@@ -1,0 +1,28 @@
+# all paths are relative to yaml/execution?
+data:
+  in_dim: [4,1]
+  reshape_in_to: null
+  directory: null
+saver:
+  save_weights: null
+  load_weights: null
+  save_graph: null
+  # if load model, then the architecture+implementation is void
+  load_graph: null
+tensorboard:
+  # if null, a default location will be created/selected
+  log_dir: null
+hyper_parameters:
+  lr: 1e-3
+  batch_size: 16
+  epochs: 3
+architecture:
+  # if yaml, then ignore the rest
+  # type, size, details(filter), frozen, dropout, regularization, etc..
+  yaml: './architecture.yaml'
+implementation:
+  # optimizer will be a string
+  # TODO: will have 'sane' defaults
+  optimizer: 'adam'
+  initialization: null
+

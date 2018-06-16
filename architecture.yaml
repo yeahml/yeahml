@@ -1,0 +1,6 @@
+# documentation will be key - "sane" defaults
+# key: value
+# key will be the "name" of the layer, value will hold the type+
+# TODO: set *NECESSARTY/REQUIRED* params
+layers:
+  
