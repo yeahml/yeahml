@@ -8,7 +8,8 @@ def reset_graph(seed=42):
     np.random.seed(seed)
 
 
-def build_graph(MC: dict, AC: dict):
+def build_graph(MCd: dict, ACd: dict):
+
     reset_graph()
     g = tf.Graph()
     with g.as_default():
@@ -16,40 +17,256 @@ def build_graph(MC: dict, AC: dict):
         #### model architecture
         with tf.name_scope("inputs"):
             # TODO: input dimension logic (currently hardcoded)
-            X = tf.placeholder(dtype=tf.float32, shape=[None, 150, 150, 3], name="X_in")
-            y = tf.placeholder(
-                dtype=tf.int64, shape=[None, int(MC[data][output_dim])], name="y_in"
+
+            X = tf.placeholder(dtype=tf.float32, shape=(MCd["in_dim"]), name="X_in")
+            y_raw = tf.placeholder(
+                dtype=tf.int64, shape=(MCd["output_dim"]), name="y_in"
             )
-            # may need to cast y to float here.
+            y = tf.cast(y_raw, tf.float32, name="label")
 
         with tf.name_scope("hidden"):
             # TODO: hidden layer logic
-            pass
+            h_1 = tf.layers.conv2d(
+                X,
+                filters=32,
+                kernel_size=3,
+                activation=tf.nn.elu,
+                padding="SAME",
+                strides=2,
+                name="conv_1",
+            )
+
+            h_2 = tf.layers.conv2d(
+                h_1,
+                filters=64,
+                kernel_size=3,
+                activation=tf.nn.elu,
+                padding="SAME",
+                strides=2,
+                name="conv_2",
+            )
+
+            h_3 = tf.layers.conv2d(
+                h_2,
+                filters=96,
+                kernel_size=3,
+                activation=tf.nn.elu,
+                padding="SAME",
+                strides=2,
+                name="conv_3",
+            )
+
+            h_4 = tf.layers.max_pooling2d(
+                h_3, pool_size=[2, 2], strides=2, name="max_pool_01"
+            )
+
+            h_5 = tf.layers.conv2d(
+                h_4,
+                filters=128,
+                kernel_size=3,
+                activation=tf.nn.elu,
+                padding="SAME",
+                strides=1,
+                name="conv_4",
+            )
+
+            h_6 = tf.layers.conv2d(
+                h_5,
+                filters=192,
+                kernel_size=3,
+                activation=tf.nn.elu,
+                padding="SAME",
+                strides=1,
+                name="conv_5",
+            )
+
+            last_shape = int(np.prod(h_6.get_shape()[1:]))
+            h_out_flat = tf.reshape(h_6, shape=[-1, last_shape])
+
+            h_10 = tf.layers.dense(
+                h_out_flat, 256, name="layer_01", activation=tf.nn.elu
+            )
+            h_11 = tf.layers.dense(h_10, 64, name="layer_02", activation=tf.nn.elu)
+            h_12 = tf.layers.dense(h_11, 16, name="layer_03", activation=tf.nn.elu)
+
         with tf.name_scope("logits"):
-            # TODO: output layer logic
-            pass
+            logits = tf.layers.dense(h_12, MCd["output_dim"][-1], name="logits")
+            preds = tf.sigmoid(logits, name="preds")
 
         #### loss logic
         with tf.name_scope("loss"):
-            # TODO: loss logic
-            pass
+            xentropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=logits)
+            batch_loss = tf.reduce_mean(xentropy, name="loss")
 
         #### optimizer
         with tf.name_scope("train"):
-            # TODO: optimizer
-            # TODO: training operation
-            pass
+            optimizer = tf.train.AdamOptimizer(
+                learning_rate=MCd["lr"],
+                beta1=0.9,
+                beta2=0.999,
+                epsilon=1e-08,
+                use_locking=False,
+                name="Adam",
+            )
+            training_op = optimizer.minimize(batch_loss, name="training_op")
 
         #### saver
         with tf.name_scope("save_session"):
-            # TODO: implement
-            # init_global = tf.global_variables_initializer()
-            # init_local = tf.local_variables_initializer()
-            # saver = tf.train.Saver()
-            pass
+            init_global = tf.global_variables_initializer()
+            init_local = tf.local_variables_initializer()
+            saver = tf.train.Saver()
 
         #### metrics
         with tf.name_scope("metrics"):
-            pass
+            # ================================== performance
+            with tf.name_scope("common"):
+                # preds = tf.nn.softmax(logits, name="prediction")
+                # y_true_cls = tf.argmax(y,1)
+                # y_pred_cls = tf.argmax(preds,1)
+                y_true_cls = tf.greater_equal(y, 0.5)
+                y_pred_cls = tf.greater_equal(preds, 0.5)
+
+                correct_prediction = tf.equal(
+                    y_pred_cls, y_true_cls, name="correct_predictions"
+                )
+                batch_acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            with tf.name_scope("train_metrics") as scope:
+                train_auc, train_auc_update = tf.metrics.auc(
+                    labels=y, predictions=preds
+                )
+                train_acc, train_acc_update = tf.metrics.accuracy(
+                    labels=y_true_cls, predictions=y_pred_cls
+                )
+                train_acc_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                train_met_reset_op = tf.variables_initializer(
+                    train_acc_vars, name="train_met_reset_op"
+                )
+            with tf.name_scope("val_metrics") as scope:
+                val_auc, val_auc_update = tf.metrics.auc(labels=y, predictions=preds)
+                val_acc, val_acc_update = tf.metrics.accuracy(
+                    labels=y_true_cls, predictions=y_pred_cls
+                )
+                val_acc_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                val_met_reset_op = tf.variables_initializer(
+                    val_acc_vars, name="val_met_reset_op"
+                )
+            with tf.name_scope("test_metrics") as scope:
+                test_auc, test_auc_update = tf.metrics.auc(labels=y, predictions=preds)
+                test_acc, test_acc_update = tf.metrics.accuracy(
+                    labels=y_true_cls, predictions=y_pred_cls
+                )
+                test_acc_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                test_acc_reset_op = tf.variables_initializer(
+                    test_acc_vars, name="test_met_reset_op"
+                )
+
+            # =============================================== loss
+            with tf.name_scope("train_loss_eval") as scope:
+                train_mean_loss, train_mean_loss_update = tf.metrics.mean(batch_loss)
+                train_loss_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                train_loss_reset_op = tf.variables_initializer(
+                    train_loss_vars, name="train_loss_reset_op"
+                )
+            with tf.name_scope("val_loss_eval") as scope:
+                val_mean_loss, val_mean_loss_update = tf.metrics.mean(batch_loss)
+                val_loss_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                val_loss_reset_op = tf.variables_initializer(
+                    val_loss_vars, name="val_loss_reset_op"
+                )
+            with tf.name_scope("test_loss_eval") as scope:
+                test_mean_loss, test_mean_loss_update = tf.metrics.mean(batch_loss)
+                test_loss_vars = tf.contrib.framework.get_variables(
+                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+                )
+                test_loss_reset_op = tf.variables_initializer(
+                    test_loss_vars, name="test_loss_rest_op"
+                )
+
+            # --- create collections
+        for node in (saver, init_global, init_local):
+            g.add_to_collection("save_init", node)
+        for node in (X, y_raw, training_op):
+            g.add_to_collection("main_ops", node)
+        for node in (preds, y_true_cls, y_pred_cls, correct_prediction):
+            g.add_to_collection("preds", node)
+        for node in (
+            train_auc,
+            train_auc_update,
+            train_acc,
+            train_acc_update,
+            train_met_reset_op,
+        ):
+            g.add_to_collection("train_metrics", node)
+        for node in (
+            val_auc,
+            val_auc_update,
+            val_acc,
+            val_acc_update,
+            val_met_reset_op,
+        ):
+            g.add_to_collection("val_metrics", node)
+        for node in (
+            test_auc,
+            test_auc_update,
+            test_acc,
+            test_acc_update,
+            test_acc_reset_op,
+        ):
+            g.add_to_collection("test_metrics", node)
+        for node in (train_mean_loss, train_mean_loss_update, train_loss_reset_op):
+            g.add_to_collection("train_loss", node)
+        for node in (val_mean_loss, val_mean_loss_update, val_loss_reset_op):
+            g.add_to_collection("val_loss", node)
+        for node in (test_mean_loss, test_mean_loss_update, test_loss_reset_op):
+            g.add_to_collection("test_loss", node)
+        g.add_to_collection("logits", logits)
+
+        # ===================================== tensorboard
+        with tf.name_scope("tensorboard_writer") as scope:
+            epoch_train_loss_scalar = tf.summary.scalar(
+                "train_epoch_loss", train_mean_loss
+            )
+            epoch_train_acc_scalar = tf.summary.scalar("train_epoch_acc", train_acc)
+            epoch_train_auc_scalar = tf.summary.scalar("train_epoch_auc", train_auc)
+            epoch_train_write_op = tf.summary.merge(
+                [
+                    epoch_train_loss_scalar,
+                    epoch_train_acc_scalar,
+                    epoch_train_auc_scalar,
+                ],
+                name="epoch_train_write_op",
+            )
+
+            # ===== epoch, validation
+            epoch_validation_loss_scalar = tf.summary.scalar(
+                "validation_epoch_loss", val_mean_loss
+            )
+            epoch_validation_acc_scalar = tf.summary.scalar(
+                "validation_epoch_acc", val_acc
+            )
+            epoch_validation_auc_scalar = tf.summary.scalar(
+                "validation_epoch_auc", val_auc
+            )
+            epoch_validation_write_op = tf.summary.merge(
+                [
+                    epoch_validation_loss_scalar,
+                    epoch_validation_acc_scalar,
+                    epoch_validation_auc_scalar,
+                ],
+                name="epoch_validation_write_op",
+            )
+
+        for node in (epoch_train_write_op, epoch_validation_write_op):
+            g.add_to_collection("tensorboard", node)
 
     return g
