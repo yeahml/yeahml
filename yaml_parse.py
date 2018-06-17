@@ -25,4 +25,30 @@ def create_model_and_arch_config(path: str) -> (dict, dict):
     return (m_config, a_config)
 
 
+def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
+    # this is necessary since the YAML structure is likely to change
+    # eventually, this can be deleted
+    MCd, ACd = {}, {}
+    ## inputs
+    MCd["in_dim"] = MC["data"]["in_dim"]
+    if MCd["in_dim"][0]:
+        MCd["in_dim"].insert(0, None)  # add batching
+
+    MCd["output_dim"] = MC["data"]["output_dim"]
+    if MCd["output_dim"][0]:
+        MCd["output_dim"].insert(0, None)  # add batching
+
+    ## hyperparams
+    MCd["lr"] = MC["hyper_parameters"]["lr"]
+    MCd["epochs"] = MC["hyper_parameters"]["lr"]
+    MCd["batch_size"] = MC["hyper_parameters"]["lr"]
+    ## implementation
+    MCd["optimizer"] = MC["implementation"]["optimizer"]
+
+    ### architecture
+    # TODO: implement after graph can be created...
+
+    return (MCd, ACd)
+
+
 # TODO: will need to implement preprocessing logic
