@@ -4,9 +4,10 @@ overall:
   verbosity: 0
   tf_log_level: 'warn'
 data:
-  in_dim: [4,1]
+  in_dim: 4
   reshape_in_to: null
   directory: null
+  output_dim: 3
   # TODO: train/val/test split, kfold?
   # TODO: augmentation?
   # TODO: preprocessing
@@ -26,7 +27,7 @@ hyper_parameters:
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..
-  yaml: './architecture.yaml'
+  yaml: './experiment/iris/architecture.yaml'
 implementation:
   # optimizer will be a string
   # TODO: will have 'sane' defaults

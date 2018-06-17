@@ -15,8 +15,13 @@ def build_graph(MC: dict, AC: dict):
 
         #### model architecture
         with tf.name_scope("inputs"):
-            # TODO: input layer logic
-            pass
+            # TODO: input dimension logic (currently hardcoded)
+            X = tf.placeholder(dtype=tf.float32, shape=[None, 150, 150, 3], name="X_in")
+            y = tf.placeholder(
+                dtype=tf.int64, shape=[None, int(MC[data][output_dim])], name="y_in"
+            )
+            # may need to cast y to float here.
+
         with tf.name_scope("hidden"):
             # TODO: hidden layer logic
             pass
