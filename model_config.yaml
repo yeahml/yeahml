@@ -1,8 +1,15 @@
 # all paths are relative to yaml/execution?
+# TODO: naming/structure will need to be improved
+overall:
+  verbosity: 0
+  tf_log_level: 'warn'
 data:
   in_dim: [4,1]
   reshape_in_to: null
   directory: null
+  # TODO: train/val/test split, kfold?
+  # TODO: augmentation?
+  # TODO: preprocessing
 saver:
   save_weights: null
   load_weights: null
@@ -25,4 +32,5 @@ implementation:
   # TODO: will have 'sane' defaults
   optimizer: 'adam'
   initialization: null
+  default_activation: 'elu'
 
