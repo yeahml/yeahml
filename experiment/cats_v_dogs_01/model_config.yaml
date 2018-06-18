@@ -4,7 +4,7 @@ overall:
   verbosity: 0
   tf_log_level: 'warn'
 data:
-  in_dim: [150, 150, 3] # XX
+  in_dim: [150, 150, 3]
   reshape_in_to: null
   directory: null
   output_dim: [1]
@@ -25,7 +25,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.0001
   batch_size: 16
-  epochs: 5
+  epochs: 2
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

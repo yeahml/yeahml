@@ -8,6 +8,76 @@ def reset_graph(seed=42):
     np.random.seed(seed)
 
 
+def get_optimizer(MCd: dict):
+    opt = MCd["optimizer"].lower()
+    optimizer = None
+    if opt == "adam":
+        optimizer = tf.train.AdamOptimizer(
+            learning_rate=MCd["lr"],
+            beta1=0.9,
+            beta2=0.999,
+            epsilon=1e-08,
+            use_locking=False,
+            name="Adam",
+        )
+    elif opt == "sgd":
+        optimizer = tf.train.GradientDescentOptimizer(
+            learning_rate=MCd["lr"], name="GradientDescent"
+        )
+    elif opt == "adadelta":
+        optimizer = tf.train.AdadeltaOptimizer(
+            learning_rate=MCd["lr"],
+            rho=0.95,
+            epsilon=1e-08,
+            use_locking=False,
+            name="Adadelta",
+        )
+    elif opt == "adagrad":
+        optimizer = tf.train.AdagradOptimizer(
+            learning_rate=MCd["lr"],
+            initial_accumulator_value=0.1,
+            use_locking=False,
+            name="Adagrad",
+        )
+    # elif opt == "momentum":
+    #     tf.train.MomentumOptimizer(
+    #         learning_rate=MCd["lr"],
+    #         momentum, # TODO: value
+    #         use_locking=False,
+    #         name="Momentum",
+    #         use_nesterov=False,
+    #     )
+    elif opt == "ftrl":
+        optimizer = tf.train.FtrlOptimizer(
+            learning_rate=MCd["lr"],
+            learning_rate_power=-0.5,
+            initial_accumulator_value=0.1,
+            l1_regularization_strength=0.0,
+            l2_regularization_strength=0.0,
+            use_locking=False,
+            name="Ftrl",
+            accum_name=None,
+            linear_name=None,
+            l2_shrinkage_regularization_strength=0.0,
+        )
+    elif opt == "rmsprop":
+        optimizer = tf.train.RMSPropOptimizer(
+            learning_rate=MCd["lr"],
+            decay=0.9,
+            momentum=0.0,
+            epsilon=1e-10,
+            use_locking=False,
+            centered=False,
+            name="RMSProp",
+        )
+    else:
+        # TODO: error handle?
+        # realistically this should be caught by the initial check
+        pass
+
+    return optimizer
+
+
 def build_graph(MCd: dict, ACd: dict):
 
     reset_graph()
@@ -24,13 +94,15 @@ def build_graph(MCd: dict, ACd: dict):
             )
             y = tf.cast(y_raw, tf.float32, name="label")
 
+        act_fn = tf.nn.elu
+
         with tf.name_scope("hidden"):
             # TODO: hidden layer logic
             h_1 = tf.layers.conv2d(
                 X,
                 filters=32,
                 kernel_size=3,
-                activation=tf.nn.elu,
+                activation=act_fn,
                 padding="SAME",
                 strides=2,
                 name="conv_1",
@@ -40,7 +112,7 @@ def build_graph(MCd: dict, ACd: dict):
                 h_1,
                 filters=64,
                 kernel_size=3,
-                activation=tf.nn.elu,
+                activation=act_fn,
                 padding="SAME",
                 strides=2,
                 name="conv_2",
@@ -50,7 +122,7 @@ def build_graph(MCd: dict, ACd: dict):
                 h_2,
                 filters=96,
                 kernel_size=3,
-                activation=tf.nn.elu,
+                activation=act_fn,
                 padding="SAME",
                 strides=2,
                 name="conv_3",
@@ -64,7 +136,7 @@ def build_graph(MCd: dict, ACd: dict):
                 h_4,
                 filters=128,
                 kernel_size=3,
-                activation=tf.nn.elu,
+                activation=act_fn,
                 padding="SAME",
                 strides=1,
                 name="conv_4",
@@ -74,7 +146,7 @@ def build_graph(MCd: dict, ACd: dict):
                 h_5,
                 filters=192,
                 kernel_size=3,
-                activation=tf.nn.elu,
+                activation=act_fn,
                 padding="SAME",
                 strides=1,
                 name="conv_5",
@@ -83,11 +155,9 @@ def build_graph(MCd: dict, ACd: dict):
             last_shape = int(np.prod(h_6.get_shape()[1:]))
             h_out_flat = tf.reshape(h_6, shape=[-1, last_shape])
 
-            h_10 = tf.layers.dense(
-                h_out_flat, 256, name="layer_01", activation=tf.nn.elu
-            )
-            h_11 = tf.layers.dense(h_10, 64, name="layer_02", activation=tf.nn.elu)
-            h_12 = tf.layers.dense(h_11, 16, name="layer_03", activation=tf.nn.elu)
+            h_10 = tf.layers.dense(h_out_flat, 256, name="layer_01", activation=act_fn)
+            h_11 = tf.layers.dense(h_10, 64, name="layer_02", activation=act_fn)
+            h_12 = tf.layers.dense(h_11, 16, name="layer_03", activation=act_fn)
 
         with tf.name_scope("logits"):
             logits = tf.layers.dense(h_12, MCd["output_dim"][-1], name="logits")
@@ -100,14 +170,7 @@ def build_graph(MCd: dict, ACd: dict):
 
         #### optimizer
         with tf.name_scope("train"):
-            optimizer = tf.train.AdamOptimizer(
-                learning_rate=MCd["lr"],
-                beta1=0.9,
-                beta2=0.999,
-                epsilon=1e-08,
-                use_locking=False,
-                name="Adam",
-            )
+            optimizer = get_optimizer(MCd)
             training_op = optimizer.minimize(batch_loss, name="training_op")
 
         #### saver
