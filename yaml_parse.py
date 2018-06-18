@@ -38,6 +38,8 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     if MCd["output_dim"][0]:
         MCd["output_dim"].insert(0, None)  # add batching
 
+    MCd["TFR_dir"] = MC["data"]["TFR_dir"]
+
     ## hyperparams
     MCd["lr"] = MC["hyper_parameters"]["lr"]
     MCd["epochs"] = MC["hyper_parameters"]["epochs"]
@@ -48,7 +50,8 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["shuffle_buffer"] = MC["implementation"]["shuffle_buffer"]
 
     ### architecture
-    # TODO: implement after graph can be created...
+    # TODO: implement after graph can be created...l
+    MCd["save_pparams"] = MC["saver"]["save_pparams"]
 
     return (MCd, ACd)
 

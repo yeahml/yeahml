@@ -8,12 +8,14 @@ data:
   reshape_in_to: null
   directory: null
   output_dim: [1]
+  TFR_dir: './experiment/cats_v_dogs_01/data/record_holder/150'
   # TODO: train/val/test split, kfold?
   # TODO: augmentation?
   # TODO: preprocessing
 saver:
-  save_weights: null
-  load_weights: null
+  # pickel-ed-params
+  save_pparams: 'best_params'
+  load_pparams: null
   save_graph: null
   # if load model, then the architecture+implementation is void
   load_graph: null
