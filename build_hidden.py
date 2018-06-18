@@ -2,11 +2,38 @@ import tensorflow as tf
 import numpy as np
 
 
+def get_activation_fn(MCd: dict):
+    act = MCd["def_act"]
+    act_fn = None
+    if act == "sigmoid":
+        act_fn = tf.sigmoid
+    elif act == "tanh":
+        act_fn = tf.tanh
+    elif act == "elu":
+        act_fn = tf.nn.elu
+    elif act == "selu":
+        act_fn = tf.nn.selu
+    elif act == "softplus":
+        act_fn = tf.nn.softplus
+    elif act == "softsign":
+        act_fn = tf.nn.softsign
+    elif act == "relu":
+        act_gn = tf.nn.relu
+    # elif act == "leaky":
+    # act_fn = tf.nn.leay_relu
+    elif act == "relu6":
+        act_fn = tf.nn.relu6
+    else:
+        # TODO: error handle?
+        # realistically this should be caught by the initial check
+        pass
+    return act_fn
+
+
 def build_hidden_block(X, MCd: dict, ACd: dict):
     # in: X
     # out: last layer before logits
-
-    act_fn = tf.nn.elu
+    act_fn = get_activation_fn(MCd)
 
     with tf.name_scope("hidden"):
         # TODO: hidden layer logic

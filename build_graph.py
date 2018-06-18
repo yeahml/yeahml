@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from build_hidden import build_hidden_layer
+from build_hidden import build_hidden_block
 
 # Helper to make the output consistent
 def reset_graph(seed=42):

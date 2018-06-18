@@ -94,7 +94,10 @@ def return_batched_iter(setType, MCd, sess):
     if GLOBAL_SET_TYPE != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
-    dataset = dataset.batch(MCd["batch_size"])
+    # prefetch is used to ensure one batch is always ready
+    # TODO: this prefetch should have some logic based on the
+    # system environment, batchsize, and data size
+    dataset = dataset.batch(MCd["batch_size"]).prefetch(1)
     dataset = dataset.repeat(1)
 
     iterator = dataset.make_initializable_iterator()

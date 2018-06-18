@@ -46,7 +46,7 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
     ## implementation
     MCd["optimizer"] = MC["implementation"]["optimizer"]
-
+    MCd["def_act"] = MC["implementation"]["default_activation"]
     MCd["shuffle_buffer"] = MC["implementation"]["shuffle_buffer"]
 
     ### architecture
