@@ -40,10 +40,12 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
 
     ## hyperparams
     MCd["lr"] = MC["hyper_parameters"]["lr"]
-    MCd["epochs"] = MC["hyper_parameters"]["lr"]
-    MCd["batch_size"] = MC["hyper_parameters"]["lr"]
+    MCd["epochs"] = MC["hyper_parameters"]["epochs"]
+    MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
     ## implementation
     MCd["optimizer"] = MC["implementation"]["optimizer"]
+
+    MCd["shuffle_buffer"] = MC["implementation"]["shuffle_buffer"]
 
     ### architecture
     # TODO: implement after graph can be created...

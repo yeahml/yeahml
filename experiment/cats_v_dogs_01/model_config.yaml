@@ -21,12 +21,14 @@ tensorboard:
   # if null, a default location will be created/selected
   log_dir: null
 hyper_parameters:
-  lr: 1e-3
+  lr: 0.0001
   batch_size: 16
-  epochs: 3
+  epochs: 5
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..
+  # TODO: maybe this could also be a .py file containing a graph
+  # > (clear input/output would need to be defined)
   yaml: './experiment/cats_v_dogs_01/architecture.yaml'
 implementation:
   # optimizer will be a string
@@ -34,4 +36,5 @@ implementation:
   optimizer: 'adam'
   initialization: null
   default_activation: 'elu'
+  shuffle_buffer: 128
 
