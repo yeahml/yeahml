@@ -28,7 +28,8 @@ def create_model_and_arch_config(path: str) -> (dict, dict):
 def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     # this is necessary since the YAML structure is likely to change
     # eventually, this can be deleted
-    MCd, ACd = {}, {}
+    MCd = {}
+    # ACd = {}
     ## inputs
     MCd["in_dim"] = MC["data"]["in_dim"]
     if MCd["in_dim"][0]:
@@ -53,7 +54,7 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     # TODO: implement after graph can be created...l
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
 
-    return (MCd, ACd)
+    return (MCd, AC)
 
 
 # TODO: will need to implement preprocessing logic

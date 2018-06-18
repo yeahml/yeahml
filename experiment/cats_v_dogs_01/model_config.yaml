@@ -3,6 +3,9 @@
 overall:
   verbosity: 0
   tf_log_level: 'warn'
+  # will need to investigate disabling cudnn > nondeterministic backprop
+  deterministic: null
+  rand_seed: null # TODO: use
 data:
   in_dim: [150, 150, 3]
   reshape_in_to: null
@@ -32,6 +35,7 @@ architecture:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
   yaml: './experiment/cats_v_dogs_01/architecture.yaml'
+  #yaml: 'architecture.yaml'
 implementation:
   # optimizer will be a string
   # TODO: will have 'sane' defaults
