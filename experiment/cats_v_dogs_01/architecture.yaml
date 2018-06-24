@@ -18,6 +18,7 @@ layers:
       kernel_size: 3
       padding: 'SAME'
       strides: 2
+      bias_regularizer: 'l2'
     activation: 'elu'
   conv_2:
     type: 'conv2d'
@@ -58,7 +59,7 @@ layers:
     options:
       units: 64
       kernel_initializer: null
-      kernel_regularizer: null
+      kernel_regularizer: 'l2'
       bias_regularizer: null
       trainable: True
     activation: 'elu'

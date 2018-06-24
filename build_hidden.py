@@ -2,6 +2,33 @@ import tensorflow as tf
 import numpy as np
 
 
+def get_regulizer_fn(reg_str: str):
+
+    # TODO: need to test/validate this contrib
+    # TODO: need to allow modification for scale
+    scale = 0.1
+
+    if reg_str:
+        reg_str = reg_str.lower()
+
+    if reg_str == "":
+        reg_fn = None  # default is glorot
+    elif reg_str == "l1":
+        reg_fn = tf.contrib.layers.l1_regularizer(scale, scope=None)
+    elif reg_str == "l2":
+        reg_fn = tf.contrib.layers.l2_regularizer(scale, scope=None)
+    elif reg_str == "l1l2":
+        # TODO: how/is this different from elastic nets
+        reg_fn = tf.contrib.layers.l1_l2_regularizer(
+            scale_l1=1.0, scale_l2=1.0, scope=None
+        )
+    else:
+        # TODO: Error
+        reg_fn = None
+
+    return reg_fn
+
+
 def get_initializer_fn(init_str: str):
     # NOTE: will use uniform (not normal) by default
 
@@ -29,6 +56,7 @@ def get_initializer_fn(init_str: str):
             factor=2.0, mode="FAN_IN", uniform=False, seed=None, dtype=tf.float32
         )
     else:
+        # TODO: Error
         init_fn = None
     return init_fn
 
@@ -58,14 +86,13 @@ def get_activation_fn(act_str: str):
     elif act_str == "relu6":
         act_fn = tf.nn.relu6
     else:
-        # TODO: error handle?
+        # TODO: Error
         # realistically this should be caught by the initial check
         pass
     return act_fn
 
 
 def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
-    # TODO: convert to lower API
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 
@@ -73,6 +100,16 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:
         k_init_fn = None
+
+    try:
+        k_reg = get_regulizer_fn(opts["kernel_regularizer"])
+    except KeyError:
+        k_reg = None
+
+    try:
+        b_reg = get_regulizer_fn(opts["bias_regularizer"])
+    except KeyError:
+        b_reg = None
 
     filters = opts["filters"]
     try:
@@ -93,13 +130,21 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
     if not name:
         name = "unnamed_conv_layer"
 
+    # trainable = opts["trainable"]
+    trainable = True
+
     out = tf.layers.conv2d(
         cur_input,
         filters=filters,
         kernel_size=kernel_size,
-        activation=actfn,
-        padding=padding,
         strides=strides,
+        padding=padding,
+        activation=actfn,
+        kernel_initializer=k_init_fn,
+        bias_initializer=tf.zeros_initializer(),
+        kernel_regularizer=k_reg,
+        bias_regularizer=b_reg,
+        trainable=trainable,
         name=name,
     )
 
@@ -114,10 +159,16 @@ def build_dense_layer(cur_input, opts: dict, actfn, name: str):
     except KeyError:
         k_init_fn = None
 
-    # k_reg = opts["kernel_regularizer"]
-    k_reg = None
-    # b_reg = opts["bias_regularizer"]
-    b_reg = None
+    try:
+        k_reg = get_regulizer_fn(opts["kernel_regularizer"])
+    except KeyError:
+        k_reg = None
+
+    try:
+        b_reg = get_regulizer_fn(opts["bias_regularizer"])
+    except KeyError:
+        b_reg = None
+
     # trainable = opts["trainable"]
     trainable = True
     out = tf.layers.dense(

@@ -104,8 +104,21 @@ def build_graph(MCd: dict, ACd: dict):
 
         #### loss logic
         with tf.name_scope("loss"):
-            xentropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=logits)
-            batch_loss = tf.reduce_mean(xentropy, name="loss")
+            # BINARY
+            BINARY = True
+            if BINARY:
+                xentropy = tf.nn.sigmoid_cross_entropy_with_logits(
+                    labels=y, logits=logits
+                )
+
+            base_loss = tf.reduce_mean(xentropy, name="base_loss")
+            # handle regularization losses
+            reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+            # TODO: ensure this returns 0/None when regularization is not used
+            # reg_losses = tf.losses.get_regularization_loss(
+            # scope=None, name="total_regularization_loss"
+            # )
+            batch_loss = tf.add_n([base_loss] + reg_losses, name="loss")
 
         #### optimizer
         with tf.name_scope("train"):
