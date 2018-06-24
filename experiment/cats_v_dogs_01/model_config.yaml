@@ -28,7 +28,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.0001
   batch_size: 16
-  epochs: 2
+  epochs: 1
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

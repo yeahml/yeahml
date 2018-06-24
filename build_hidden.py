@@ -2,7 +2,41 @@ import tensorflow as tf
 import numpy as np
 
 
+def get_initializer_fn(init_str: str):
+    # NOTE: will use uniform (not normal) by default
+
+    # elif opts["kernel_initializer"] == "he":
+    # init_fn = lambda shape, dtype=tf.float32: tf.truncated_normal(shape, 0., stddev=np.sqrt(2/shape[0]))
+    if init_str:
+        init_str = init_str.lower()
+
+    if init_str == "":
+        init_fn = None  # default is glorot
+    elif init_str == "glorot":
+        init_fn = tf.glorot_uniform_initializer(seed=None, dtype=tf.float32)
+    elif init_str == "zeros" or init_str == "zero":
+        init_fn = tf.zeros_initializer(dtype=tf.float32)
+    elif init_str == "ones" or init_str == "one":
+        init_fn = tf.ones_initializer(dtype=tf.float32)
+    elif init_str == "rand" or init_str == "random":
+        # TODO: this will need a value for maxval
+        init_fn = tf.random_uniform_initializer(
+            minval=0, maxval=None, seed=None, dtype=tf.float32
+        )
+    elif init_str == "he":
+        # TODO: unsure about this one...
+        tf.contrib.layers.variance_scaling_initializer(
+            factor=2.0, mode="FAN_IN", uniform=False, seed=None, dtype=tf.float32
+        )
+    else:
+        init_fn = None
+    return init_fn
+
+
 def get_activation_fn(act_str: str):
+
+    if act_str:
+        act_str = act_str.lower()
 
     act_fn = None
     if act_str == "sigmoid":
@@ -34,6 +68,11 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
     # TODO: convert to lower API
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
+
+    try:
+        k_init_fn = get_initializer_fn(opts["kernel_initializer"])
+    except KeyError:
+        k_init_fn = None
 
     filters = opts["filters"]
     try:
@@ -68,9 +107,29 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
 
 
 def build_dense_layer(cur_input, opts: dict, actfn, name: str):
-    # TODO: convert to lower API
     units = opts["units"]
-    out = tf.layers.dense(cur_input, units, activation=actfn, name=name)
+
+    try:
+        k_init_fn = get_initializer_fn(opts["kernel_initializer"])
+    except KeyError:
+        k_init_fn = None
+
+    # k_reg = opts["kernel_regularizer"]
+    k_reg = None
+    # b_reg = opts["bias_regularizer"]
+    b_reg = None
+    # trainable = opts["trainable"]
+    trainable = True
+    out = tf.layers.dense(
+        inputs=cur_input,
+        units=units,
+        activation=actfn,
+        kernel_initializer=k_init_fn,
+        kernel_regularizer=k_reg,
+        bias_regularizer=b_reg,
+        trainable=trainable,
+        name=name,
+    )
     return out
 
 
