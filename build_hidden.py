@@ -151,7 +151,7 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
     return out
 
 
-def build_dense_layer(cur_input, opts: dict, actfn, name: str):
+def build_dense_layer(cur_input, training, opts: dict, actfn, name: str):
     units = opts["units"]
 
     try:
@@ -181,6 +181,25 @@ def build_dense_layer(cur_input, opts: dict, actfn, name: str):
         trainable=trainable,
         name=name,
     )
+
+    ## add dropout
+    # this block isn't very elegant...
+    try:
+        dropout_rate = opts["dropout"]
+    except KeyError:
+        dropout_rate = None
+
+    if dropout_rate:
+        # apply dropout
+        out = tf.layers.dropout(
+            inputs=out,
+            rate=dropout_rate,
+            noise_shape=None,
+            seed=None,
+            training=training,
+            name=None,
+        )
+
     return out
 
 
@@ -206,7 +225,7 @@ def build_pool_layer(cur_input, opts: dict, name: str):
     return out
 
 
-def build_hidden_block(X, MCd: dict, ACd: dict):
+def build_hidden_block(X, training, MCd: dict, ACd: dict):
     # in: X
     # out: last layer before logits
 
@@ -238,14 +257,16 @@ def build_hidden_block(X, MCd: dict, ACd: dict):
                 cur_input = build_conv2d_layer(cur_input, opts, actfn, l_name)
             elif ltype == "dense":
                 # ---- this block is 'dumb' but works --------------
+                # this is necessary because if the last block was a pool
+                # or conv, we need to flatten layer before we add a dense layer
                 prev_ltype_key = list(ACd["layers"])[i - 1]
                 prev_ltype = ACd["layers"][prev_ltype_key]["type"]
-                # --------------------------------------------------
                 if prev_ltype == "conv2d" or prev_ltype == "pooling2d":
                     # flatten
                     last_shape = int(np.prod(cur_input.get_shape()[1:]))
                     cur_input = tf.reshape(cur_input, shape=[-1, last_shape])
-                cur_input = build_dense_layer(cur_input, opts, actfn, l_name)
+                # --------------------------------------------------
+                cur_input = build_dense_layer(cur_input, training, opts, actfn, l_name)
             elif ltype == "pooling2d":
                 cur_input = build_pool_layer(cur_input, opts, l_name)
             else:

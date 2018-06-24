@@ -89,6 +89,7 @@ def build_graph(MCd: dict, ACd: dict):
         #### model architecture
         with tf.name_scope("inputs"):
             # TODO: input dimension logic (currently hardcoded)
+            training = tf.placeholder_with_default(False, shape=(), name="training")
 
             X = tf.placeholder(dtype=tf.float32, shape=(MCd["in_dim"]), name="X_in")
             y_raw = tf.placeholder(
@@ -96,7 +97,7 @@ def build_graph(MCd: dict, ACd: dict):
             )
             y = tf.cast(y_raw, tf.float32, name="label")
 
-        hidden = build_hidden_block(X, MCd, ACd)
+        hidden = build_hidden_block(X, training, MCd, ACd)
 
         with tf.name_scope("logits"):
             logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
@@ -210,7 +211,7 @@ def build_graph(MCd: dict, ACd: dict):
             # --- create collections
         for node in (saver, init_global, init_local):
             g.add_to_collection("save_init", node)
-        for node in (X, y_raw, training_op):
+        for node in (X, y_raw, training, training_op):
             g.add_to_collection("main_ops", node)
         for node in (preds, y_true_cls, y_pred_cls, correct_prediction):
             g.add_to_collection("preds", node)

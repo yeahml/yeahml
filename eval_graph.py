@@ -90,7 +90,7 @@ def eval_graph(g, MCd):
     best_params = load_obj(MCd["save_pparams"])
     with tf.Session(graph=g) as sess:
         saver, init_global, init_local = g.get_collection("save_init")
-        X, y_raw, training_op = g.get_collection("main_ops")
+        X, y_raw, training, training_op = g.get_collection("main_ops")
         preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
         test_auc, test_auc_update, test_acc, test_acc_update, test_acc_reset_op = g.get_collection(
             "test_metrics"

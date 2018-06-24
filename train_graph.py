@@ -114,7 +114,7 @@ def return_batched_iter(setType, MCd, sess):
 def train_graph(g, MCd):
     global BEST_PARAMS_PATH
     saver, init_global, init_local = g.get_collection("save_init")
-    X, y_raw, training_op = g.get_collection("main_ops")
+    X, y_raw, training, training_op = g.get_collection("main_ops")
     preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
     train_auc, train_auc_update, train_acc, train_acc_update, train_met_reset_op = g.get_collection(
         "train_metrics"
@@ -159,6 +159,7 @@ def train_graph(g, MCd):
             next_tr_element = tr_iter.get_next()
 
             # loop entire training set
+            # main training loop
             while True:
                 try:
                     data, target = sess.run(next_tr_element)
@@ -170,7 +171,7 @@ def train_graph(g, MCd):
                             train_acc_update,
                             train_mean_loss_update,
                         ],
-                        feed_dict={X: data, y_raw: target},
+                        feed_dict={X: data, y_raw: target, training: True},
                     )
                 #                     pr, yt, yp = sess.run([preds, y_true_cls, y_pred_cls], feed_dict={X:data, y_raw:target})
                 #                     print(pr)
