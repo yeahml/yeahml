@@ -3,7 +3,7 @@ import pickle
 import os
 import numpy as np
 
-from handle_data import return_batched_iter, reinitialize_iter
+from handle_data import return_batched_iter
 
 # Helper to make the output consistent
 # TODO: this could sit in a helper file?
@@ -54,7 +54,10 @@ def eval_graph(g, MCd):
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         test_iter = return_batched_iter("test", MCd, filenames_ph)
-        reinitialize_iter(sess, test_iter, "test", filenames_ph)
+
+        tfr_f_path = os.path.join(MCd["TFR_dir"], "test.tfrecords")
+        sess.run(test_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
+
         next_test_element = test_iter.get_next()
         while True:
             try:

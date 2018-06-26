@@ -75,12 +75,3 @@ def return_batched_iter(setType, MCd, filenames_ph):
 
     return iterator
 
-
-def reinitialize_iter(sess, iterator, set_type, filenames_ph):
-    TFR_DIR = "./example/cats_v_dogs_01/data/record_holder/150"
-    tfr_file_name = str(set_type) + ".tfrecords"
-    tfrecord_file_path = os.path.join(TFR_DIR, tfr_file_name)
-
-    # initialize
-    sess.run(iterator.initializer, feed_dict={filenames_ph: [tfrecord_file_path]})
-    return

@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 
 # TODO: make sure global var still works....
-from handle_data import return_batched_iter, reinitialize_iter
+from handle_data import return_batched_iter
 
 
 # these two functions (get_model_params and restore_model_params) are
@@ -102,7 +102,9 @@ def train_graph(g, MCd):
                 ]
             )
 
-            reinitialize_iter(sess, tr_iter, "train", filenames_ph)
+            # reinitialize training iterator
+            tfr_f_path = os.path.join(MCd["TFR_dir"], "train.tfrecords")
+            sess.run(tr_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_tr_element = tr_iter.get_next()
 
             # loop entire training set
@@ -129,7 +131,8 @@ def train_graph(g, MCd):
             train_writer.flush()
 
             # run validation
-            reinitialize_iter(sess, val_iter, "val", filenames_ph)
+            tfr_f_path = os.path.join(MCd["TFR_dir"], "val.tfrecords")
+            sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_val_element = val_iter.get_next()
             while True:
                 try:
