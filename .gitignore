@@ -3,16 +3,17 @@
 
 __pycache__/
 
-experiment/cats_v_dogs_01/data/train/
+example/cats_v_dogs_01/data/train/
 
-experiment/cats_v_dogs_01/\.ipynb_checkpoints/
+example/cats_v_dogs_01/\.ipynb_checkpoints/
 
-experiment/cats_v_dogs_01/data/numpy/150/
+example/cats_v_dogs_01/data/numpy/150/
 
-experiment/cats_v_dogs_01/data/train\.zip
+example/cats_v_dogs_01/data/train\.zip
 
-experiment/cats_v_dogs_01/data/record_holder/150/
+example/cats_v_dogs_01/data/record_holder/150/
 
-experiment/cats_v_dogs_01/tf_logs/*
+example/cats_v_dogs_01/tf_logs/*
 
-experiment/cats_v_dogs_01/trial/best_params/
+example/cats_v_dogs_01/trial/best_params/
+

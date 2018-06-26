@@ -15,9 +15,7 @@ def reset_graph(seed=42):
 
 # TODO: this could sit in a helper file?
 def load_obj(name):
-    with open(
-        "./experiment/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb"
-    ) as f:
+    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb") as f:
         return pickle.load(f)
 
 

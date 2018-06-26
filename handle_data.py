@@ -4,7 +4,7 @@ import pickle
 from tqdm import tqdm
 import os
 
-TFR_DIR = "./experiment/cats_v_dogs_01/data/record_holder/150"
+TFR_DIR = "./example/cats_v_dogs_01/data/record_holder/150"
 
 
 def augment_image(img_tensor):

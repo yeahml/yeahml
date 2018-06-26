@@ -40,17 +40,13 @@ def restore_model_params(model_params, g, sess):
 # model params to disk
 # TODO: file name needs to be managed
 def save_obj(obj, name):
-    with open(
-        "./experiment/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "wb"
-    ) as f:
+    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "wb") as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
 # TODO: file name needs to be managed
 def load_obj(name):
-    with open(
-        "./experiment/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb"
-    ) as f:
+    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb") as f:
         return pickle.load(f)
 
 
@@ -83,7 +79,7 @@ def train_graph(g, MCd):
     #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
     # TODO: these logs needs to go to the correct place
-    root_logs = "./experiment/cats_v_dogs_01"
+    root_logs = "./example/cats_v_dogs_01"
     train_writer = tf.summary.FileWriter(os.path.join(root_logs, "tf_logs", "train"))
     val_writer = tf.summary.FileWriter(os.path.join(root_logs, "tf_logs", "validation"))
 

@@ -6,7 +6,8 @@ from eval_graph import eval_graph
 import os
 
 ## parse config files
-MC, AC = create_model_and_arch_config("./experiment/cats_v_dogs_01/model_config.yaml")
+# 1) cats vs dogs : ./example/cats_v_dogs_01/model_config.yaml
+MC, AC = create_model_and_arch_config("./example/cats_v_dogs_01/model_config.yaml")
 MCd, ACd = extract_from_dict(MC, AC)
 
 
