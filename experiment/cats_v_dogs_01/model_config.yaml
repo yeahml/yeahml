@@ -6,6 +6,16 @@ overall:
   # will need to investigate disabling cudnn > nondeterministic backprop
   deterministic: null
   rand_seed: null # TODO: use
+  # regression, segmentation, GAN, autoencode
+  type: 'classification' # TODO: use
+  options: 'binary'
+  seed: 42
+  # performance:
+  #   # default (auc, acc,loss)
+  #   eval:
+  #     - 'sensitivity'
+  #     - 'precision'
+  #     - 'F1'
 data:
   in_dim: [150, 150, 3]
   reshape_in_to: null
@@ -28,7 +38,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.0001
   batch_size: 16
-  epochs: 2
+  epochs: 3
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..
@@ -43,4 +53,11 @@ implementation:
   initialization: null
   default_activation: 'elu'
   shuffle_buffer: 128
-
+train:
+  # the values aren't being used yet...
+  image: 'standardize'
+  augmentation:
+    v_flip: 50
+    h_flip: 50
+    rotate: 50
+    brightness: 0.2

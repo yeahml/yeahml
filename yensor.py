@@ -8,12 +8,11 @@ import os
 ## parse config files
 MC, AC = create_model_and_arch_config("./experiment/cats_v_dogs_01/model_config.yaml")
 MCd, ACd = extract_from_dict(MC, AC)
-# print(MCd)
-# print(ACd)
 
 
 # TODO: this needs to be handled differently
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+# os.environ["TF_USE_CUDNN"] = "1" # necessary for Conv2d
 
 
 ## Basic Error Checking

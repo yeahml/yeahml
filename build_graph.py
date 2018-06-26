@@ -118,9 +118,8 @@ def build_graph(MCd: dict, ACd: dict):
 
         #### loss logic
         with tf.name_scope("loss"):
-            # BINARY
-            BINARY = True
-            if BINARY:
+            # Classification, BINARY
+            if MCd["final_type"].lower() == "binary":
                 xentropy = tf.nn.sigmoid_cross_entropy_with_logits(
                     labels=y, logits=logits
                 )

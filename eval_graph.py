@@ -3,6 +3,8 @@ import pickle
 import os
 import numpy as np
 
+from handle_data import return_batched_iter
+
 # Helper to make the output consistent
 # TODO: this could sit in a helper file?
 def reset_graph(seed=42):
@@ -20,30 +22,6 @@ def load_obj(name):
 
 
 # TODO: this could sit in a helper file?
-def _parse_function(example_proto):
-    global GLOBAL_SET_TYPE
-    labelName = str(GLOBAL_SET_TYPE) + "/label"
-    featureName = str(GLOBAL_SET_TYPE) + "/image"
-    feature = {
-        featureName: tf.FixedLenFeature([], tf.string),
-        labelName: tf.FixedLenFeature([], tf.int64),
-    }
-
-    # decode
-    parsed_features = tf.parse_single_example(example_proto, features=feature)
-
-    # convert image data from string to number
-    image = tf.decode_raw(parsed_features[featureName], tf.float32)
-    # TODO: these values should be acquired from the yaml
-    image = tf.reshape(image, [150, 150, 3])
-    label = tf.cast(parsed_features[labelName], tf.int64)
-
-    # [do any preprocessing here]
-
-    return image, label
-
-
-# TODO: this could sit in a helper file?
 def restore_model_params(model_params, g, sess):
     gvar_names = list(model_params.keys())
     assign_ops = {
@@ -57,32 +35,6 @@ def restore_model_params(model_params, g, sess):
         init_values[gvar_name]: model_params[gvar_name] for gvar_name in gvar_names
     }
     sess.run(assign_ops, feed_dict=feed_dict)
-
-
-# TODO: this could sit in a helper file?
-def return_batched_iter(setType, MCd, sess):
-    global GLOBAL_SET_TYPE
-    GLOBAL_SET_TYPE = setType
-
-    filenames_ph = tf.placeholder(tf.string, shape=[None])
-
-    dataset = tf.data.TFRecordDataset(filenames_ph)
-    dataset = dataset.map(_parse_function)  # Parse the record into tensors.
-    if GLOBAL_SET_TYPE != "test":
-        dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
-    # dataset = dataset.shuffle(buffer_size=1)
-    dataset = dataset.batch(MCd["batch_size"])
-    dataset = dataset.repeat(1)
-
-    iterator = dataset.make_initializable_iterator()
-
-    tfrecords_file_name = str(GLOBAL_SET_TYPE) + ".tfrecords"
-    tfrecord_file_path = os.path.join(MCd["TFR_dir"], tfrecords_file_name)
-
-    # initialize
-    sess.run(iterator.initializer, feed_dict={filenames_ph: [tfrecord_file_path]})
-
-    return iterator
 
 
 def eval_graph(g, MCd):

@@ -4,6 +4,10 @@ import pickle
 from tqdm import tqdm
 import os
 
+# TODO: make sure global var still works....
+from handle_data import return_batched_iter
+
+
 # these two functions (get_model_params and restore_model_params) are
 # ad[a|o]pted from:
 # https://github.com/ageron/handson-ml/blob/master/11_deep_learning.ipynb
@@ -51,64 +55,11 @@ def load_obj(name):
 
 
 # TODO: Global needs to be managed, if possible
-GLOBAL_SET_TYPE = None
-TFR_DIR = "./experiment/cats_v_dogs_01/data/record_holder/150"
+# GLOBAL_SET_TYPE = None
 BEST_PARAMS_PATH = "best_params"
 
 # TODO: standard dirs need to be created
 # make_standard_dirs()
-
-
-def _parse_function(example_proto):
-    global GLOBAL_SET_TYPE
-    labelName = str(GLOBAL_SET_TYPE) + "/label"
-    featureName = str(GLOBAL_SET_TYPE) + "/image"
-    feature = {
-        featureName: tf.FixedLenFeature([], tf.string),
-        labelName: tf.FixedLenFeature([], tf.int64),
-    }
-
-    # decode
-    parsed_features = tf.parse_single_example(example_proto, features=feature)
-
-    # convert image data from string to number
-    image = tf.decode_raw(parsed_features[featureName], tf.float32)
-    # TODO: these values should be acquired from the yaml
-    image = tf.reshape(image, [150, 150, 3])
-    label = tf.cast(parsed_features[labelName], tf.int64)
-
-    # [do any preprocessing here]
-
-    return image, label
-
-
-def return_batched_iter(setType, MCd, sess):
-    global GLOBAL_SET_TYPE
-    global TFR_DIR
-    GLOBAL_SET_TYPE = setType
-
-    filenames_ph = tf.placeholder(tf.string, shape=[None])
-
-    dataset = tf.data.TFRecordDataset(filenames_ph)
-    dataset = dataset.map(_parse_function)  # Parse the record into tensors.
-    if GLOBAL_SET_TYPE != "test":
-        dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
-    # dataset = dataset.shuffle(buffer_size=1)
-    # prefetch is used to ensure one batch is always ready
-    # TODO: this prefetch should have some logic based on the
-    # system environment, batchsize, and data size
-    dataset = dataset.batch(MCd["batch_size"]).prefetch(1)
-    dataset = dataset.repeat(1)
-
-    iterator = dataset.make_initializable_iterator()
-
-    tfrecords_file_name = str(GLOBAL_SET_TYPE) + ".tfrecords"
-    tfrecord_file_path = os.path.join(TFR_DIR, tfrecords_file_name)
-
-    # initialize
-    sess.run(iterator.initializer, feed_dict={filenames_ph: [tfrecord_file_path]})
-
-    return iterator
 
 
 def train_graph(g, MCd):
@@ -140,9 +91,6 @@ def train_graph(g, MCd):
 
     with tf.Session(graph=g) as sess:
 
-        # test
-        #         test_iter = return_batched_iter('test', MCd, sess)
-        #         next_test_element = test_iter.get_next()
         sess.run([init_global, init_local])
 
         for e in tqdm(range(1, MCd["epochs"] + 1)):
@@ -154,7 +102,12 @@ def train_graph(g, MCd):
                     train_loss_reset_op,
                 ]
             )
-            # training
+            # training, parse new dataset from records every iteration
+            # TODO: this (and validation) should *likely* be moved outside
+            # > the loop, I think it is currently continuing to add nodes to
+            # > the graph, thus slowing down training.. Instead I could make
+            # > a repeat(n), but would need to ensure I then test validation
+            # > after an appropriate number of loops.
             tr_iter = return_batched_iter("train", MCd, sess)
             next_tr_element = tr_iter.get_next()
 
@@ -173,10 +126,6 @@ def train_graph(g, MCd):
                         ],
                         feed_dict={X: data, y_raw: target, training: True},
                     )
-                #                     pr, yt, yp = sess.run([preds, y_true_cls, y_pred_cls], feed_dict={X:data, y_raw:target})
-                #                     print(pr)
-                #                     print(yt)
-                #                     print(yp)
                 except tf.errors.OutOfRangeError:
                     break
 
@@ -186,6 +135,7 @@ def train_graph(g, MCd):
             train_writer.flush()
 
             # run validation
+            # TODO: same note as above, may need to move outside training loop
             val_iter = return_batched_iter("val", MCd, sess)
             next_val_element = val_iter.get_next()
             while True:

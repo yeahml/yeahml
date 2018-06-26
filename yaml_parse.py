@@ -53,6 +53,8 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     ### architecture
     # TODO: implement after graph can be created...l
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
+    MCd["final_type"] = MC["overall"]["options"]
+    MCd["seed"] = MC["overall"]["seed"]
 
     return (MCd, AC)
 
