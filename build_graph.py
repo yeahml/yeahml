@@ -3,7 +3,16 @@ import numpy as np
 
 from build_hidden import build_hidden_block
 
-# Helper to make the output consistent
+# Helper to make the output "consistent"
+def reset_graph_deterministic(seed=42):
+    # there is no option for deterministic behavior yet...
+    # > tf issue https://github.com/tensorflow/tensorflow/issues/18096
+    # os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
+    tf.reset_default_graph()
+    tf.set_random_seed(seed)
+    np.random.seed(seed)
+
+
 def reset_graph(seed=42):
     tf.reset_default_graph()
     tf.set_random_seed(seed)
@@ -82,7 +91,11 @@ def get_optimizer(MCd: dict):
 
 def build_graph(MCd: dict, ACd: dict):
 
-    reset_graph()
+    try:
+        reset_graph_deterministic(MCd["seed"])
+    except KeyError:
+        reset_graph()
+
     g = tf.Graph()
     with g.as_default():
 
