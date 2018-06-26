@@ -13,19 +13,15 @@ layers:
   conv_1:
     type: 'conv2d'
     options:
-      kernel_initializer: 'glorot' # default
       filters: 16
       kernel_size: 3
-      padding: 'SAME'
       strides: 2
-      bias_regularizer: 'l2'
     activation: 'elu'
   conv_2:
     type: 'conv2d'
     options:
       filters: 32
       kernel_size: 3
-      padding: 'SAME'
       strides: 2
     activation: 'elu'
   conv_3:
@@ -33,7 +29,6 @@ layers:
     options:
       filters: 64
       kernel_size: 3
-      padding: 'SAME'
       strides: 2
     activation: 'elu'
   conv_4:
@@ -41,7 +36,6 @@ layers:
     options:
       filters: 128
       kernel_size: 3
-      padding: 'SAME'
       strides: 2
     activation: 'elu'
   # conv_5:

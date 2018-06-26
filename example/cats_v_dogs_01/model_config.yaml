@@ -10,6 +10,7 @@ overall:
   type: 'classification' # TODO: use
   options: 'binary'
   seed: 42
+  report_level: 1 # use to print model arch (output size)
   # performance:
   #   # default (auc, acc,loss)
   #   eval:
@@ -38,7 +39,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.0001
   batch_size: 16
-  epochs: 3
+  epochs: 6
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

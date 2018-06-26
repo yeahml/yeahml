@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 
 # TODO: make sure global var still works....
-from handle_data import return_batched_iter
+from handle_data import return_batched_iter, reinitialize_iter
 
 
 # these two functions (get_model_params and restore_model_params) are
@@ -88,6 +88,9 @@ def train_graph(g, MCd):
     with tf.Session(graph=g) as sess:
 
         sess.run([init_global, init_local])
+        filenames_ph = tf.placeholder(tf.string, shape=[None])
+        tr_iter = return_batched_iter("train", MCd, filenames_ph)
+        val_iter = return_batched_iter("val", MCd, filenames_ph)
 
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             sess.run(
@@ -98,13 +101,8 @@ def train_graph(g, MCd):
                     train_loss_reset_op,
                 ]
             )
-            # training, parse new dataset from records every iteration
-            # TODO: this (and validation) should *likely* be moved outside
-            # > the loop, I think it is currently continuing to add nodes to
-            # > the graph, thus slowing down training.. Instead I could make
-            # > a repeat(n), but would need to ensure I then test validation
-            # > after an appropriate number of loops.
-            tr_iter = return_batched_iter("train", MCd, sess)
+
+            reinitialize_iter(sess, tr_iter, "train", filenames_ph)
             next_tr_element = tr_iter.get_next()
 
             # loop entire training set
@@ -131,8 +129,7 @@ def train_graph(g, MCd):
             train_writer.flush()
 
             # run validation
-            # TODO: same note as above, may need to move outside training loop
-            val_iter = return_batched_iter("val", MCd, sess)
+            reinitialize_iter(sess, val_iter, "val", filenames_ph)
             next_val_element = val_iter.get_next()
             while True:
                 try:

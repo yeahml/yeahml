@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def get_regulizer_fn(reg_str: str):
+def get_regularizer_fn(reg_str: str):
 
     # TODO: need to test/validate this contrib
     # TODO: need to allow modification for scale
@@ -102,12 +102,12 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str):
         k_init_fn = None
 
     try:
-        k_reg = get_regulizer_fn(opts["kernel_regularizer"])
+        k_reg = get_regularizer_fn(opts["kernel_regularizer"])
     except KeyError:
         k_reg = None
 
     try:
-        b_reg = get_regulizer_fn(opts["bias_regularizer"])
+        b_reg = get_regularizer_fn(opts["bias_regularizer"])
     except KeyError:
         b_reg = None
 
@@ -160,12 +160,12 @@ def build_dense_layer(cur_input, training, opts: dict, actfn, name: str):
         k_init_fn = None
 
     try:
-        k_reg = get_regulizer_fn(opts["kernel_regularizer"])
+        k_reg = get_regularizer_fn(opts["kernel_regularizer"])
     except KeyError:
         k_reg = None
 
     try:
-        b_reg = get_regulizer_fn(opts["bias_regularizer"])
+        b_reg = get_regularizer_fn(opts["bias_regularizer"])
     except KeyError:
         b_reg = None
 

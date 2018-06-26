@@ -3,7 +3,7 @@ import pickle
 import os
 import numpy as np
 
-from handle_data import return_batched_iter
+from handle_data import return_batched_iter, reinitialize_iter
 
 # Helper to make the output consistent
 # TODO: this could sit in a helper file?
@@ -52,7 +52,9 @@ def eval_graph(g, MCd):
         restore_model_params(model_params=best_params, g=g, sess=sess)
         sess.run([test_acc_reset_op, test_loss_reset_op])
 
-        test_iter = return_batched_iter("test", MCd, sess)
+        filenames_ph = tf.placeholder(tf.string, shape=[None])
+        test_iter = return_batched_iter("test", MCd, filenames_ph)
+        reinitialize_iter(sess, test_iter, "test", filenames_ph)
         next_test_element = test_iter.get_next()
         while True:
             try:

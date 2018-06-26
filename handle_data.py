@@ -55,12 +55,10 @@ def _parse_function(example_proto):
     return image, label
 
 
-def return_batched_iter(setType, MCd, sess):
+def return_batched_iter(setType, MCd, filenames_ph):
     global GLOBAL_SET_TYPE
     global TFR_DIR
     GLOBAL_SET_TYPE = setType
-
-    filenames_ph = tf.placeholder(tf.string, shape=[None])
 
     dataset = tf.data.TFRecordDataset(filenames_ph)
     dataset = dataset.map(_parse_function)  # Parse the record into tensors.
@@ -75,10 +73,14 @@ def return_batched_iter(setType, MCd, sess):
 
     iterator = dataset.make_initializable_iterator()
 
-    tfrecords_file_name = str(GLOBAL_SET_TYPE) + ".tfrecords"
-    tfrecord_file_path = os.path.join(TFR_DIR, tfrecords_file_name)
+    return iterator
+
+
+def reinitialize_iter(sess, iterator, set_type, filenames_ph):
+    TFR_DIR = "./example/cats_v_dogs_01/data/record_holder/150"
+    tfr_file_name = str(set_type) + ".tfrecords"
+    tfrecord_file_path = os.path.join(TFR_DIR, tfr_file_name)
 
     # initialize
     sess.run(iterator.initializer, feed_dict={filenames_ph: [tfrecord_file_path]})
-
-    return iterator
+    return
