@@ -233,43 +233,42 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
     # the next iteration it will be the input to the following layer
     cur_input = X
 
-    with tf.name_scope("hidden"):
-        # build each layer based on the (ordered) yaml specification
-        for i, l_name in enumerate(ACd["layers"]):
-            layer_info = ACd["layers"][str(l_name)]
+    # build each layer based on the (ordered) yaml specification
+    for i, l_name in enumerate(ACd["layers"]):
+        layer_info = ACd["layers"][str(l_name)]
 
-            try:
-                opts = layer_info["options"]
-            except:
-                opts = None
-                pass
+        try:
+            opts = layer_info["options"]
+        except:
+            opts = None
+            pass
 
-            try:
-                actfn_str = layer_info["activation"]
-                actfn = get_activation_fn(actfn_str)
-            except KeyError:
-                # TODO: this seems dumb..
-                actfn = get_activation_fn(MCd["def_act"])
-                pass
+        try:
+            actfn_str = layer_info["activation"]
+            actfn = get_activation_fn(actfn_str)
+        except KeyError:
+            # TODO: this seems dumb..
+            actfn = get_activation_fn(MCd["def_act"])
+            pass
 
-            ltype = layer_info["type"].lower()
-            if ltype == "conv2d":
-                cur_input = build_conv2d_layer(cur_input, opts, actfn, l_name)
-            elif ltype == "dense":
-                # ---- this block is 'dumb' but works --------------
-                # this is necessary because if the last block was a pool
-                # or conv, we need to flatten layer before we add a dense layer
-                prev_ltype_key = list(ACd["layers"])[i - 1]
-                prev_ltype = ACd["layers"][prev_ltype_key]["type"]
-                if prev_ltype == "conv2d" or prev_ltype == "pooling2d":
-                    # flatten
-                    last_shape = int(np.prod(cur_input.get_shape()[1:]))
-                    cur_input = tf.reshape(cur_input, shape=[-1, last_shape])
-                # --------------------------------------------------
-                cur_input = build_dense_layer(cur_input, training, opts, actfn, l_name)
-            elif ltype == "pooling2d":
-                cur_input = build_pool_layer(cur_input, opts, l_name)
-            else:
-                print("ruh roh.. this is currently a fatal err")
+        ltype = layer_info["type"].lower()
+        if ltype == "conv2d":
+            cur_input = build_conv2d_layer(cur_input, opts, actfn, l_name)
+        elif ltype == "dense":
+            # ---- this block is 'dumb' but works --------------
+            # this is necessary because if the last block was a pool
+            # or conv, we need to flatten layer before we add a dense layer
+            prev_ltype_key = list(ACd["layers"])[i - 1]
+            prev_ltype = ACd["layers"][prev_ltype_key]["type"]
+            if prev_ltype == "conv2d" or prev_ltype == "pooling2d":
+                # flatten
+                last_shape = int(np.prod(cur_input.get_shape()[1:]))
+                cur_input = tf.reshape(cur_input, shape=[-1, last_shape])
+            # --------------------------------------------------
+            cur_input = build_dense_layer(cur_input, training, opts, actfn, l_name)
+        elif ltype == "pooling2d":
+            cur_input = build_pool_layer(cur_input, opts, l_name)
+        else:
+            print("ruh roh.. this is currently a fatal err")
 
     return cur_input

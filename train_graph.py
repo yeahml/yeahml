@@ -38,9 +38,8 @@ def train_graph(g, MCd):
 
     with tf.Session(graph=g) as sess:
 
-        # , graph=sess.graph
         train_writer = tf.summary.FileWriter(
-            os.path.join(MCd["log_dir"], "tf_logs", "train")
+            os.path.join(MCd["log_dir"], "tf_logs", "train"), graph=sess.graph
         )
         val_writer = tf.summary.FileWriter(
             os.path.join(MCd["log_dir"], "tf_logs", "validation")
