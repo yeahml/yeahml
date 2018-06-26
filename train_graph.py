@@ -6,56 +6,12 @@ import os
 
 # TODO: make sure global var still works....
 from handle_data import return_batched_iter
-
-
-# these two functions (get_model_params and restore_model_params) are
-# ad[a|o]pted from:
-# https://github.com/ageron/handson-ml/blob/master/11_deep_learning.ipynb
-def get_model_params():
-    global_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-    return {
-        global_vars.op.name: value
-        for global_vars, value in zip(
-            global_vars, tf.get_default_session().run(global_vars)
-        )
-    }
-
-
-def restore_model_params(model_params, g, sess):
-    gvar_names = list(model_params.keys())
-    assign_ops = {
-        gvar_name: g.get_operation_by_name(gvar_name + "/Assign")
-        for gvar_name in gvar_names
-    }
-    init_values = {
-        gvar_name: assign_op.inputs[1] for gvar_name, assign_op in assign_ops.items()
-    }
-    feed_dict = {
-        init_values[gvar_name]: model_params[gvar_name] for gvar_name in gvar_names
-    }
-    sess.run(assign_ops, feed_dict=feed_dict)
-
-
-# these two functions are used to manually save the best
-# model params to disk
-# TODO: file name needs to be managed
-def save_obj(obj, name):
-    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "wb") as f:
-        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
-
-
-# TODO: file name needs to be managed
-def load_obj(name):
-    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb") as f:
-        return pickle.load(f)
+from helper import load_obj, save_obj, get_model_params
 
 
 # TODO: Global needs to be managed, if possible
 # GLOBAL_SET_TYPE = None
 BEST_PARAMS_PATH = "best_params"
-
-# TODO: standard dirs need to be created
-# make_standard_dirs()
 
 
 def train_graph(g, MCd):
@@ -78,14 +34,17 @@ def train_graph(g, MCd):
     epoch_train_write_op, epoch_validation_write_op = g.get_collection("tensorboard")
     #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
-    # TODO: these logs needs to go to the correct place
-    root_logs = "./example/cats_v_dogs_01"
-    train_writer = tf.summary.FileWriter(os.path.join(root_logs, "tf_logs", "train"))
-    val_writer = tf.summary.FileWriter(os.path.join(root_logs, "tf_logs", "validation"))
-
     best_val_loss = np.inf
 
     with tf.Session(graph=g) as sess:
+
+        # , graph=sess.graph
+        train_writer = tf.summary.FileWriter(
+            os.path.join(MCd["log_dir"], "tf_logs", "train")
+        )
+        val_writer = tf.summary.FileWriter(
+            os.path.join(MCd["log_dir"], "tf_logs", "validation")
+        )
 
         sess.run([init_global, init_local])
         filenames_ph = tf.placeholder(tf.string, shape=[None])
@@ -130,7 +89,8 @@ def train_graph(g, MCd):
             train_writer.add_summary(summary, e)
             train_writer.flush()
 
-            # run validation
+            # run/loop validation
+            # reinitialize validation iterator
             tfr_f_path = os.path.join(MCd["TFR_dir"], "val.tfrecords")
             sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_val_element = val_iter.get_next()
@@ -150,7 +110,8 @@ def train_graph(g, MCd):
             cur_loss, cur_acc = sess.run([val_mean_loss, val_acc])
             if cur_loss < best_val_loss:
                 best_val_loss = cur_loss
-                best_params = get_model_params()
+                global_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+                best_params = get_model_params(global_vars)
                 save_obj(best_params, BEST_PARAMS_PATH)
                 print(
                     "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(

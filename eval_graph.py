@@ -4,35 +4,7 @@ import os
 import numpy as np
 
 from handle_data import return_batched_iter
-
-# Helper to make the output consistent
-# TODO: this could sit in a helper file?
-def reset_graph(seed=42):
-    tf.reset_default_graph()
-    tf.set_random_seed(seed)
-    np.random.seed(seed)
-
-
-# TODO: this could sit in a helper file?
-def load_obj(name):
-    with open("./example/cats_v_dogs_01/trial/best_params/" + name + ".pkl", "rb") as f:
-        return pickle.load(f)
-
-
-# TODO: this could sit in a helper file?
-def restore_model_params(model_params, g, sess):
-    gvar_names = list(model_params.keys())
-    assign_ops = {
-        gvar_name: g.get_operation_by_name(gvar_name + "/Assign")
-        for gvar_name in gvar_names
-    }
-    init_values = {
-        gvar_name: assign_op.inputs[1] for gvar_name, assign_op in assign_ops.items()
-    }
-    feed_dict = {
-        init_values[gvar_name]: model_params[gvar_name] for gvar_name in gvar_names
-    }
-    sess.run(assign_ops, feed_dict=feed_dict)
+from helper import load_obj, restore_model_params
 
 
 def eval_graph(g, MCd):

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import yaml
+import shutil
+import os
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -23,6 +25,33 @@ def create_model_and_arch_config(path: str) -> (dict, dict):
         a_config = m_config["architecture"]
 
     return (m_config, a_config)
+
+
+# helper to create dirs if they don't already exist
+def maybe_create_dir(dir_path):
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        print("{} created".format(dir_path))
+    else:
+        print("{} already exists".format(dir_path))
+
+
+def create_standard_dirs(root_dir, wipe):
+    # this logic is messy
+    if wipe:
+        if os.path.exists(root_dir):
+            shutil.rmtree(root_dir)
+        maybe_create_dir(root_dir)
+    else:
+        maybe_create_dir(root_dir)
+
+    # maybe_create_dir(root_dir + "/saver")
+    # `best_params/` will hold a serialized version of the best params
+    # I like to keep this as a backup in case I run into issues with
+    # the saver files
+    maybe_create_dir(root_dir + "/best_params")
+    # `tf_logs/` will hold the logs that will be visable in tensorboard
+    maybe_create_dir(root_dir + "/tf_logs")
 
 
 def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
@@ -55,6 +84,12 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
     MCd["final_type"] = MC["overall"]["options"]
     MCd["seed"] = MC["overall"]["seed"]
+
+    MCd["log_dir"] = os.path.join(
+        ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]
+    )
+    # wipe is set to true for now
+    create_standard_dirs(MCd["log_dir"], True)
 
     return (MCd, AC)
 

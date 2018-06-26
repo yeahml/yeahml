@@ -35,11 +35,11 @@ saver:
   load_graph: null
 tensorboard:
   # if null, a default location will be created/selected
-  log_dir: null
+  log_dir: 'trial_01'
 hyper_parameters:
   lr: 0.0001
   batch_size: 16
-  epochs: 6
+  epochs: 3
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

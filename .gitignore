@@ -17,3 +17,5 @@ example/cats_v_dogs_01/tf_logs/*
 
 example/cats_v_dogs_01/trial/best_params/
 
+
+example/cats_v_dogs_01/trial_01/*
