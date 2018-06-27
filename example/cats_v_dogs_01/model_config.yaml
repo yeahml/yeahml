@@ -2,15 +2,15 @@
 # TODO: naming/structure will need to be improved
 overall:
   verbosity: 0
-  tf_log_level: 'warn'
+  tf_log_level: 'warn' # TODO: use
   # will need to investigate disabling cudnn > nondeterministic backprop
-  deterministic: null
-  rand_seed: null # TODO: use
+  deterministic: null # not currently possible
+  rand_seed: 42 # TODO: use
   # regression, segmentation, GAN, autoencode
   type: 'classification' # TODO: use
   options: 'binary'
-  seed: 42
   report_level: 1 # use to print model arch (output size)
+  trace: 'none'
   # performance:
   #   # default (auc, acc,loss)
   #   eval:
@@ -19,10 +19,10 @@ overall:
   #     - 'F1'
 data:
   in_dim: [150, 150, 3]
-  reshape_in_to: null
-  directory: null
   output_dim: [1]
   TFR_dir: './example/cats_v_dogs_01/data/record_holder/150'
+  # reshape_in_to: null
+  # directory: null
   # TODO: train/val/test split, kfold?
   # TODO: augmentation?
   # TODO: preprocessing
@@ -38,8 +38,8 @@ tensorboard:
   log_dir: 'trial_01'
 hyper_parameters:
   lr: 0.0001
-  batch_size: 16
-  epochs: 3
+  batch_size: 32
+  epochs: 5
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

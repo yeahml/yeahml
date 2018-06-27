@@ -83,7 +83,8 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     # TODO: implement after graph can be created...l
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
     MCd["final_type"] = MC["overall"]["options"]
-    MCd["seed"] = MC["overall"]["seed"]
+    MCd["seed"] = MC["overall"]["rand_seed"]
+    MCd["trace_level"] = MC["overall"]["trace"]
 
     MCd["log_dir"] = os.path.join(
         ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]

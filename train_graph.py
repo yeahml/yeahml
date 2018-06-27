@@ -50,6 +50,23 @@ def train_graph(g, MCd):
         tr_iter = return_batched_iter("train", MCd, filenames_ph)
         val_iter = return_batched_iter("val", MCd, filenames_ph)
 
+        # tracing options
+        try:
+            if MCd["trace_level"].lower() == "full":
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            elif MCd["trace_level"].lower() == "software":
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.SOFTWARE_TRACE)
+            elif MCd["trace_level"].lower() == "hardware":
+                run_options = tf.RunOptions(trace_level=tf.RunOptions.HARDWARE_TRACE)
+            elif MCd["trace_level"].lower() == "None":
+                run_options = None
+            else:
+                run_options = None
+            run_metadata = tf.RunMetadata()
+        except KeyError:
+            run_options = None
+            pass
+
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             sess.run(
                 [
@@ -67,24 +84,42 @@ def train_graph(g, MCd):
 
             # loop entire training set
             # main training loop
+
             while True:
                 try:
                     data, target = sess.run(next_tr_element)
                     target = np.reshape(target, (target.shape[0], 1))
-                    sess.run(
-                        [
-                            training_op,
-                            train_auc_update,
-                            train_acc_update,
-                            train_mean_loss_update,
-                        ],
-                        feed_dict={X: data, y_raw: target, training: True},
-                    )
+                    if run_options != None:
+                        sess.run(
+                            [training_op],
+                            feed_dict={X: data, y_raw: target, training: True},
+                            options=run_options,
+                            run_metadata=run_metadata,
+                        )
+                        sess.run(
+                            [
+                                train_auc_update,
+                                train_acc_update,
+                                train_mean_loss_update,
+                            ],
+                            feed_dict={X: data, y_raw: target, training: True},
+                        )
+                    else:
+                        sess.run(
+                            [
+                                training_op,
+                                train_auc_update,
+                                train_acc_update,
+                                train_mean_loss_update,
+                            ],
+                            feed_dict={X: data, y_raw: target, training: True},
+                        )
                 except tf.errors.OutOfRangeError:
                     break
 
             # write average for epoch
             summary = sess.run(epoch_train_write_op)
+            train_writer.add_run_metadata(run_metadata, "step%d" % e)
             train_writer.add_summary(summary, e)
             train_writer.flush()
 
