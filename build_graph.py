@@ -260,41 +260,56 @@ def build_graph(MCd: dict, ACd: dict):
         g.add_to_collection("logits", logits)
 
         # ===================================== tensorboard
-        with tf.name_scope("tensorboard_writer") as scope:
-            epoch_train_loss_scalar = tf.summary.scalar(
-                "train_epoch_loss", train_mean_loss
-            )
-            epoch_train_acc_scalar = tf.summary.scalar("train_epoch_acc", train_acc)
-            epoch_train_auc_scalar = tf.summary.scalar("train_epoch_auc", train_auc)
-            epoch_train_write_op = tf.summary.merge(
-                [
-                    epoch_train_loss_scalar,
-                    epoch_train_acc_scalar,
-                    epoch_train_auc_scalar,
-                ],
-                name="epoch_train_write_op",
-            )
+        #### scalar
+        weights = [
+            v
+            for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            if v.name.endswith("kernel:0")
+        ]
+        bias = [
+            v
+            for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            if v.name.endswith("bias:0")
+        ]
+        assert len(weights) == len(bias), "number of weights & bias are not equal"
 
-            # ===== epoch, validation
-            epoch_validation_loss_scalar = tf.summary.scalar(
-                "validation_epoch_loss", val_mean_loss
-            )
-            epoch_validation_acc_scalar = tf.summary.scalar(
-                "validation_epoch_acc", val_acc
-            )
-            epoch_validation_auc_scalar = tf.summary.scalar(
-                "validation_epoch_auc", val_auc
-            )
-            epoch_validation_write_op = tf.summary.merge(
-                [
-                    epoch_validation_loss_scalar,
-                    epoch_validation_acc_scalar,
-                    epoch_validation_auc_scalar,
-                ],
-                name="epoch_validation_write_op",
-            )
+        hist_list = []
+        for i, w in enumerate(weights):
+            name = "weights_" + str(i)
+            b_name = "bias_" + str(i)
+            with tf.variable_scope(str(i)):
+                w_hist = tf.summary.histogram(name, w)
+                b_hist = tf.summary.histogram(b_name, bias[i])
+                hist_list.append(w_hist)
+                hist_list.append(b_hist)
 
-        for node in (epoch_train_write_op, epoch_validation_write_op):
+        hist_write_op = tf.summary.merge(hist_list, name="histogram_write_op")
+
+        # with tf.name_scope("tensorboard_writer") as scope:
+        epoch_train_loss_scalar = tf.summary.scalar("train_epoch_loss", train_mean_loss)
+        epoch_train_acc_scalar = tf.summary.scalar("train_epoch_acc", train_acc)
+        epoch_train_auc_scalar = tf.summary.scalar("train_epoch_auc", train_auc)
+        epoch_train_write_op = tf.summary.merge(
+            [epoch_train_loss_scalar, epoch_train_acc_scalar, epoch_train_auc_scalar],
+            name="epoch_train_write_op",
+        )
+
+        # ===== epoch, validation
+        epoch_validation_loss_scalar = tf.summary.scalar(
+            "validation_epoch_loss", val_mean_loss
+        )
+        epoch_validation_acc_scalar = tf.summary.scalar("validation_epoch_acc", val_acc)
+        epoch_validation_auc_scalar = tf.summary.scalar("validation_epoch_auc", val_auc)
+        epoch_validation_write_op = tf.summary.merge(
+            [
+                epoch_validation_loss_scalar,
+                epoch_validation_acc_scalar,
+                epoch_validation_auc_scalar,
+            ],
+            name="epoch_validation_write_op",
+        )
+
+        for node in (epoch_train_write_op, epoch_validation_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
 
     return g

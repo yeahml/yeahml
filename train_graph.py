@@ -31,7 +31,9 @@ def train_graph(g, MCd):
     val_mean_loss, val_mean_loss_update, val_loss_reset_op = g.get_collection(
         "val_loss"
     )
-    epoch_train_write_op, epoch_validation_write_op = g.get_collection("tensorboard")
+    epoch_train_write_op, epoch_validation_write_op, hist_write_op = g.get_collection(
+        "tensorboard"
+    )
     #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
     best_val_loss = np.inf
@@ -67,6 +69,7 @@ def train_graph(g, MCd):
             run_options = None
             pass
 
+        local_step = 0  # This should be an internal tf counter.
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             sess.run(
                 [
@@ -87,6 +90,7 @@ def train_graph(g, MCd):
 
             while True:
                 try:
+                    local_step += 1
                     data, target = sess.run(next_tr_element)
                     target = np.reshape(target, (target.shape[0], 1))
                     if run_options != None:
@@ -114,6 +118,11 @@ def train_graph(g, MCd):
                             ],
                             feed_dict={X: data, y_raw: target, training: True},
                         )
+                    if local_step % 20 == 0:
+                        # not sure about this...
+                        hist_str = sess.run(hist_write_op)
+                        train_writer.add_summary(hist_str, local_step)
+                        train_writer.flush()
                 except tf.errors.OutOfRangeError:
                     break
 
