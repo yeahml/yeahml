@@ -274,6 +274,11 @@ def build_graph(MCd: dict, ACd: dict):
         assert len(weights) == len(bias), "number of weights & bias are not equal"
         layer_names = list(ACd["layers"])
         layer_names.append("logits")
+        # exclude all pooling layers
+        # TODO: this logic assumes that the layer name corresponds to the type of layer
+        # > ideally, this list should be built by inspecting the layer 'type', but for beta
+        # > purposes, this works for now.
+        layer_names = [l for l in layer_names if not l.startswith("pool")]
         assert len(weights) == len(layer_names), "num of w&b not equal to num layers"
 
         hist_list = []

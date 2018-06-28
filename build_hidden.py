@@ -203,7 +203,7 @@ def build_dense_layer(cur_input, training, opts: dict, actfn, name: str):
     return out
 
 
-def build_pool_layer(cur_input, opts: dict, name: str):
+def build_pool_layer(cur_input, training, opts: dict, name: str):
 
     try:
         pool_size = opts["pool_size"]
@@ -221,6 +221,24 @@ def build_pool_layer(cur_input, opts: dict, name: str):
     out = tf.layers.max_pooling2d(
         cur_input, pool_size=pool_size, strides=strides, name=name
     )
+
+    ## add dropout
+    # this block isn't very elegant...
+    try:
+        dropout_rate = opts["dropout"]
+    except KeyError:
+        dropout_rate = None
+
+    if dropout_rate:
+        # apply dropout
+        out = tf.layers.dropout(
+            inputs=out,
+            rate=dropout_rate,
+            noise_shape=None,
+            seed=None,
+            training=training,
+            name=None,
+        )
 
     return out
 
@@ -267,7 +285,7 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
             # --------------------------------------------------
             cur_input = build_dense_layer(cur_input, training, opts, actfn, l_name)
         elif ltype == "pooling2d":
-            cur_input = build_pool_layer(cur_input, opts, l_name)
+            cur_input = build_pool_layer(cur_input, training, opts, l_name)
         else:
             print("ruh roh.. this is currently a fatal err")
 
