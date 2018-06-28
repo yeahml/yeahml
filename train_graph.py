@@ -128,7 +128,8 @@ def train_graph(g, MCd):
 
             # write average for epoch
             summary = sess.run(epoch_train_write_op)
-            train_writer.add_run_metadata(run_metadata, "step%d" % e)
+            if run_options != None:
+                train_writer.add_run_metadata(run_metadata, "step%d" % e)
             train_writer.add_summary(summary, e)
             train_writer.flush()
 

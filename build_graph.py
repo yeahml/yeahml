@@ -285,21 +285,19 @@ def build_graph(MCd: dict, ACd: dict):
 
         hist_write_op = tf.summary.merge(hist_list, name="histogram_write_op")
 
-        # with tf.name_scope("tensorboard_writer") as scope:
-        epoch_train_loss_scalar = tf.summary.scalar("train_epoch_loss", train_mean_loss)
-        epoch_train_acc_scalar = tf.summary.scalar("train_epoch_acc", train_acc)
-        epoch_train_auc_scalar = tf.summary.scalar("train_epoch_auc", train_auc)
+        # TODO: would like to combine val+train on the same graph
+        epoch_train_loss_scalar = tf.summary.scalar("loss/train", train_mean_loss)
+        epoch_train_acc_scalar = tf.summary.scalar("acc/train", train_acc)
+        epoch_train_auc_scalar = tf.summary.scalar("auc/train", train_auc)
         epoch_train_write_op = tf.summary.merge(
             [epoch_train_loss_scalar, epoch_train_acc_scalar, epoch_train_auc_scalar],
             name="epoch_train_write_op",
         )
 
         # ===== epoch, validation
-        epoch_validation_loss_scalar = tf.summary.scalar(
-            "validation_epoch_loss", val_mean_loss
-        )
-        epoch_validation_acc_scalar = tf.summary.scalar("validation_epoch_acc", val_acc)
-        epoch_validation_auc_scalar = tf.summary.scalar("validation_epoch_auc", val_auc)
+        epoch_validation_loss_scalar = tf.summary.scalar("loss/val", val_mean_loss)
+        epoch_validation_acc_scalar = tf.summary.scalar("acc/val", val_acc)
+        epoch_validation_auc_scalar = tf.summary.scalar("auc/val", val_auc)
         epoch_validation_write_op = tf.summary.merge(
             [
                 epoch_validation_loss_scalar,
