@@ -272,13 +272,16 @@ def build_graph(MCd: dict, ACd: dict):
             if v.name.endswith("bias:0")
         ]
         assert len(weights) == len(bias), "number of weights & bias are not equal"
+        layer_names = list(ACd["layers"])
+        layer_names.append("logits")
+        assert len(weights) == len(layer_names), "num of w&b not equal to num layers"
 
         hist_list = []
-        for i, w in enumerate(weights):
-            name = "weights_" + str(i)
-            b_name = "bias_" + str(i)
-            with tf.variable_scope(str(i)):
-                w_hist = tf.summary.histogram(name, w)
+        for i, l_weight in enumerate(weights):
+            l_name = layer_names[i] + "_params"
+            w_name, b_name = "weights", "bias"
+            with tf.variable_scope(l_name):
+                w_hist = tf.summary.histogram(w_name, l_weight)
                 b_hist = tf.summary.histogram(b_name, bias[i])
                 hist_list.append(w_hist)
                 hist_list.append(b_hist)
