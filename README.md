@@ -16,3 +16,8 @@ There is currently one example project (TODO: link) -- after a project structure
 - add graph to `tf_logs`
 - include different metrics
 - weight/bias regularization
+- capsule layers (and scalar -> vect, vect -> scalar?)
+- regression support (use Cali Housing)
+- multiclass support (use MNIST)
+- print model information prior to training
+- add support for transfer learning (loading from a file, freezing)

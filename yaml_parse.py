@@ -85,6 +85,8 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["final_type"] = MC["overall"]["options"]
     MCd["seed"] = MC["overall"]["rand_seed"]
     MCd["trace_level"] = MC["overall"]["trace"]
+    MCd["print_g_spec"] = MC["overall"]["print_graph_spec"]
+    MCd["name"] = MC["overall"]["name"]
 
     MCd["log_dir"] = os.path.join(
         ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]

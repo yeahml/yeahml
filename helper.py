@@ -49,4 +49,5 @@ def restore_model_params(model_params, g, sess):
     sess.run(assign_ops, feed_dict=feed_dict)
 
 
-# TODO: file name needs to be managed
+def print_tensor_info(t):
+    print("| {:15s} | {}".format(t.name.rstrip("0123456789").rstrip(":"), t.shape))

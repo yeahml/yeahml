@@ -13,59 +13,30 @@ layers:
   conv_1:
     type: 'conv2d'
     options:
-      filters: 16
+      filters: 1
       kernel_size: 3
       strides: 2
-    activation: 'elu'
   conv_2:
     type: 'conv2d'
     options:
-      filters: 32
+      filters: 2
       kernel_size: 3
       strides: 2
-    activation: 'elu'
   conv_3:
     type: 'conv2d'
     options:
-      filters: 64
+      filters: 4
       kernel_size: 3
       strides: 2
-    activation: 'elu'
-  conv_4:
-    type: 'conv2d'
-    options:
-      filters: 128
-      kernel_size: 3
-      strides: 2
-    activation: 'elu'
-  # conv_5:
-  #   type: 'conv2d'
-  #   options:
-  #     filters: 256
-  #     kernel_size: 3
-  #     padding: 'SAME'
-  #     strides: 1
-  #   activation: 'elu'
-  # TODO: will need to check each shape to see if it's flat
-  # /needs to be flattened
+  pool_1:
+    type: 'pooling2d'
   dense_1:
     type: 'dense'
     options:
       units: 64
-      kernel_initializer: null
-      kernel_regularizer: 'l2'
-      bias_regularizer: null
-      trainable: True
       dropout: 0.5
-    activation: 'elu'
   dense_2:
     type: 'dense'
     options:
-      units: 32
+      units: 16
       dropout: 0.5
-    activation: 'elu'
-  dense_3:
-    type: 'dense'
-    options:
-      units: 8
-    activation: 'elu'

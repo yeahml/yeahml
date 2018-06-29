@@ -1,7 +1,9 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
+  name: 'cats vs dogs'
   verbosity: 0
+  print_graph_spec: True
   tf_log_level: 'warn' # TODO: use
   # will need to investigate disabling cudnn > nondeterministic backprop
   deterministic: null # not currently possible
@@ -9,7 +11,7 @@ overall:
   # regression, segmentation, GAN, autoencode
   type: 'classification' # TODO: use
   options: 'binary'
-  report_level: 1 # use to print model arch (output size)
+  #report_level: 1 # use to print model arch (output size)
   trace: 'none'
   # performance:
   #   # default (auc, acc,loss)
@@ -29,17 +31,17 @@ data:
 saver:
   # pickel-ed-params
   save_pparams: 'best_params'
-  load_pparams: null
-  save_graph: null
+  #load_pparams: null
+  #save_graph: null
   # if load model, then the architecture+implementation is void
-  load_graph: null
+  #load_graph: null
 tensorboard:
   # if null, a default location will be created/selected
   log_dir: 'trial_01'
 hyper_parameters:
-  lr: 0.0001
-  batch_size: 32
-  epochs: 5
+  lr: 0.00001
+  batch_size: 16
+  epochs: 3
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..
@@ -48,16 +50,16 @@ architecture:
   yaml: './example/cats_v_dogs_01/architecture.yaml'
   #yaml: 'architecture.yaml'
 implementation:
-  # optimizer will be a string
   # TODO: will have 'sane' defaults
   optimizer: 'adam'
-  initialization: null
+  #initialization: null
   default_activation: 'elu'
   shuffle_buffer: 128
 train:
   # the values aren't being used yet...
   image: 'standardize'
-  augmentation:
+  augmentation: # TODO: use
+    include_val: True
     v_flip: 50
     h_flip: 50
     rotate: 50

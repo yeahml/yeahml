@@ -33,8 +33,8 @@ _ = train_graph(g, MCd)
 
 ## evaluate graph (incomplete)
 # TODO: only creating a new graph to ensure no issues
-g_e = build_graph(MCd, ACd)
-_ = eval_graph(g_e, MCd)
+# g_e = build_graph(MCd, ACd)
+_ = eval_graph(g, MCd)
 
 
 ## Serving

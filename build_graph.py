@@ -3,6 +3,12 @@ import numpy as np
 
 from build_hidden import build_hidden_block
 
+# print information about the graph
+from helper import print_tensor_info
+
+# get tf optimizer
+from get_components import get_optimizer
+
 # Helper to make the output "consistent"
 def reset_graph_deterministic(seed=42):
     # there is no option for deterministic behavior yet...
@@ -19,82 +25,25 @@ def reset_graph(seed=42):
     np.random.seed(seed)
 
 
-def get_optimizer(MCd: dict):
-    opt = MCd["optimizer"].lower()
-    optimizer = None
-    if opt == "adam":
-        optimizer = tf.train.AdamOptimizer(
-            learning_rate=MCd["lr"],
-            beta1=0.9,
-            beta2=0.999,
-            epsilon=1e-08,
-            use_locking=False,
-            name="Adam",
-        )
-    elif opt == "sgd":
-        optimizer = tf.train.GradientDescentOptimizer(
-            learning_rate=MCd["lr"], name="GradientDescent"
-        )
-    elif opt == "adadelta":
-        optimizer = tf.train.AdadeltaOptimizer(
-            learning_rate=MCd["lr"],
-            rho=0.95,
-            epsilon=1e-08,
-            use_locking=False,
-            name="Adadelta",
-        )
-    elif opt == "adagrad":
-        optimizer = tf.train.AdagradOptimizer(
-            learning_rate=MCd["lr"],
-            initial_accumulator_value=0.1,
-            use_locking=False,
-            name="Adagrad",
-        )
-    # elif opt == "momentum":
-    #     tf.train.MomentumOptimizer(
-    #         learning_rate=MCd["lr"],
-    #         momentum, # TODO: value
-    #         use_locking=False,
-    #         name="Momentum",
-    #         use_nesterov=False,
-    #     )
-    elif opt == "ftrl":
-        optimizer = tf.train.FtrlOptimizer(
-            learning_rate=MCd["lr"],
-            learning_rate_power=-0.5,
-            initial_accumulator_value=0.1,
-            l1_regularization_strength=0.0,
-            l2_regularization_strength=0.0,
-            use_locking=False,
-            name="Ftrl",
-            accum_name=None,
-            linear_name=None,
-            l2_shrinkage_regularization_strength=0.0,
-        )
-    elif opt == "rmsprop":
-        optimizer = tf.train.RMSPropOptimizer(
-            learning_rate=MCd["lr"],
-            decay=0.9,
-            momentum=0.0,
-            epsilon=1e-10,
-            use_locking=False,
-            centered=False,
-            name="RMSProp",
-        )
-    else:
-        # TODO: error handle?
-        # realistically this should be caught by the initial check
-        pass
-
-    return optimizer
-
-
 def build_graph(MCd: dict, ACd: dict):
 
     try:
         reset_graph_deterministic(MCd["seed"])
     except KeyError:
         reset_graph()
+
+    # G_PRINT is used as bool to determine whether information
+    # about the graph should be printed
+    try:
+        G_PRINT = MCd["print_g_spec"]
+    except:
+        G_PRINT = False
+    try:
+        G_NAME = MCd["name"]
+    except:
+        G_NAME = "custom architecture"
+    if G_PRINT:
+        print("========================{}========================".format(G_NAME))
 
     g = tf.Graph()
     with g.as_default():
@@ -105,6 +54,8 @@ def build_graph(MCd: dict, ACd: dict):
             training = tf.placeholder_with_default(False, shape=(), name="training")
 
             X = tf.placeholder(dtype=tf.float32, shape=(MCd["in_dim"]), name="X_in")
+            if G_PRINT:
+                print_tensor_info(X)
             y_raw = tf.placeholder(
                 dtype=tf.int64, shape=(MCd["output_dim"]), name="y_in"
             )
@@ -112,9 +63,10 @@ def build_graph(MCd: dict, ACd: dict):
 
         hidden = build_hidden_block(X, training, MCd, ACd)
 
-        with tf.name_scope("logits"):
-            logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
-            preds = tf.sigmoid(logits, name="preds")
+        logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
+        preds = tf.sigmoid(logits, name="preds")
+        if G_PRINT:
+            print_tensor_info(preds)
 
         #### loss logic
         with tf.name_scope("loss"):
@@ -136,6 +88,8 @@ def build_graph(MCd: dict, ACd: dict):
         #### optimizer
         with tf.name_scope("train"):
             optimizer = get_optimizer(MCd)
+            if G_PRINT:
+                print("opt: {}".format(optimizer._name))
             training_op = optimizer.minimize(batch_loss, name="training_op")
 
         #### saver
@@ -317,5 +271,12 @@ def build_graph(MCd: dict, ACd: dict):
 
         for node in (epoch_train_write_op, epoch_validation_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
+
+    if G_PRINT:
+        print(
+            "======================={}=========================".format(
+                str(len(G_NAME) * "=")
+            )
+        )
 
     return g
