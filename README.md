@@ -5,11 +5,11 @@ YamlFlow is a prototype (and yet to be fully implemented) framework for creating
 
 ## Getting Started
 
-There is currently one example project [here](./example/cats_v_dogs_01) that the main files implement.
+There is currently one example project [here](./example/cats_v_dogs_01/README.md) that the main files implement.
 
 Main documentation + getting started will be created after a logical project structure is created and more examples have been tested (currently only one, cats vs dogs binary image classification).
 
-Documentation for the main configuration file can be found [here](./documentation_helper/model_config.md). Documentation for the main architecture configuration file can be found [here](./documentation_helper/architecture.md) and documentation for the currently supported layer types [conv2d](./documentation_helper/layers/conv2d.md), [pooling](./documentation_helper/layers/pooling2d.md), and [dense](./documentation_helper/layers/dense.md) are also included.
+Documentation for the main configuration file can be found [here](./documentation_helper/configuration_files/model_config.md). Documentation for the main architecture configuration file can be found [here](./documentation_helper/configuration_files/architecture.md) and documentation for the currently supported layer types [conv2d](./documentation_helper/configuration_files/layers/conv2d.md), [pooling](./documentation_helper/configuration_files/layers/pooling2d.md), and [dense](./documentation_helper/configuration_files/layers/dense.md) are also included.
 
  **If anyone would like to attempt to use or work on this, feel free to open an issue and/or reach out to me on twitter @Jack_Burdick**
 

@@ -2,22 +2,36 @@
 import yaml
 import shutil
 import os
+import sys
 
 
 def parse_yaml_from_path(path: str) -> dict:
     # return python dict from yaml path
-    with open(path, "r") as stream:
-        try:
-            y = yaml.load(stream)
-            return y
-        except yaml.YAMLError as exc:
-            print(exc)
-            return None
+    try:
+        with open(path, "r") as stream:
+            try:
+                y = yaml.load(stream)
+                return y
+            except yaml.YAMLError as exc:
+                print(exc)
+                return dict()
+    except FileNotFoundError:
+        sys.exit(
+            "Error > Exiting: the model configuration file {} was not found".format(
+                path
+            )
+        )
 
 
-def create_model_and_arch_config(path: str) -> (dict, dict):
+def create_model_and_arch_config(path: str) -> tuple:
     # return the model and archtitecture configuration dicts
     m_config = parse_yaml_from_path(path)
+    if not m_config:
+        sys.exit(
+            "Error > Exiting: the model config file was found {}, but appears to be empty".format(
+                path
+            )
+        )
     # create architecture config
     if m_config["architecture"]["yaml"]:
         a_config = parse_yaml_from_path(m_config["architecture"]["yaml"])
@@ -28,7 +42,7 @@ def create_model_and_arch_config(path: str) -> (dict, dict):
 
 
 # helper to create dirs if they don't already exist
-def maybe_create_dir(dir_path):
+def maybe_create_dir(dir_path: str):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
         print("{} created".format(dir_path))
@@ -36,9 +50,9 @@ def maybe_create_dir(dir_path):
         print("{} already exists".format(dir_path))
 
 
-def create_standard_dirs(root_dir, wipe):
+def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     # this logic is messy
-    if wipe:
+    if wipe_dirs:
         if os.path.exists(root_dir):
             shutil.rmtree(root_dir)
         maybe_create_dir(root_dir)
@@ -54,7 +68,7 @@ def create_standard_dirs(root_dir, wipe):
     maybe_create_dir(root_dir + "/tf_logs")
 
 
-def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
+def extract_from_dict(MC: dict, AC: dict) -> tuple:
     # this is necessary since the YAML structure is likely to change
     # eventually, this can be deleted
     MCd = {}
@@ -80,7 +94,7 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["shuffle_buffer"] = MC["implementation"]["shuffle_buffer"]
 
     ### architecture
-    # TODO: implement after graph can be created...l
+    # TODO: implement after graph can be created...
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
     MCd["final_type"] = MC["overall"]["options"]
     MCd["seed"] = MC["overall"]["rand_seed"]

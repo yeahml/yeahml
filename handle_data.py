@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 
 
-def augment_image(img_tensor, aug_opts):
+def augment_image(img_tensor, aug_opts: dict):
 
     try:
         # h_flip = aug_opts["h_flip"]
@@ -107,7 +107,6 @@ def _parse_function(
         else:  # test
             pass
 
-    # TODO: this needs to be based on config
     if standardize_img:
         image = tf.image.per_image_standardization(image)
 
