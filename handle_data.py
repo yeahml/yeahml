@@ -32,10 +32,10 @@ def augment_image(img_tensor):
     return img_tensor
 
 
-def _parse_function(example_proto):
-    global GLOBAL_SET_TYPE
-    labelName = str(GLOBAL_SET_TYPE) + "/label"
-    featureName = str(GLOBAL_SET_TYPE) + "/image"
+def _parse_function(example_proto, set_type):
+
+    labelName = str(set_type) + "/label"
+    featureName = str(set_type) + "/image"
     feature = {
         featureName: tf.FixedLenFeature([], tf.string),
         labelName: tf.FixedLenFeature([], tf.int64),
@@ -52,7 +52,7 @@ def _parse_function(example_proto):
 
     # TODO: will need to figure out how to aug_opts information here.
     # NOTE: Augmentation! this may not be the best place to do this.
-    if GLOBAL_SET_TYPE != "test":
+    if set_type != "test":
         # TODO: this needs to be based on config
         image = augment_image(image)
 
@@ -62,13 +62,13 @@ def _parse_function(example_proto):
     return image, label
 
 
-def return_batched_iter(setType, MCd, filenames_ph):
-    global GLOBAL_SET_TYPE
-    GLOBAL_SET_TYPE = setType
+def return_batched_iter(set_type, MCd, filenames_ph):
 
     dataset = tf.data.TFRecordDataset(filenames_ph)
-    dataset = dataset.map(_parse_function)  # Parse the record into tensors.
-    if GLOBAL_SET_TYPE != "test":
+    dataset = dataset.map(
+        lambda x: _parse_function(x, set_type)
+    )  # Parse the record into tensors.
+    if set_type != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
     # prefetch is used to ensure one batch is always ready
