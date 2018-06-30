@@ -57,7 +57,7 @@ implementation:
   shuffle_buffer: 128
 train:
   # the values aren't being used yet...
-  image: 'standardize'
+  image_standardize: True
   # augmentation: # TODO: use
   #   aug_val: True
   #   v_flip: True

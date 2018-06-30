@@ -74,7 +74,9 @@ def augment_image(img_tensor, aug_opts):
     return img_tensor
 
 
-def _parse_function(example_proto, set_type: str, aug_opts: dict):
+def _parse_function(
+    example_proto, set_type: str, standardize_img: bool, aug_opts: dict
+):
 
     labelName = str(set_type) + "/label"
     featureName = str(set_type) + "/image"
@@ -106,7 +108,8 @@ def _parse_function(example_proto, set_type: str, aug_opts: dict):
             pass
 
     # TODO: this needs to be based on config
-    image = tf.image.per_image_standardization(image)
+    if standardize_img:
+        image = tf.image.per_image_standardization(image)
 
     return image, label
 
@@ -118,9 +121,14 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
     except KeyError:
         aug_opts = None
 
+    try:
+        standardize_img = MCd["image_standardize"]
+    except KeyError:
+        standardize_img = False
+
     dataset = tf.data.TFRecordDataset(filenames_ph)
     dataset = dataset.map(
-        lambda x: _parse_function(x, set_type, aug_opts)
+        lambda x: _parse_function(x, set_type, standardize_img, aug_opts)
     )  # Parse the record into tensors.
     if set_type != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])

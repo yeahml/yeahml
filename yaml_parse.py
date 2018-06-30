@@ -93,6 +93,11 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     except KeyError:
         pass
 
+    try:
+        MCd["image_standardize"] = MC["train"]["image_standardize"]
+    except KeyError:
+        pass
+
     MCd["log_dir"] = os.path.join(
         ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]
     )
