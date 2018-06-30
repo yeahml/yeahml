@@ -5,34 +5,70 @@ from tqdm import tqdm
 import os
 
 
-def augment_image(img_tensor):
-    # TODO: this needs to be based on config
-    if np.random.rand() < 0.5:
-        img_tensor = tf.image.flip_left_right(img_tensor)
+def augment_image(img_tensor, aug_opts):
 
-    # if np.random.rand() < 0.5:
-    #     img_tensor = tf.image.flip_up_down(img_tensor)
+    try:
+        h_flip = aug_opts["h_flip"]
+        if np.random.rand() < h_flip:
+            img_tensor = tf.image.flip_left_right(img_tensor)
+    except KeyError:
+        pass
 
-    # if np.random.rand() < 0.5:
-    #     img_tensor = tf.image.rot90(img_tensor)
+    try:
+        v_flip = aug_opts["v_flip"]
+        if np.random.rand() < v_flip:
+            img_tensor = tf.image.flip_up_down(img_tensor)
+    except KeyError:
+        pass
 
-    if np.random.rand() < 0.5:
-        img_tensor = tf.image.random_brightness(img_tensor, max_delta=0.2)
+    try:
+        v_flip = aug_opts["v_flip"]
+        if np.random.rand() < v_flip:
+            img_tensor = tf.image.rot90(img_tensor)
+    except KeyError:
+        pass
+
+    ##################################### image manipulation
+    # TODO: confirm interval
+    # TODO: handle min/max value
+    # TODO: current default is set to 0.5 > half, if specified, will be altered
+    try:
+        brt_max = aug_opts["brightness"]
+        if np.random.rand() < 0.5:
+            img_tensor = tf.image.random_brightness(img_tensor, max_delta=brt_max)
+    except KeyError:
+        pass
 
     # TODO: confirm these intervals
-    if np.random.rand() < 0.5:
-        img_tensor = tf.image.random_contrast(img_tensor, lower=0.0, upper=0.5)
+    try:
+        contrast_val = aug_opts["contrast"]
+        if np.random.rand() < 0.5:
+            img_tensor = tf.image.random_contrast(
+                img_tensor, lower=0.0, upper=contrast_val
+            )
+    except KeyError:
+        pass
 
-    if np.random.rand() < 0.5:
-        img_tensor = tf.image.random_hue(img_tensor, max_delta=0.3)
+    try:
+        hue_max = aug_opts["hue"]
+        if np.random.rand() < 0.5:
+            img_tensor = tf.image.random_hue(img_tensor, max_delta=hue_max)
+    except KeyError:
+        pass
 
-    if np.random.rand() < 0.5:
-        img_tensor = tf.image.random_saturation(img_tensor, lower=0.0, upper=0.5)
+    try:
+        sat_val = aug_opts["saturation"]
+        if np.random.rand() < 0.5:
+            img_tensor = tf.image.random_saturation(
+                img_tensor, lower=0.0, upper=sat_val
+            )
+    except KeyError:
+        pass
 
     return img_tensor
 
 
-def _parse_function(example_proto, set_type):
+def _parse_function(example_proto, set_type: str, aug_opts: dict):
 
     labelName = str(set_type) + "/label"
     featureName = str(set_type) + "/image"
@@ -50,11 +86,19 @@ def _parse_function(example_proto, set_type):
     image = tf.reshape(image, [150, 150, 3])
     label = tf.cast(parsed_features[labelName], tf.int64)
 
-    # TODO: will need to figure out how to aug_opts information here.
-    # NOTE: Augmentation! this may not be the best place to do this.
-    if set_type != "test":
-        # TODO: this needs to be based on config
-        image = augment_image(image)
+    # Augmentation
+    if set_type == "train":
+        if aug_opts:
+            image = augment_image(image, aug_opts)
+    elif set_type == "val":
+        try:
+            if aug_opts["aug_val"]:
+                image = augment_image(image, aug_opts)
+        except KeyError:
+            pass
+    else:
+        # test
+        pass
 
     # TODO: this needs to be based on config
     image = tf.image.per_image_standardization(image)
@@ -62,11 +106,16 @@ def _parse_function(example_proto, set_type):
     return image, label
 
 
-def return_batched_iter(set_type, MCd, filenames_ph):
+def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
+
+    try:
+        aug_opts = MCd["augmentation"]
+    except KeyError:
+        aug_opts = None
 
     dataset = tf.data.TFRecordDataset(filenames_ph)
     dataset = dataset.map(
-        lambda x: _parse_function(x, set_type)
+        lambda x: _parse_function(x, set_type, aug_opts)
     )  # Parse the record into tensors.
     if set_type != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
