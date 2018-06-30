@@ -4,8 +4,6 @@ import pickle
 from tqdm import tqdm
 import os
 
-TFR_DIR = "./example/cats_v_dogs_01/data/record_holder/150"
-
 
 def augment_image(img_tensor):
     # TODO: this needs to be based on config
@@ -66,7 +64,6 @@ def _parse_function(example_proto):
 
 def return_batched_iter(setType, MCd, filenames_ph):
     global GLOBAL_SET_TYPE
-    global TFR_DIR
     GLOBAL_SET_TYPE = setType
 
     dataset = tf.data.TFRecordDataset(filenames_ph)
