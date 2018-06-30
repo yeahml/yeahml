@@ -2,13 +2,32 @@
 
 YamlFlow is a prototype (and yet to be fully implemented) framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).
 
-The primary motivation is to define and create (simple) models easily. The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a seperate project (TODO: inlude link once made) that will attempt to generate/analyze architectures --- and use the yaml file as a way of generating/defining architectures.
 
 ## Getting Started
 
-There is currently one example project (TODO: link) -- after a project structure has been created, documentation and improved documentation will be included. The current example expects the tf records to already be included on the local environment (these can be created by downloading the kaggle datset and following the included `.py` files). After the tf records have been created. The current directory and config files will work as expected when calling `python yamlflow.py`. **If anyone would like to attempt to use or work on this, feel free to open an issue and/or reach out to me on twitter @Jack_Burdick**
+There is currently one example project [here](./example/cats_v_dogs_01) that the main files implement.
 
-### TODO
+Main documentation + getting started will be created after a logical project structure is created and more examples have been tested (currently only one, cats vs dogs binary image classification).
+
+Documentation for the main configuration file can be found [here](./documentation_helper/model_config.md). Documentation for the main architecture configuration file can be found [here](./documentation_helper/architecture.md) and documentation for the currently supported layer types [conv2d](./documentation_helper/layers/conv2d.md), [pooling](./documentation_helper/layers/pooling2d.md), and [dense](./documentation_helper/layers/dense.md) are also included.
+
+ **If anyone would like to attempt to use or work on this, feel free to open an issue and/or reach out to me on twitter @Jack_Burdick**
+
+## Motivation
+
+The primary motivation is to define and create (simple) models easily. The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a seperate project (TODO: inlude link once made) that will attempt to generate/analyze architectures --- and use the yaml file as a way of generating/defining architectures.l
+
+### Future Goals
+
+At the moment the project is being developed around a binary image classification task. In the future, I'd like to support:
+
+- Multi-class classification (Images)
+- Regression
+- Autoencoders
+- GANs
+
+
+### TODO and in Progress
 
 - update tf_logs dir to be set on each run by a "name". include option to delete current logs as needed
 - Add image augmentation logic

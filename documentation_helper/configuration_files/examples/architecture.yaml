@@ -1,35 +1,30 @@
-# documentation will be key - "sane" defaults
-# key: value
-# key will be the "name" of the layer, value will hold the type+
-# TODO: set *NECESSARTY/REQUIRED* params
-
-# TODO: initialization
-# TODO: option to write scalar
-# TODO: default conv = conv2d?
-# TODO: default strides = 1, padding='SAME'
-# TODO: regularization
-
 layers:
+  # convolutional block
   conv_1:
     type: 'conv2d'
     options:
       filters: 16
       kernel_size: 3
-      strides: 2
+      strides: 1
+  pool_1:
+    type: 'pooling2d'
   conv_2:
     type: 'conv2d'
     options:
       filters: 32
       kernel_size: 3
-      strides: 2
+      strides: 1
+  pool_2:
+    type: 'pooling2d'
   conv_3:
     type: 'conv2d'
     options:
       filters: 64
       kernel_size: 3
-      strides: 2
-  pool_1:
+      strides: 1
+  pool_3:
     type: 'pooling2d'
+  # fully connected layers
   dense_1:
     type: 'dense'
     options:

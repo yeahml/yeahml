@@ -41,7 +41,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.00001
   batch_size: 16
-  epochs: 2 # for quick testing
+  epochs: 9 # for quick testing
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

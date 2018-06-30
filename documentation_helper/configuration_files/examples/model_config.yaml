@@ -1,0 +1,31 @@
+overall:
+  name: 'cats vs dogs'
+  print_graph_spec: True
+  type: 'classification' # TODO: use
+  options: 'binary'
+  trace: 'full'
+data:
+  in_dim: [150, 150, 3]
+  output_dim: [1]
+  TFR_dir: './path/to/dir/holding/tfrs'
+saver:
+  save_pparams: 'best_params' # location to save best params
+tensorboard:
+  log_dir: 'trial_01'
+hyper_parameters:
+  lr: 0.00001
+  batch_size: 16
+  epochs: 9 # for quick testing
+architecture:
+  yaml: './path/to/architecture.yaml'
+implementation:
+  optimizer: 'adam'
+  default_activation: 'elu'
+  shuffle_buffer: 128
+train:
+  image_standardize: True
+  augmentation:
+    aug_val: True
+    v_flip: True
+    h_flip: True
+    max_brightness: 0.2
