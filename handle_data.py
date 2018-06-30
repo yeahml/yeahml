@@ -13,13 +13,23 @@ def augment_image(img_tensor):
         img_tensor = tf.image.flip_left_right(img_tensor)
 
     # if np.random.rand() < 0.5:
-    # img_tensor = tf.image.flip_up_down(img_tensor)
+    #     img_tensor = tf.image.flip_up_down(img_tensor)
 
     # if np.random.rand() < 0.5:
-    # img_tensor = tf.image.rot90(img_tensor)
+    #     img_tensor = tf.image.rot90(img_tensor)
 
     if np.random.rand() < 0.5:
         img_tensor = tf.image.random_brightness(img_tensor, max_delta=0.2)
+
+    # TODO: confirm these intervals
+    if np.random.rand() < 0.5:
+        img_tensor = tf.image.random_contrast(img_tensor, lower=0.0, upper=0.5)
+
+    if np.random.rand() < 0.5:
+        img_tensor = tf.image.random_hue(img_tensor, max_delta=0.3)
+
+    if np.random.rand() < 0.5:
+        img_tensor = tf.image.random_saturation(img_tensor, lower=0.0, upper=0.5)
 
     return img_tensor
 
@@ -42,15 +52,14 @@ def _parse_function(example_proto):
     image = tf.reshape(image, [150, 150, 3])
     label = tf.cast(parsed_features[labelName], tf.int64)
 
-    # [do any preprocessing here]
-    # TODO: this needs to be based on config
-    image = tf.image.per_image_standardization(image)
-
     # TODO: will need to figure out how to aug_opts information here.
     # NOTE: Augmentation! this may not be the best place to do this.
     if GLOBAL_SET_TYPE != "test":
         # TODO: this needs to be based on config
         image = augment_image(image)
+
+    # TODO: this needs to be based on config
+    image = tf.image.per_image_standardization(image)
 
     return image, label
 
