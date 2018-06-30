@@ -9,13 +9,10 @@ from handle_data import return_batched_iter
 from helper import load_obj, save_obj, get_model_params
 
 
-# TODO: Global needs to be managed, if possible
-# GLOBAL_SET_TYPE = None
-BEST_PARAMS_PATH = "best_params"
-
-
 def train_graph(g, MCd):
-    global BEST_PARAMS_PATH
+
+    best_params_path = MCd["save_pparams"]  # required
+
     saver, init_global, init_local = g.get_collection("save_init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
     preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
@@ -156,7 +153,7 @@ def train_graph(g, MCd):
                 best_val_loss = cur_loss
                 global_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
                 best_params = get_model_params(global_vars)
-                save_obj(best_params, BEST_PARAMS_PATH)
+                save_obj(best_params, best_params_path)
                 print(
                     "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(
                         cur_acc * 100, cur_loss

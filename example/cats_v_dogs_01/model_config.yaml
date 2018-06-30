@@ -30,7 +30,7 @@ data:
   # TODO: preprocessing
 saver:
   # pickel-ed-params
-  save_pparams: 'best_params'
+  save_pparams: 'best_params' # required
   #load_pparams: null
   #save_graph: null
   # if load model, then the architecture+implementation is void
@@ -41,7 +41,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.00001
   batch_size: 16
-  epochs: 3
+  epochs: 2 # for quick testing
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..
