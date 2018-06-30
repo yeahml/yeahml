@@ -58,9 +58,9 @@ implementation:
 train:
   # the values aren't being used yet...
   image: 'standardize'
-  augmentation: # TODO: use
-    aug_val: True
-    v_flip: 50
-    h_flip: 50
-    #rotate: 0
-    brightness: 0.2
+  # augmentation: # TODO: use
+  #   aug_val: True
+  #   v_flip: True
+  #   h_flip: True
+  #   #rotate: 0
+  #   max_brightness: 0.2

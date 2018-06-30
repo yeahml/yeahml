@@ -88,7 +88,10 @@ def extract_from_dict(MC: dict, AC: dict) -> (dict, dict):
     MCd["print_g_spec"] = MC["overall"]["print_graph_spec"]
     MCd["name"] = MC["overall"]["name"]
 
-    MCd["augmentation"] = MC["train"]["augmentation"]
+    try:
+        MCd["augmentation"] = MC["train"]["augmentation"]
+    except KeyError:
+        pass
 
     MCd["log_dir"] = os.path.join(
         ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]

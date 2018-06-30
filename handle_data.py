@@ -8,33 +8,36 @@ import os
 def augment_image(img_tensor, aug_opts):
 
     try:
-        h_flip = aug_opts["h_flip"]
-        if np.random.rand() < h_flip:
-            img_tensor = tf.image.flip_left_right(img_tensor)
+        # h_flip = aug_opts["h_flip"]
+        # if np.random.rand() < h_flip:
+        if aug_opts["h_flip"]:
+            img_tensor = tf.image.random_flip_left_right(img_tensor)
     except KeyError:
         pass
 
     try:
-        v_flip = aug_opts["v_flip"]
-        if np.random.rand() < v_flip:
-            img_tensor = tf.image.flip_up_down(img_tensor)
+        # v_flip = aug_opts["v_flip"]
+        # if np.random.rand() < v_flip:
+        if aug_opts["v_flip"]:
+            img_tensor = tf.image.random_flip_up_down(img_tensor)
     except KeyError:
         pass
 
-    try:
-        v_flip = aug_opts["v_flip"]
-        if np.random.rand() < v_flip:
-            img_tensor = tf.image.rot90(img_tensor)
-    except KeyError:
-        pass
+    # try:
+    #     v_flip = aug_opts["rotate"]
+    #     if np.random.rand() < v_flip:
+    #         img_tensor = tf.image.rot90(img_tensor)
+    # except KeyError:
+    #     pass
 
     ##################################### image manipulation
-    # TODO: confirm interval
+    # TODO: confirm intervals
     # TODO: handle min/max value
     # TODO: current default is set to 0.5 > half, if specified, will be altered
     try:
-        brt_max = aug_opts["brightness"]
-        if np.random.rand() < 0.5:
+        brt_max = aug_opts["max_brightness"]
+        # if np.random.rand() < 0.5:
+        if brt_max > 0:
             img_tensor = tf.image.random_brightness(img_tensor, max_delta=brt_max)
     except KeyError:
         pass
@@ -42,7 +45,8 @@ def augment_image(img_tensor, aug_opts):
     # TODO: confirm these intervals
     try:
         contrast_val = aug_opts["contrast"]
-        if np.random.rand() < 0.5:
+        # if np.random.rand() < 0.5:
+        if contrast_val > 0:
             img_tensor = tf.image.random_contrast(
                 img_tensor, lower=0.0, upper=contrast_val
             )
@@ -51,14 +55,16 @@ def augment_image(img_tensor, aug_opts):
 
     try:
         hue_max = aug_opts["hue"]
-        if np.random.rand() < 0.5:
+        # if np.random.rand() < 0.5:
+        if hue_max > 0:
             img_tensor = tf.image.random_hue(img_tensor, max_delta=hue_max)
     except KeyError:
         pass
 
     try:
         sat_val = aug_opts["saturation"]
-        if np.random.rand() < 0.5:
+        # if np.random.rand() < 0.5:
+        if sat_val > 0:
             img_tensor = tf.image.random_saturation(
                 img_tensor, lower=0.0, upper=sat_val
             )
@@ -87,18 +93,17 @@ def _parse_function(example_proto, set_type: str, aug_opts: dict):
     label = tf.cast(parsed_features[labelName], tf.int64)
 
     # Augmentation
-    if set_type == "train":
-        if aug_opts:
+    if aug_opts:
+        if set_type == "train":
             image = augment_image(image, aug_opts)
-    elif set_type == "val":
-        try:
-            if aug_opts["aug_val"]:
-                image = augment_image(image, aug_opts)
-        except KeyError:
+        elif set_type == "val":
+            try:
+                if aug_opts["aug_val"]:
+                    image = augment_image(image, aug_opts)
+            except KeyError:
+                pass
+        else:  # test
             pass
-    else:
-        # test
-        pass
 
     # TODO: this needs to be based on config
     image = tf.image.per_image_standardization(image)
