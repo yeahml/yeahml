@@ -2,17 +2,17 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'cats vs dogs'
-  verbosity: 0
+  #verbosity: 0
   print_graph_spec: True
-  tf_log_level: 'warn' # TODO: use
+  #tf_log_level: 'warn' # TODO: use
   # will need to investigate disabling cudnn > nondeterministic backprop
-  deterministic: null # not currently possible
-  rand_seed: 42 # TODO: use
+  #deterministic: null # not currently possible
+  #rand_seed: 42 # TODO: use
   # regression, segmentation, GAN, autoencode
   type: 'classification' # TODO: use
   options: 'binary'
   #report_level: 1 # use to print model arch (output size)
-  trace: 'none'
+  trace: 'full'
   # performance:
   #   # default (auc, acc,loss)
   #   eval:
@@ -41,7 +41,7 @@ tensorboard:
 hyper_parameters:
   lr: 0.00001
   batch_size: 16
-  epochs: 3 # for quick testing
+  epochs: 12 # for quick testing
 architecture:
   # if yaml, then ignore the rest
   # type, size, details(filter), frozen, dropout, regularization, etc..

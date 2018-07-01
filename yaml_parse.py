@@ -97,7 +97,11 @@ def extract_from_dict(MC: dict, AC: dict) -> tuple:
     # TODO: implement after graph can be created...
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
     MCd["final_type"] = MC["overall"]["options"]
-    MCd["seed"] = MC["overall"]["rand_seed"]
+    try:
+        MCd["seed"] = MC["overall"]["rand_seed"]
+    except KeyError:
+        pass
+
     MCd["trace_level"] = MC["overall"]["trace"]
     MCd["print_g_spec"] = MC["overall"]["print_graph_spec"]
     MCd["name"] = MC["overall"]["name"]
