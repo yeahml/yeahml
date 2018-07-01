@@ -44,7 +44,7 @@ out = tf.layers.dense(
       dropout: <int> # will wrap dense in dropout layer
 ```
 
-Including the `dropout` opt will do the following:
+Including the `dropout` opt will implement the following logic:
 
 ```python
 

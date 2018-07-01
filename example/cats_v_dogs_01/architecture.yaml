@@ -16,20 +16,29 @@ layers:
       filters: 16
       kernel_size: 3
       strides: 2
+  pool_1:
+    type: 'pooling2d'
+    options:
+      pool_type: "avg"
   conv_2:
     type: 'conv2d'
     options:
       filters: 32
       kernel_size: 3
-      strides: 2
+      strides: 1
+  pool_2:
+    type: 'pooling2d'
   conv_3:
     type: 'conv2d'
     options:
       filters: 64
       kernel_size: 3
-      strides: 2
-  pool_1:
+      strides: 1
+  pool_3:
     type: 'pooling2d'
+    options:
+      pool_type: "max"
+      dropout: 0.5
   dense_1:
     type: 'dense'
     options:

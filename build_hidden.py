@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import sys
 
 from helper import print_tensor_info
 from get_components import get_regularizer_fn, get_initializer_fn, get_activation_fn
@@ -147,9 +148,27 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
     if not name:
         name = "unnamed_pool2d_layer"
 
-    out = tf.layers.max_pooling2d(
-        cur_input, pool_size=pool_size, strides=strides, name=name
-    )
+    try:
+        if opts:
+            pool_type = opts["pool_type"]
+        else:
+            pool_type = "max"
+        if pool_type not in ["max", "avg"]:
+            sys.exit("pool type {} is not allowed".format(pool_type))
+    except KeyError:
+        pool_type = "max"
+
+    if pool_type == "max":
+        out = tf.layers.max_pooling2d(
+            cur_input, pool_size=pool_size, strides=strides, padding="valid", name=name
+        )
+    elif pool_type == "avg":
+        out = tf.layers.average_pooling2d(
+            cur_input, pool_size=pool_size, strides=strides, padding="valid", name=name
+        )
+    else:
+        # for future implementations
+        sys.exit("pool type {} is not yet implemented".format(pool_type))
 
     if G_PRINT:
         print_tensor_info(out)
