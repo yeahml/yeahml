@@ -31,6 +31,7 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, G_PRINT: bool):
         kernel_size = 3
 
     try:
+        # TODO: create func (w/error handling) for this
         padding = opts["padding"]
     except KeyError:
         padding = "SAME"
@@ -210,8 +211,12 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
             actfn = get_activation_fn(actfn_str)
         except KeyError:
             # TODO: this seems dumb..
-            actfn = get_activation_fn(MCd["def_act"])
-            pass
+            try:
+                actfn = get_activation_fn(MCd["def_act"])
+            except KeyError:
+                # the reasoning here is that the relu is subjectively the most
+                # common/default activation function in DNNs, but I don't LOVE this
+                actfn = get_activation_fn("relu")
 
         ltype = layer_info["type"].lower()
         if ltype == "conv2d":

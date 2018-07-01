@@ -1,4 +1,5 @@
 import tensorflow as tf
+import sys
 
 
 def get_regularizer_fn(reg_str: str):
@@ -103,7 +104,7 @@ def get_activation_fn(act_str: str):
     if act_str:
         act_str = act_str.lower()
 
-    act_fn = None
+    act_fn = None  # TODO: this should maybe be an identity function
     if act_str == "sigmoid":
         act_fn = tf.sigmoid
     elif act_str == "tanh":
@@ -117,15 +118,17 @@ def get_activation_fn(act_str: str):
     elif act_str == "softsign":
         act_fn = tf.nn.softsign
     elif act_str == "relu":
-        act_gn = tf.nn.relu
+        act_fn = tf.nn.relu
     # elif act == "leaky":
     # act_fn = tf.nn.leay_relu
     elif act_str == "relu6":
         act_fn = tf.nn.relu6
     else:
-        # TODO: Error
-        # realistically this should be caught by the initial check
-        pass
+        # TODO: Error logging
+        # the reasoning here is that the relu is subjectively the most
+        # common/default activation function in DNNs, but I don't LOVE this
+        sys.exit("No activation function has been set")
+
     return act_fn
 
 

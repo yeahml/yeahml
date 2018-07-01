@@ -54,6 +54,7 @@ layers:
       units: 64
       dropout: 0.5
 ```
+
 *this is still a beta/prototype project, please understand that not everything may be connected correctly.
 
 ## Shape information
@@ -77,7 +78,6 @@ opt: Adam
 ============================================================
 
 ```
-
 
 ### Other Notes
 

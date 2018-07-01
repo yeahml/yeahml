@@ -84,7 +84,7 @@ def extract_from_dict(MC: dict, AC: dict) -> tuple:
 
     MCd["TFR_dir"] = MC["data"]["TFR_dir"]
 
-    ## hyperparams
+    ## hyperparameters
     MCd["lr"] = MC["hyper_parameters"]["lr"]
     MCd["epochs"] = MC["hyper_parameters"]["epochs"]
     MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
