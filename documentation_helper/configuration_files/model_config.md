@@ -41,8 +41,9 @@ hyper_parameters:
   # activation function that will be used by default (if one isn't specified for the layer)
   default_activation: ["sigmoid","tanh","elu","selu","softplus","softsign","relu","relu6"] # choose one
   shuffle_buffer: <int> # 128
-  early_stopping_epochs: <int> # OPTIONAL - default behavior is 0
-  warm_up_epochs: <int> # OPTIONAL - default behavior is 5
+  early_stopping:
+    epochs:  <int> # OPTIONAL - default behavior
+    warm_up_epochs: <int> # OPTIONAL - default behavior is 5
 
 # What do the hidden layers look like?
 hidden_config:
