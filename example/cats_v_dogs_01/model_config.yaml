@@ -11,7 +11,7 @@ overall:
   # regression, segmentation, GAN, autoencode
   type: 'classification_binary' # ['classification_binary']
   #report_level: 1 # use to print model arch (output size)
-  trace: 'full'
+  # trace: 'full'
   # performance:
   #   # default (auc, acc,loss)
   #   eval:
@@ -52,7 +52,7 @@ hidden:
   yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 train:
   image_standardize: True
-  # augmentation: # TODO: use
+  # augmentation:
   #   aug_val: True
   #   v_flip: True
   #   h_flip: True

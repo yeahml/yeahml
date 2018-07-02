@@ -70,7 +70,7 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     maybe_create_dir(root_dir + "/tf_logs")
 
 
-def extract_from_dict(MC: dict, HC: dict) -> tuple:
+def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # this is necessary since the YAML structure is likely to change
     # eventually, this may be deleted
     MCd = {}
@@ -85,14 +85,15 @@ def extract_from_dict(MC: dict, HC: dict) -> tuple:
 
     MCd["TFR_dir"] = MC["data"]["TFR_dir"]
 
-    ## hyperparameters
+    ########### hyperparameters
     MCd["lr"] = MC["hyper_parameters"]["lr"]
     MCd["epochs"] = MC["hyper_parameters"]["epochs"]
     MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
-    ## implementation
     MCd["optimizer"] = MC["hyper_parameters"]["optimizer"]
     MCd["def_act"] = MC["hyper_parameters"]["default_activation"]
     MCd["shuffle_buffer"] = MC["hyper_parameters"]["shuffle_buffer"]
+
+    ## validation
     try:
         MCd["early_stopping_e"] = MC["hyper_parameters"]["early_stopping_epochs"]
     except KeyError:
@@ -117,7 +118,11 @@ def extract_from_dict(MC: dict, HC: dict) -> tuple:
     except KeyError:
         pass
 
-    MCd["trace_level"] = MC["overall"]["trace"]
+    try:
+        MCd["trace_level"] = MC["overall"]["trace"]
+    except KeyError:
+        pass
+
     MCd["print_g_spec"] = MC["overall"]["print_graph_spec"]
     MCd["name"] = MC["overall"]["name"]
 

@@ -1,7 +1,7 @@
 from yaml_parse import create_model_and_hidden_config
 
 # get relevant components from the yaml file/standardize
-from yaml_parse import extract_from_dict
+from yaml_parse import extract_dict_and_set_defaults
 
 from build_graph import build_graph
 from train_graph import train_graph
@@ -25,8 +25,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 model_config, hidden_config = create_model_and_hidden_config(
     "./example/cats_v_dogs_01/model_config.yaml"
 )
-
-model_config, hidden_config = extract_from_dict(model_config, hidden_config)
+model_config, hidden_config = extract_dict_and_set_defaults(model_config, hidden_config)
 
 ## build graph
 g = build_graph(model_config, hidden_config)

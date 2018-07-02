@@ -15,7 +15,7 @@ overall:
   options: 'binary' # currently only 'binary' is supported
   # for memory+time optimization/visualization in tensorboard
   # 'full' does both hardware and software
-  trace: ['full','hardware','software'] # choose one
+  trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None
 
 # information about the data being used
 data:
