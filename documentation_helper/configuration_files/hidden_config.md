@@ -1,6 +1,6 @@
-# Architecture Options
+# Hidden Layer Architecture Options
 
-The architecture configuration file will contain the configuration information for how the hidden layers in the model described by the main `model_config.yaml` yaml file should be constructed. An example configuration file can be found [here](./examples/architecture.yaml).
+The hidden configuration file will contain the configuration information for how the hidden layers in the model described by the main `model_config.yaml` yaml file should be constructed. An example configuration file can be found [here](./examples/architecture.yaml).
 
 ## Overview
 

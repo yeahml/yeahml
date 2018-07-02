@@ -1,4 +1,4 @@
-from yaml_parse import create_model_and_arch_config
+from yaml_parse import create_model_and_hidden_config
 
 # get relevant components from the yaml file/standardize
 from yaml_parse import extract_from_dict
@@ -22,14 +22,14 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Core Logic
 
 ## parse config files
-model_config, arch_config = create_model_and_arch_config(
+model_config, hidden_config = create_model_and_hidden_config(
     "./example/cats_v_dogs_01/model_config.yaml"
 )
 
-model_config, arch_config = extract_from_dict(model_config, arch_config)
+model_config, hidden_config = extract_from_dict(model_config, hidden_config)
 
 ## build graph
-g = build_graph(model_config, arch_config)
+g = build_graph(model_config, hidden_config)
 
 ## train graph
 _ = train_graph(g, model_config)

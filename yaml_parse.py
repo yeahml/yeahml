@@ -23,7 +23,7 @@ def parse_yaml_from_path(path: str) -> dict:
         )
 
 
-def create_model_and_arch_config(path: str) -> tuple:
+def create_model_and_hidden_config(path: str) -> tuple:
     # return the model and archtitecture configuration dicts
     m_config = parse_yaml_from_path(path)
     if not m_config:
@@ -33,12 +33,14 @@ def create_model_and_arch_config(path: str) -> tuple:
             )
         )
     # create architecture config
-    if m_config["architecture"]["yaml"]:
-        a_config = parse_yaml_from_path(m_config["architecture"]["yaml"])
+    if m_config["hidden"]["yaml"]:
+        h_config = parse_yaml_from_path(m_config["hidden"]["yaml"])
     else:
-        a_config = m_config["architecture"]
+        # hidden is defined in the current yaml
+        # TODO: this needs error checking/handling, empty case
+        h_config = m_config["hidden"]
 
-    return (m_config, a_config)
+    return (m_config, h_config)
 
 
 # helper to create dirs if they don't already exist
@@ -68,11 +70,10 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     maybe_create_dir(root_dir + "/tf_logs")
 
 
-def extract_from_dict(MC: dict, AC: dict) -> tuple:
+def extract_from_dict(MC: dict, HC: dict) -> tuple:
     # this is necessary since the YAML structure is likely to change
-    # eventually, this can be deleted
+    # eventually, this may be deleted
     MCd = {}
-    # ACd = {}
     ## inputs
     MCd["in_dim"] = MC["data"]["in_dim"]
     if MCd["in_dim"][0]:
@@ -122,7 +123,7 @@ def extract_from_dict(MC: dict, AC: dict) -> tuple:
     # wipe is set to true for now
     create_standard_dirs(MCd["log_dir"], True)
 
-    return (MCd, AC)
+    return (MCd, HC)
 
 
 # TODO: will need to implement preprocessing logic

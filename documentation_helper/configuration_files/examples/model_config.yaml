@@ -17,7 +17,7 @@ hyper_parameters:
   batch_size: 16
   epochs: 9 # for quick testing
 architecture:
-  yaml: './path/to/architecture.yaml'
+  yaml: './path/to/hidden_config.yaml'
 implementation:
   optimizer: 'adam'
   default_activation: 'elu'

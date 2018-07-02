@@ -39,8 +39,8 @@ hyper_parameters:
   epochs: <int> # 20
 
 # What do the hidden layers look like?
-architecture:
-  yaml: './example/cats_v_dogs_01/architecture.yaml'
+hidden_config:
+  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 
 # more training information.. this may belong under `hyper_parameters`
 implementation:
