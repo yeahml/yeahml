@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import sys
 
 from build_hidden import build_hidden_block
 
@@ -23,6 +24,20 @@ def reset_graph(seed=42):
     tf.reset_default_graph()
     tf.set_random_seed(seed)
     np.random.seed(seed)
+
+
+def get_tf_dtype(dtype: str):
+    # TODO: add type supports + error handling
+    tf_dtype = None
+
+    if dtype == "float32":
+        tf_dtype = tf.float32
+    elif dtype == "int64":
+        tf_dtype = tf.int64
+    else:
+        sys.exit("Error: Exit: dtype {} not recognized/supported".format(dtype))
+
+    return tf_dtype
 
 
 def build_graph(MCd: dict, ACd: dict):
@@ -53,13 +68,31 @@ def build_graph(MCd: dict, ACd: dict):
             # TODO: input dimension logic (currently hardcoded)
             training = tf.placeholder_with_default(False, shape=(), name="training")
 
-            X = tf.placeholder(dtype=tf.float32, shape=(MCd["in_dim"]), name="X_in")
+            # raw data input dim/type
+            # TODO: consider x_raw, similar to y_raw. will need to update collection
+            x_dtype = get_tf_dtype(MCd["in_dtype"])
+            X = tf.placeholder(dtype=x_dtype, shape=(MCd["in_dim"]), name="X_in")
+            if MCd["reshape_in_to"]:
+                X = tf.reshape(X, shape=MCd["reshape_in_to"], name="data")
             if G_PRINT:
                 print_tensor_info(X)
+
+            # label input dim/type
+            label_dtype = get_tf_dtype(MCd["label_dtype"])
             y_raw = tf.placeholder(
-                dtype=tf.int64, shape=(MCd["output_dim"]), name="y_in"
+                dtype=label_dtype, shape=(MCd["output_dim"]), name="y_in"
             )
-            y = tf.cast(y_raw, tf.float32, name="label")
+
+            # TODO: revamp this conversion. I think for metrics they will need to be
+            # consistent, but in general, this should be handled more carefully as it
+            # will break in certain situations.
+            # > int64 probably shouldn't be mapped to float32
+            if MCd["label_dtype"].startswith("int"):
+                y = tf.cast(y_raw, tf.float32, name="label")
+            else:
+                # this is currently needed so that the raw values can be added to a collection
+                # and retrieved later for both converted and not converted values
+                y = y_raw
 
         hidden = build_hidden_block(X, training, MCd, ACd)
 

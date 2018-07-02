@@ -81,7 +81,7 @@ def train_graph(g, MCd):
             )
 
             # reinitialize training iterator
-            tfr_f_path = os.path.join(MCd["TFR_dir"], "train.tfrecords")
+            tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
             sess.run(tr_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_tr_element = tr_iter.get_next()
 
@@ -135,7 +135,7 @@ def train_graph(g, MCd):
 
             # run/loop validation
             # reinitialize validation iterator
-            tfr_f_path = os.path.join(MCd["TFR_dir"], "validation.tfrecords")
+            tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_val"])
             sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_val_element = val_iter.get_next()
             while True:

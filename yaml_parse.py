@@ -75,15 +75,26 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # eventually, this may be deleted
     MCd = {}
     ## inputs
-    MCd["in_dim"] = MC["data"]["in_dim"]
-    if MCd["in_dim"][0]:
+    MCd["in_dim"] = MC["data"]["in"]["dim"]
+    if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
         MCd["in_dim"].insert(0, None)  # add batching
+    MCd["in_dtype"] = MC["data"]["in"]["dtype"]
+    try:
+        MCd["reshape_in_to"] = MC["data"]["in"]["reshape_to"]
+    except KeyError:
+        # None in this case is representative of not reshaping
+        MCd["reshape_in_to"] = None
 
-    MCd["output_dim"] = MC["data"]["output_dim"]
-    if MCd["output_dim"][0]:
+    MCd["output_dim"] = MC["data"]["label"]["dim"]
+    if MCd["output_dim"][0]:  # as oppposed to [None, x, y, z]
         MCd["output_dim"].insert(0, None)  # add batching
+    MCd["label_dtype"] = MC["data"]["label"]["dtype"]
 
-    MCd["TFR_dir"] = MC["data"]["TFR_dir"]
+    # currently required
+    MCd["TFR_dir"] = MC["data"]["TFR"]["dir"]
+    MCd["TFR_train"] = MC["data"]["TFR"]["train"]
+    MCd["TFR_test"] = MC["data"]["TFR"]["test"]
+    MCd["TFR_val"] = MC["data"]["TFR"]["validation"]
 
     ########### hyperparameters
     MCd["lr"] = MC["hyper_parameters"]["lr"]

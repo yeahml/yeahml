@@ -27,7 +27,7 @@ def eval_graph(g, MCd):
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         test_iter = return_batched_iter("test", MCd, filenames_ph)
 
-        tfr_f_path = os.path.join(MCd["TFR_dir"], "test.tfrecords")
+        tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_test"])
         sess.run(test_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
 
         next_test_element = test_iter.get_next()
