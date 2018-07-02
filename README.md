@@ -8,7 +8,7 @@ YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily)
 
 The goal of the core implementation is as follows:
 
-Where documentation+examples for the main configuration file can be found [here](./documentation_helper/configuration_files/model_config.md) and documentation+examples for the main architecture configuration file can be found [here](./documentation_helper/configuration_files/architecture.md). Additional information, such as documentation for the currently supported layer types [conv2d](./documentation_helper/configuration_files/layers/conv2d.md), [pooling](./documentation_helper/configuration_files/layers/pooling2d.md), and [dense](./documentation_helper/configuration_files/layers/dense.md) are also included.
+Where documentation+examples for the main configuration file can be found [here](./documentation_helper/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./documentation_helper/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./documentation_helper/configuration_files/layers/conv2d.md), [pooling](./documentation_helper/configuration_files/layers/pooling2d.md), and [dense](./documentation_helper/configuration_files/layers/dense.md) are also included.
 
 ```python
 import yamlflow as yf
@@ -47,8 +47,8 @@ hyper_parameters:
   lr: 0.00001
   batch_size: 16
   epochs: 20
-architecture:
-  yaml: './example/cats_v_dogs_01/architecture.yaml'
+hidden:
+  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 implementation:
   optimizer: 'adam'
   default_activation: 'elu'
@@ -61,7 +61,7 @@ train:
     h_flip: True
 ```
 
-The architecture config (where the path to this file is specified above by (`architecture:yaml`) may look similiar to the following:
+The hidden layer architecture config (where the path to this file is specified above by (`hidden:yaml`) may look similiar to the following:
 
 ```yaml
 layers:
