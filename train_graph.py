@@ -135,7 +135,7 @@ def train_graph(g, MCd):
 
             # run/loop validation
             # reinitialize validation iterator
-            tfr_f_path = os.path.join(MCd["TFR_dir"], "val.tfrecords")
+            tfr_f_path = os.path.join(MCd["TFR_dir"], "validation.tfrecords")
             sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_val_element = val_iter.get_next()
             while True:
