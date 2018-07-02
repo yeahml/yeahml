@@ -12,6 +12,8 @@ from helper import load_obj, save_obj, get_model_params
 def train_graph(g, MCd):
 
     best_params_path = MCd["save_pparams"]  # required
+    EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
+    WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
 
     saver, init_global, init_local = g.get_collection("save_init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
@@ -34,6 +36,7 @@ def train_graph(g, MCd):
     #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
     best_val_loss = np.inf
+    last_best_e = 0  # marker for early stopping
 
     with tf.Session(graph=g) as sess:
 
@@ -150,6 +153,7 @@ def train_graph(g, MCd):
             # TODO: there should be a flag here as desired
             cur_loss, cur_acc = sess.run([val_mean_loss, val_acc])
             if cur_loss < best_val_loss:
+                last_best_e = e
                 best_val_loss = cur_loss
                 global_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
                 best_params = get_model_params(global_vars)
@@ -159,6 +163,12 @@ def train_graph(g, MCd):
                         cur_acc * 100, cur_loss
                     )
                 )
+            # Early stopping conditions will start tracking after the WARM_UP_e period
+            if EARLY_STOPPING_e > 0:
+                if e > WARM_UP_e and e - last_best_e > EARLY_STOPPING_e:
+                    # TODO: log early stopping information
+                    print("early stopping")
+                    break
 
             summary = sess.run(epoch_validation_write_op)
             val_writer.add_summary(summary, e)

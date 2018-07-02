@@ -36,11 +36,11 @@ def build_graph(MCd: dict, ACd: dict):
     # about the graph should be printed
     try:
         G_PRINT = MCd["print_g_spec"]
-    except:
+    except KeyError:
         G_PRINT = False
     try:
         G_NAME = MCd["name"]
-    except:
+    except KeyError:
         G_NAME = "custom architecture"
     if G_PRINT:
         print("========================{}========================".format(G_NAME))

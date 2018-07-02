@@ -41,9 +41,11 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.00001
   batch_size: 16
-  epochs: 2 # for quick testing
+  epochs: 10 # for quick testing
   default_activation: 'elu'
   shuffle_buffer: 128
+  early_stopping_epochs: 3
+  warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)

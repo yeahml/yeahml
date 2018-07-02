@@ -52,6 +52,8 @@ hyper_parameters:
   optimizer: 'adam'
   default_activation: 'elu'
   shuffle_buffer: 128
+  early_stopping_epochs: 3 # will break if validation loss does not improve after 3
+  warm_up_epochs: 5 # won't start checking for early stopping until after 5 epochs
 hidden:
   yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 train:

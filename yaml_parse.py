@@ -93,6 +93,20 @@ def extract_from_dict(MC: dict, HC: dict) -> tuple:
     MCd["optimizer"] = MC["hyper_parameters"]["optimizer"]
     MCd["def_act"] = MC["hyper_parameters"]["default_activation"]
     MCd["shuffle_buffer"] = MC["hyper_parameters"]["shuffle_buffer"]
+    try:
+        MCd["early_stopping_e"] = MC["hyper_parameters"]["early_stopping_epochs"]
+    except KeyError:
+        # default behavior is to not have early stopping
+        # TODO: Log information - default early_stopping_e set to 0
+        MCd["early_stopping_e"] = 0
+
+    # NOTE: warm_up_epochs is only useful when early_stopping_e > 0
+    try:
+        MCd["warm_up_epochs"] = MC["hyper_parameters"]["warm_up_epochs"]
+    except KeyError:
+        # default behavior is to have a warm up period of 5 epochs
+        # TODO: Log information - default warm_up_epochs set to 5
+        MCd["warm_up_epochs"] = 5
 
     ### architecture
     # TODO: implement after graph can be created...
