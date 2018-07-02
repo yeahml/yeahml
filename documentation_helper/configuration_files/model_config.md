@@ -37,17 +37,14 @@ hyper_parameters:
   lr: <int> # 0.00001
   batch_size: <int> # 16
   epochs: <int> # 20
-
-# What do the hidden layers look like?
-hidden_config:
-  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
-
-# more training information.. this may belong under `hyper_parameters`
-implementation:
   optimizer: ["adam","sgd","adadelta","adagrad","ftrl","rmsprop"] # choose one
   # activation function that will be used by default (if one isn't specified for the layer)
   default_activation: ["sigmoid","tanh","elu","selu","softplus","softsign","relu","relu6"] # choose one
   shuffle_buffer: <int> # 128
+
+# What do the hidden layers look like?
+hidden_config:
+  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 
 # information about the data for training + eval.. This heading is poorly chosen and will likely change
 train:

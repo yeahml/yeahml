@@ -15,13 +15,12 @@ tensorboard:
 hyper_parameters:
   lr: 0.00001
   batch_size: 16
-  epochs: 9 # for quick testing
-architecture:
-  yaml: './path/to/hidden_config.yaml'
-implementation:
+  epochs: 10
   optimizer: 'adam'
   default_activation: 'elu'
   shuffle_buffer: 128
+architecture:
+  yaml: './path/to/hidden_config.yaml'
 train:
   image_standardize: True
   augmentation:

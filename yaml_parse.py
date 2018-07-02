@@ -90,14 +90,14 @@ def extract_from_dict(MC: dict, HC: dict) -> tuple:
     MCd["epochs"] = MC["hyper_parameters"]["epochs"]
     MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
     ## implementation
-    MCd["optimizer"] = MC["implementation"]["optimizer"]
-    MCd["def_act"] = MC["implementation"]["default_activation"]
-    MCd["shuffle_buffer"] = MC["implementation"]["shuffle_buffer"]
+    MCd["optimizer"] = MC["hyper_parameters"]["optimizer"]
+    MCd["def_act"] = MC["hyper_parameters"]["default_activation"]
+    MCd["shuffle_buffer"] = MC["hyper_parameters"]["shuffle_buffer"]
 
     ### architecture
     # TODO: implement after graph can be created...
     MCd["save_pparams"] = MC["saver"]["save_pparams"]
-    MCd["final_type"] = MC["overall"]["options"]
+    MCd["final_type"] = MC["overall"]["type"]
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]
     except KeyError:

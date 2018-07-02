@@ -9,8 +9,7 @@ overall:
   #deterministic: null # not currently possible
   #rand_seed: 42 # TODO: use
   # regression, segmentation, GAN, autoencode
-  type: 'classification' # TODO: use
-  options: 'binary'
+  type: 'classification_binary' # ['classification_binary']
   #report_level: 1 # use to print model arch (output size)
   trace: 'full'
   # performance:
@@ -39,24 +38,17 @@ tensorboard:
   # if null, a default location will be created/selected
   log_dir: 'trial_01'
 hyper_parameters:
+  optimizer: 'adam'
   lr: 0.00001
   batch_size: 16
-  epochs: 3 # for quick testing
+  epochs: 2 # for quick testing
+  default_activation: 'elu'
+  shuffle_buffer: 128
 hidden:
-  # if yaml, then ignore the rest
-  # type, size, details(filter), frozen, dropout, regularization, etc..
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
   yaml: './example/cats_v_dogs_01/hidden_config.yaml'
-  #yaml: 'architecture.yaml'
-implementation:
-  # TODO: will have 'sane' defaults
-  optimizer: 'adam'
-  #initialization: null
-  default_activation: 'elu'
-  shuffle_buffer: 128
 train:
-  # the values aren't being used yet...
   image_standardize: True
   # augmentation: # TODO: use
   #   aug_val: True

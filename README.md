@@ -27,7 +27,9 @@ _ = yf.train_graph(g, model_config)
 ## evaluate graph
 _ = yf.eval_graph(g, model_config)
 ```
+
 The model config may look similar to the following:
+
 ```yaml
 overall:
   name: 'cats vs dogs'
