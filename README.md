@@ -49,12 +49,11 @@ hyper_parameters:
   lr: 0.00001
   batch_size: 16
   epochs: 20
-hidden:
-  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
-implementation:
   optimizer: 'adam'
   default_activation: 'elu'
   shuffle_buffer: 128
+hidden:
+  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 train:
   image_standardize: True
   augmentation:
