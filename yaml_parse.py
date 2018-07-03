@@ -74,6 +74,9 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # this is necessary since the YAML structure is likely to change
     # eventually, this may be deleted
     MCd = {}
+
+    MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
+
     ## inputs
     MCd["in_dim"] = MC["data"]["in"]["dim"]
     if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
@@ -126,7 +129,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
 
     ### architecture
     # TODO: implement after graph can be created...
-    MCd["save_pparams"] = MC["saver"]["save_pparams"]
+    MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
     MCd["final_type"] = MC["overall"]["type"]
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]
@@ -151,8 +154,22 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     except KeyError:
         pass
 
+    # DEV_DIR is a hardcoded value for the directory in which the examples
+    # are located. for packing+, this will need to be removed.
+    DEV_DIR = "example"
+    # BEST_PARAMS_DIR is a hardcoded value that must match the created dir in
+    # create_standard_dirs
+    BEST_PARAMS_DIR = "best_params"
     MCd["log_dir"] = os.path.join(
-        ".", "example", "cats_v_dogs_01", MC["tensorboard"]["log_dir"]
+        ".", DEV_DIR, MC["overall"]["name"], MCd["experiment_dir"]
+    )
+    MCd["saver_save"] = os.path.join(
+        ".",
+        DEV_DIR,
+        MC["overall"]["name"],
+        MCd["experiment_dir"],
+        BEST_PARAMS_DIR,
+        MCd["save_params"] + ".ckpt",
     )
     # wipe is set to true for now
     create_standard_dirs(MCd["log_dir"], True)

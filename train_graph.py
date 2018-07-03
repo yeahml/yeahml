@@ -1,6 +1,5 @@
 import tensorflow as tf
 import math
-import pickle
 from tqdm import tqdm
 import os
 
@@ -12,7 +11,6 @@ from handle_data import return_batched_iter
 
 def train_graph(g, MCd):
 
-    best_params_path = MCd["save_pparams"]  # required
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
 
@@ -158,9 +156,7 @@ def train_graph(g, MCd):
             if cur_loss < best_val_loss:
                 last_best_e = e
                 best_val_loss = cur_loss
-                save_path = saver.save(
-                    sess, "./example/mnist/saver/ckpt_best_params.ckpt"
-                )
+                save_path = saver.save(sess, MCd["saver_save"])
                 print("Model checkpoint saved in path: %s" % save_path)
                 print(
                     "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(

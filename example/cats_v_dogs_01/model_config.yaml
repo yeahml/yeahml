@@ -1,7 +1,7 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
-  name: 'cats vs dogs'
+  name: 'cats_vs_dogs'
   #verbosity: 0
   print_graph_spec: True
   #tf_log_level: 'warn' # TODO: use
@@ -10,6 +10,13 @@ overall:
   #rand_seed: 42 # TODO: use
   # regression, segmentation, GAN, autoencode
   type: 'sigmoid'
+  experiment_dir: 'trial_01'
+  saver:
+    save_params_name: "best_params_ckpt"
+    #load_pparams: null
+    #save_graph: null
+    # if load model, then the architecture+implementation is void
+    #load_graph: null
   #report_level: 1 # use to print model arch (output size)
   # trace: 'full'
   # performance:
@@ -34,16 +41,9 @@ data:
   # TODO: train/val/test split, kfold?
   # TODO: augmentation?
   # TODO: preprocessing
-saver:
-  # pickel-ed-params
-  save_pparams: 'best_params' # required
-  #load_pparams: null
-  #save_graph: null
-  # if load model, then the architecture+implementation is void
-  #load_graph: null
-tensorboard:
+#tensorboard:
   # if null, a default location will be created/selected
-  log_dir: 'trial_01'
+  
 hyper_parameters:
   optimizer: 'adam'
   lr: 0.00001

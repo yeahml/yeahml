@@ -1,5 +1,6 @@
 import tensorflow as tf
-import numpy as np
+
+# import numpy as np
 import sys
 
 from build_hidden import build_hidden_block
@@ -18,13 +19,13 @@ def reset_graph_deterministic(seed=42):
     # os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
     tf.reset_default_graph()
     tf.set_random_seed(seed)
-    np.random.seed(seed)
+    # np.random.seed(seed)
 
 
 def reset_graph(seed=42):
     tf.reset_default_graph()
     tf.set_random_seed(seed)
-    np.random.seed(seed)
+    # np.random.seed(seed)
 
 
 def build_graph(MCd: dict, ACd: dict):
@@ -84,8 +85,8 @@ def build_graph(MCd: dict, ACd: dict):
         hidden = build_hidden_block(X, training, MCd, ACd)
 
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
-        # TODO: the def is really sigmoid vs softmax...
-        # TODO: there are now three locations where the type of problem has to be checked
+
+        # TODO: there are now three locations where the type of problem alters code choices
         if MCd["final_type"] == "sigmoid":
             preds = tf.sigmoid(logits, name="y_proba")
         elif MCd["final_type"] == "softmax":
@@ -219,7 +220,7 @@ def build_graph(MCd: dict, ACd: dict):
                     test_loss_vars, name="test_loss_rest_op"
                 )
 
-            # --- create collections
+        # --- create collections
         # for node in (saver, init_global, init_local):
         for node in (init_global, init_local):
             g.add_to_collection("init", node)

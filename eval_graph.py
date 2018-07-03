@@ -3,14 +3,9 @@ import os
 
 from handle_data import return_batched_iter
 
-# from helper import load_obj, restore_model_params
-
 
 def eval_graph(g, MCd):
-
-    # best_params = load_obj(MCd["save_pparams"])
     with tf.Session(graph=g) as sess:
-        # init_global, init_local = g.get_collection("init")
         saver = tf.train.Saver()
         X, y_raw, training, training_op = g.get_collection("main_ops")
         preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
@@ -22,7 +17,7 @@ def eval_graph(g, MCd):
         )
 
         # restore_model_params(model_params=best_params, g=g, sess=sess)
-        saver.restore(sess, "./example/mnist/saver/ckpt_best_params.ckpt")
+        saver.restore(sess, MCd["saver_save"])
         sess.run([test_acc_reset_op, test_loss_reset_op])
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])

@@ -4,6 +4,9 @@ overall:
   name: 'mnist'
   print_graph_spec: True
   type: 'softmax'
+  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/
+  saver:
+    save_params_name: "best_params_ckpt"
   # trace: Null
 data:
   in: 
@@ -18,11 +21,6 @@ data:
     train: 'train.tfrecords'
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
-saver:
-  # pickel-ed-params
-  save_pparams: 'best_params' # required
-tensorboard:
-  log_dir: 'trial_01'
 hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
