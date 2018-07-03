@@ -83,9 +83,9 @@ def train_graph(g, MCd, HCd):
                         # print("len -----", len(layer_tensor))
                         for t_param in layer_tensor:
                             # the split logic is used to remove the (potentially different) name
-                            # for example conv_2/kernel:0 will become kernel:0, for which we can
+                            # for example conv_2/kernel:0 will become kernel:0 which will become "kernel", for which we can
                             # append to the name to be used for the layer
-                            p_name = t_param.name.split("/")[1]
+                            p_name = t_param.name.split("/")[1].split(":")[0]
 
                             # build list of vars to load and vars to load onto
                             load_names.append(load_name + "/" + p_name)
@@ -104,8 +104,11 @@ def train_graph(g, MCd, HCd):
             layer_tensor_params
         ), "indicated number of params to load and params found are not equal"
         init_vars = dict(zip(load_names, layer_tensor_params))
-        print(init_vars)
 
+        restore_saver = tf.train.Saver(init_vars)
+        # print(MCd["load_params_path"])
+        restore_saver.restore(sess, MCd["load_params_path"])
+        # print(">>>>>>> init_vars restored")
         # ================= [end] transfer learning
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])
