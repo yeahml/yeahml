@@ -4,4 +4,4 @@ The current example expects the tf records to already be included on the local e
 
 ## NOTE
 
-This directory is used as the development data for `classification_binary`
+This directory is used as the development data for `sigmoid`

@@ -3,13 +3,13 @@
 overall:
   name: 'mnist'
   print_graph_spec: True
-  type: 'classification_multi'
+  type: 'softmax'
   # trace: Null
 data:
   in: 
     dim: [784]
     dtype: 'float32'
-    reshape_to: [28, 28, 1] # TODO: use
+    reshape_to: [28, 28, 1]
   label:
     dim: [10]
     dtype: 'float32'
@@ -27,7 +27,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 8
+  epochs: 2
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

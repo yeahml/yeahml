@@ -35,7 +35,7 @@ overall:
   name: 'cats vs dogs'
   print_graph_spec: True
   type: 'classification'
-  options: 'binary'
+  options: 'sigmoid'
   trace: 'full'
 data:
   in_dim: [150, 150, 3]

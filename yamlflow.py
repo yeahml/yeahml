@@ -20,11 +20,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Core Logic
 
 ## Config files for currently supported modes
-# classification_binary: ./example/cats_v_dogs_01/model_config.yaml
-# classification_multi:
-model_config, hidden_config = create_model_and_hidden_config(
-    "./example/mnist/model_config.yaml"
-)
+sigmoid_example = "./example/cats_v_dogs_01/model_config.yaml"
+softmax_example = "./example/mnist/model_config.yaml"
+model_config, hidden_config = create_model_and_hidden_config(softmax_example)
 model_config, hidden_config = extract_dict_and_set_defaults(model_config, hidden_config)
 
 ## build graph

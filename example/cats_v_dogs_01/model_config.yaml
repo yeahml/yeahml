@@ -9,7 +9,7 @@ overall:
   #deterministic: null # not currently possible
   #rand_seed: 42 # TODO: use
   # regression, segmentation, GAN, autoencode
-  type: 'classification_binary' # ['classification_binary']
+  type: 'sigmoid'
   #report_level: 1 # use to print model arch (output size)
   # trace: 'full'
   # performance:
@@ -52,7 +52,7 @@ hyper_parameters:
   default_activation: 'elu'
   shuffle_buffer: 128
   early_stopping:
-    epochs: 3
+    epochs: 2
     warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph

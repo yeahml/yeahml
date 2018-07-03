@@ -10,19 +10,26 @@ TODO: Will be updated after sections have been more logical locations. As of rig
 overall:
   name: 'cats vs dogs'
   # will print basic graph information to the terminal
-  print_graph_spec: <bool>
-  type: 'classification'
-  options: 'binary' # currently only 'binary' is supported
-  # for memory+time optimization/visualization in tensorboard
+  print_graph_spec: <bool> # 
+  type: 'softmax' # REQUIRED ['softmax', 'sigmoid'] pick one
   # 'full' does both hardware and software
   trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None
 
 # information about the data being used
 data:
-  in_dim: [<int>, <int>, <int>] # [150, 150, 3]
-  output_dim: [<int>] # [1], since only binary is supported at the moment
+  in:
+    dim: [<int>, <int>, <int>] # [150, 150, 3]
+    dtype: ['float32', 'int64'] # pick one 'float32'
+    reshape_to: <[int shape]> #[28, 28, 1]
+  label:
+    dim: [<int>] # [10]
+    dtype: ['float32', 'int64'] # pick one 'float32'
   # ./example/cats_v_dogs_01/data/record_holder/150
-  TFR_dir: './path/to/tensorflow/flow/records'
+  TFR:
+    dir: './path/to/tensorflow/flow/records'
+    train: 'file.name' # 'train.tfrecords'
+    validation: 'file.name' # 'validation.tfrecords'
+    test: 'file.name' #' test.tfrecords'
 
 # location to save the best parameters (graph weights)
 saver:

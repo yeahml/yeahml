@@ -1,13 +1,21 @@
 overall:
   name: 'cats vs dogs'
   print_graph_spec: True
-  type: 'classification' # TODO: use
-  options: 'binary'
+  options: 'softmax'
   trace: 'full'
 data:
-  in_dim: [150, 150, 3]
-  output_dim: [1]
-  TFR_dir: './path/to/dir/holding/tfrs'
+  in: 
+    dim: [784]
+    dtype: 'float32'
+    reshape_to: [28, 28, 1]
+  label:
+    dim: [10]
+    dtype: 'float32'
+  TFR:
+    dir: './example/mnist/data/'
+    train: 'train.tfrecords'
+    validation: 'validation.tfrecords'
+    test: 'test.tfrecords'
 saver:
   save_pparams: 'best_params' # location to save best params
 tensorboard:

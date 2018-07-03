@@ -99,9 +99,9 @@ def build_graph(MCd: dict, ACd: dict):
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
         # TODO: the def is really sigmoid vs softmax...
         # TODO: there are now three locations where the type of problem has to be checked
-        if MCd["final_type"] == "classification_binary":
+        if MCd["final_type"] == "sigmoid":
             preds = tf.sigmoid(logits, name="y_proba")
-        elif MCd["final_type"] == "classification_multi":
+        elif MCd["final_type"] == "softmax":
             preds = tf.nn.softmax(logits, name="y_proba")
         else:
             sys.exit(
@@ -117,11 +117,11 @@ def build_graph(MCd: dict, ACd: dict):
         with tf.name_scope("loss"):
             # TODO: the type of xentropy should be defined in the config
             # > there should also be a check for the type that should be used.
-            if MCd["final_type"] == "classification_binary":
+            if MCd["final_type"] == "sigmoid":
                 xentropy = tf.nn.sigmoid_cross_entropy_with_logits(
                     logits=logits, labels=y
                 )
-            elif MCd["final_type"] == "classification_multi":
+            elif MCd["final_type"] == "softmax":
                 # why v2? see here: https://bit.ly/2z3NJ8n
                 xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
                     logits=logits, labels=y
@@ -159,12 +159,10 @@ def build_graph(MCd: dict, ACd: dict):
         with tf.name_scope("metrics"):
             # ================================== performance
             with tf.name_scope("common"):
-                #
-                #
-                if MCd["final_type"] == "classification_binary":
+                if MCd["final_type"] == "sigmoid":
                     y_true_cls = tf.greater_equal(y, 0.5)
                     y_pred_cls = tf.greater_equal(preds, 0.5)
-                elif MCd["final_type"] == "classification_multi":
+                elif MCd["final_type"] == "softmax":
                     y_true_cls = tf.argmax(y, 1)
                     y_pred_cls = tf.argmax(preds, 1)
 
