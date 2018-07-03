@@ -50,9 +50,61 @@ def train_graph(g, MCd, HCd):
         saver = tf.train.Saver()  # create after initializing variables
 
         # ================= transfer learning
-        print("TRANSFER INIT : {}".format(MCd["load_params_path"]))
+        # TODO: if a special path is listed to load vars from for a particular layer,
+        # a second init is needed. I don't think this use case will be very common
+        # so I will come back and work on this logic later
+
+        # print("TRANSFER INIT : {}".format(MCd["load_params_path"]))
+        load_names, layer_tensor_params = [], []
         for i, l_name in enumerate(HCd["layers"]):
-            print("{} : {}".format(i, l_name))
+            try:
+                if HCd["layers"][l_name]["saver"]["load_params"]:
+                    # set name to load var from the indicated path, will default to
+                    # the current name of the layer
+                    try:
+                        load_name = HCd["layers"][l_name]["saver"]["load_name"]
+                        if load_name == None:
+                            load_name = l_name
+                    except KeyError:
+                        load_name = l_name
+                    # set the path from which to load the variables. The default path
+                    # is set in the model config but an option is presented to load from other files
+                    # try:
+                    #    load_path = HCd["layers"][l_name]["saver"]["load_path"]
+                    # except KeyError:
+                    #    load_name = MCd["load_params_path"]
+
+                    try:
+                        name_str = "{}".format(l_name)
+                        layer_tensor = tf.get_collection(
+                            tf.GraphKeys.TRAINABLE_VARIABLES, scope=name_str
+                        )
+                        # print(layer_tensor)
+                        # print("len -----", len(layer_tensor))
+                        for t_param in layer_tensor:
+                            # the split logic is used to remove the (potentially different) name
+                            # for example conv_2/kernel:0 will become kernel:0, for which we can
+                            # append to the name to be used for the layer
+                            p_name = t_param.name.split("/")[1]
+
+                            # build list of vars to load and vars to load onto
+                            load_names.append(load_name + "/" + p_name)
+                            layer_tensor_params.append(t_param)
+
+                        # layer_tensor = g.get_tensor_by_name("{}:{}".format(l_name))
+                    except:
+                        sys.exit("unable to get {}".format(l_name))
+
+                    # print("let's do some TL on {}".format(HCd["layers"][l_name]))
+            except KeyError:
+                # no init from saver
+                pass
+
+        assert len(load_names) == len(
+            layer_tensor_params
+        ), "indicated number of params to load and params found are not equal"
+        init_vars = dict(zip(load_names, layer_tensor_params))
+        print(init_vars)
 
         # ================= [end] transfer learning
 
