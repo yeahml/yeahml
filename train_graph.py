@@ -6,7 +6,8 @@ import os
 
 # TODO: make sure global var still works....
 from handle_data import return_batched_iter
-from helper import load_obj, save_obj, get_model_params
+
+# from helper import load_obj, save_obj, get_model_params
 
 
 def train_graph(g, MCd):
@@ -15,7 +16,7 @@ def train_graph(g, MCd):
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
 
-    saver, init_global, init_local = g.get_collection("save_init")
+    init_global, init_local = g.get_collection("init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
     preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
     train_auc, train_auc_update, train_acc, train_acc_update, train_met_reset_op = g.get_collection(
@@ -48,6 +49,8 @@ def train_graph(g, MCd):
         )
 
         sess.run([init_global, init_local])
+        saver = tf.train.Saver()  # create after initializing variables
+
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         tr_iter = return_batched_iter("train", MCd, filenames_ph)
         val_iter = return_batched_iter("val", MCd, filenames_ph)
@@ -155,9 +158,10 @@ def train_graph(g, MCd):
             if cur_loss < best_val_loss:
                 last_best_e = e
                 best_val_loss = cur_loss
-                global_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-                best_params = get_model_params(global_vars)
-                save_obj(best_params, best_params_path)
+                save_path = saver.save(
+                    sess, "./example/mnist/saver/ckpt_best_params.ckpt"
+                )
+                print("Model checkpoint saved in path: %s" % save_path)
                 print(
                     "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(
                         cur_acc * 100, cur_loss

@@ -220,8 +220,9 @@ def build_graph(MCd: dict, ACd: dict):
                 )
 
             # --- create collections
-        for node in (saver, init_global, init_local):
-            g.add_to_collection("save_init", node)
+        # for node in (saver, init_global, init_local):
+        for node in (init_global, init_local):
+            g.add_to_collection("init", node)
         for node in (X, y_raw, training, training_op):
             g.add_to_collection("main_ops", node)
         for node in (preds, y_true_cls, y_pred_cls, correct_prediction):
