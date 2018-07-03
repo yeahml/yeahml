@@ -75,11 +75,19 @@ def augment_image(img_tensor, aug_opts: dict):
 
 
 def _parse_function(
-    example_proto, set_type: str, standardize_img: bool, aug_opts: dict
+    example_proto,
+    set_type: str,
+    standardize_img: bool,
+    aug_opts: dict,
+    parse_shape: list,
 ):
 
-    labelName = str(set_type) + "/label"
-    featureName = str(set_type) + "/image"
+    # labelName = str(set_type) + "/label"
+    # featureName = str(set_type) + "/image_raw"
+    # TODO: these names are important / should be listed in the main config
+    featureName = "image"
+    labelName = "label"
+
     feature = {
         featureName: tf.FixedLenFeature([], tf.string),
         labelName: tf.FixedLenFeature([], tf.int64),
@@ -89,10 +97,15 @@ def _parse_function(
     parsed_features = tf.parse_single_example(example_proto, features=feature)
 
     # convert image data from string to number
-    image = tf.decode_raw(parsed_features[featureName], tf.float32)
+
+    # TODO: these datatypes are important / should be listed in the main config
+    image = tf.decode_raw(parsed_features[featureName], tf.int8)
     # TODO: these values should be acquired from the yaml
-    image = tf.reshape(image, [150, 150, 3])
+    image = tf.reshape(image, parse_shape)
     label = tf.cast(parsed_features[labelName], tf.int64)
+
+    # TODO: One hot as needed here......
+    label = tf.one_hot(label, depth=10)
 
     # Augmentation
     if aug_opts:
@@ -125,9 +138,22 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
     except KeyError:
         standardize_img = False
 
+    if MCd["reshape_in_to"]:
+        parse_shape = MCd["reshape_in_to"]
+        if MCd["reshape_in_to"][0] != -1:
+            parse_shape = MCd["reshape_in_to"]
+        else:  # e.g. [-1, 28, 28, 1]
+            parse_shape = MCd["reshape_in_to"][1:]
+    else:
+        if MCd["in_dim"][0]:
+            parse_shape = MCd["in_dim"]
+        else:  # e.g. [None, 28, 28, 1]
+            parse_shape = MCd["in_dim"][1:]
+    # parse_shape = list(parse_shape)
+
     dataset = tf.data.TFRecordDataset(filenames_ph)
     dataset = dataset.map(
-        lambda x: _parse_function(x, set_type, standardize_img, aug_opts)
+        lambda x: _parse_function(x, set_type, standardize_img, aug_opts, parse_shape)
     )  # Parse the record into tensors.
     if set_type != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])

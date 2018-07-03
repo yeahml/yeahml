@@ -81,6 +81,8 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     MCd["in_dtype"] = MC["data"]["in"]["dtype"]
     try:
         MCd["reshape_in_to"] = MC["data"]["in"]["reshape_to"]
+        if MCd["reshape_in_to"][0] != -1:  # as oppposed to [None, x, y, z]
+            MCd["reshape_in_to"].insert(0, -1)  # -1
     except KeyError:
         # None in this case is representative of not reshaping
         MCd["reshape_in_to"] = None

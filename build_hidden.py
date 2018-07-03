@@ -248,6 +248,7 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
             prev_ltype = ACd["layers"][prev_ltype_key]["type"]
             if prev_ltype == "conv2d" or prev_ltype == "pooling2d":
                 # flatten
+                # maybe remove np dependency cur_input.get_shape().as_list()[1:]
                 last_shape = int(np.prod(cur_input.get_shape()[1:]))
                 cur_input = tf.reshape(cur_input, shape=[-1, last_shape])
                 if G_PRINT:

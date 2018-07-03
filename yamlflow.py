@@ -8,8 +8,6 @@ from train_graph import train_graph
 from eval_graph import eval_graph
 import os
 
-# 1) cats vs dogs : ./example/cats_v_dogs_01/model_config.yaml
-
 # TODO: this needs to be handled differently
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # os.environ["TF_USE_CUDNN"] = "1" # necessary for Conv2d
@@ -21,9 +19,11 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 ## Core Logic
 
-## parse config files
+## Config files for currently supported modes
+# classification_binary: ./example/cats_v_dogs_01/model_config.yaml
+# classification_multi:
 model_config, hidden_config = create_model_and_hidden_config(
-    "./example/cats_v_dogs_01/model_config.yaml"
+    "./example/mnist/model_config.yaml"
 )
 model_config, hidden_config = extract_dict_and_set_defaults(model_config, hidden_config)
 

@@ -73,7 +73,7 @@ def build_graph(MCd: dict, ACd: dict):
             x_dtype = get_tf_dtype(MCd["in_dtype"])
             X = tf.placeholder(dtype=x_dtype, shape=(MCd["in_dim"]), name="X_in")
             if MCd["reshape_in_to"]:
-                X = tf.reshape(X, shape=MCd["reshape_in_to"], name="data")
+                X = tf.reshape(X, shape=(MCd["reshape_in_to"]), name="data")
             if G_PRINT:
                 print_tensor_info(X)
 
@@ -97,16 +97,40 @@ def build_graph(MCd: dict, ACd: dict):
         hidden = build_hidden_block(X, training, MCd, ACd)
 
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
-        preds = tf.sigmoid(logits, name="preds")
+        # TODO: the def is really sigmoid vs softmax...
+        # TODO: there are now three locations where the type of problem has to be checked
+        if MCd["final_type"] == "classification_binary":
+            preds = tf.sigmoid(logits, name="y_proba")
+        elif MCd["final_type"] == "classification_multi":
+            preds = tf.nn.softmax(logits, name="y_proba")
+        else:
+            sys.exit(
+                "final_type: {} -- is not supported or defined.".format(
+                    MCd["final_type"]
+                )
+            )
+
         if G_PRINT:
             print_tensor_info(preds)
 
         #### loss logic
         with tf.name_scope("loss"):
-            # Classification, BINARY
-            if MCd["final_type"].lower() == "classification_binary":
+            # TODO: the type of xentropy should be defined in the config
+            # > there should also be a check for the type that should be used.
+            if MCd["final_type"] == "classification_binary":
                 xentropy = tf.nn.sigmoid_cross_entropy_with_logits(
-                    labels=y, logits=logits
+                    logits=logits, labels=y
+                )
+            elif MCd["final_type"] == "classification_multi":
+                # why v2? see here: https://bit.ly/2z3NJ8n
+                xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
+                    logits=logits, labels=y
+                )
+            else:
+                sys.exit(
+                    "final_type: {} -- is not supported or defined.".format(
+                        MCd["final_type"]
+                    )
                 )
 
             base_loss = tf.reduce_mean(xentropy, name="base_loss")
@@ -135,11 +159,14 @@ def build_graph(MCd: dict, ACd: dict):
         with tf.name_scope("metrics"):
             # ================================== performance
             with tf.name_scope("common"):
-                # preds = tf.nn.softmax(logits, name="prediction")
-                # y_true_cls = tf.argmax(y,1)
-                # y_pred_cls = tf.argmax(preds,1)
-                y_true_cls = tf.greater_equal(y, 0.5)
-                y_pred_cls = tf.greater_equal(preds, 0.5)
+                #
+                #
+                if MCd["final_type"] == "classification_binary":
+                    y_true_cls = tf.greater_equal(y, 0.5)
+                    y_pred_cls = tf.greater_equal(preds, 0.5)
+                elif MCd["final_type"] == "classification_multi":
+                    y_true_cls = tf.argmax(y, 1)
+                    y_pred_cls = tf.argmax(preds, 1)
 
                 correct_prediction = tf.equal(
                     y_pred_cls, y_true_cls, name="correct_predictions"
