@@ -25,3 +25,5 @@ example/cats_v_dogs_01/trial_01/*
 example/mnist/data/*.tfrecords
 example/mnist/make_records/data
 example/mnist/trial_01/*
+
+example/mnist/saved_params/best_params/

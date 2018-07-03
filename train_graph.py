@@ -9,7 +9,7 @@ from handle_data import return_batched_iter
 # from helper import load_obj, save_obj, get_model_params
 
 
-def train_graph(g, MCd):
+def train_graph(g, MCd, HCd):
 
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
@@ -48,6 +48,13 @@ def train_graph(g, MCd):
 
         sess.run([init_global, init_local])
         saver = tf.train.Saver()  # create after initializing variables
+
+        # ================= transfer learning
+        print("TRANSFER INIT : {}".format(MCd["load_params_path"]))
+        for i, l_name in enumerate(HCd["layers"]):
+            print("{} : {}".format(i, l_name))
+
+        # ================= [end] transfer learning
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         tr_iter = return_batched_iter("train", MCd, filenames_ph)

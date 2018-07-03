@@ -199,7 +199,7 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
     return out
 
 
-def build_hidden_block(X, training, MCd: dict, ACd: dict):
+def build_hidden_block(X, training, MCd: dict, HCd: dict):
     # in: X
     # out: last layer before logits
 
@@ -216,8 +216,8 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
         pass
 
     # build each layer based on the (ordered) yaml specification
-    for i, l_name in enumerate(ACd["layers"]):
-        layer_info = ACd["layers"][str(l_name)]
+    for i, l_name in enumerate(HCd["layers"]):
+        layer_info = HCd["layers"][str(l_name)]
 
         try:
             opts = layer_info["options"]
@@ -244,8 +244,8 @@ def build_hidden_block(X, training, MCd: dict, ACd: dict):
             # ---- this block is 'dumb' but works --------------
             # this is necessary because if the last block was a pool
             # or conv, we need to flatten layer before we add a dense layer
-            prev_ltype_key = list(ACd["layers"])[i - 1]
-            prev_ltype = ACd["layers"][prev_ltype_key]["type"]
+            prev_ltype_key = list(HCd["layers"])[i - 1]
+            prev_ltype = HCd["layers"][prev_ltype_key]["type"]
             if prev_ltype == "conv2d" or prev_ltype == "pooling2d":
                 # flatten
                 # maybe remove np dependency cur_input.get_shape().as_list()[1:]

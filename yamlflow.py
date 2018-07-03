@@ -29,7 +29,7 @@ model_config, hidden_config = extract_dict_and_set_defaults(model_config, hidden
 g = build_graph(model_config, hidden_config)
 
 ## train graph
-_ = train_graph(g, model_config)
+_ = train_graph(g, model_config, hidden_config)
 
 ## evaluate graph
 _ = eval_graph(g, model_config)

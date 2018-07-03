@@ -73,6 +73,9 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
 def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # this is necessary since the YAML structure is likely to change
     # eventually, this may be deleted
+
+    # TODO: do type checking here... and convert all strings to lower
+
     MCd = {}
 
     MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
@@ -130,6 +133,8 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     ### architecture
     # TODO: implement after graph can be created...
     MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
+    MCd["load_params_path"] = MC["overall"]["saver"]["load_params_path"]
+
     MCd["final_type"] = MC["overall"]["type"]
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]

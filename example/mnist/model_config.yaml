@@ -7,6 +7,7 @@ overall:
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/
   saver:
     save_params_name: "best_params_ckpt"
+    load_params_path: "./example/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   # trace: Null
 data:
   in: 
@@ -25,7 +26,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 2
+  epochs: 1
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

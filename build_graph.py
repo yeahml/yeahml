@@ -28,7 +28,7 @@ def reset_graph(seed=42):
     # np.random.seed(seed)
 
 
-def build_graph(MCd: dict, ACd: dict):
+def build_graph(MCd: dict, HCd: dict):
 
     try:
         reset_graph_deterministic(MCd["seed"])
@@ -82,7 +82,7 @@ def build_graph(MCd: dict, ACd: dict):
                 # and retrieved later for both converted and not converted values
                 y = y_raw
 
-        hidden = build_hidden_block(X, training, MCd, ACd)
+        hidden = build_hidden_block(X, training, MCd, HCd)
 
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
 
@@ -137,11 +137,10 @@ def build_graph(MCd: dict, ACd: dict):
                 print("opt: {}".format(optimizer._name))
             training_op = optimizer.minimize(batch_loss, name="training_op")
 
-        #### saver
-        with tf.name_scope("save_session"):
+        #### init
+        with tf.name_scope("init"):
             init_global = tf.global_variables_initializer()
             init_local = tf.local_variables_initializer()
-            saver = tf.train.Saver()
 
         #### metrics
         with tf.name_scope("metrics"):
@@ -221,7 +220,6 @@ def build_graph(MCd: dict, ACd: dict):
                 )
 
         # --- create collections
-        # for node in (saver, init_global, init_local):
         for node in (init_global, init_local):
             g.add_to_collection("init", node)
         for node in (X, y_raw, training, training_op):
@@ -273,7 +271,7 @@ def build_graph(MCd: dict, ACd: dict):
             if v.name.endswith("bias:0")
         ]
         assert len(weights) == len(bias), "number of weights & bias are not equal"
-        layer_names = list(ACd["layers"])
+        layer_names = list(HCd["layers"])
         layer_names.append("logits")
         # exclude all pooling layers
         # TODO: this logic assumes that the layer name corresponds to the type of layer
