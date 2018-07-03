@@ -1,5 +1,5 @@
 import tensorflow as tf
-import numpy as np
+import math
 import pickle
 from tqdm import tqdm
 import os
@@ -35,7 +35,7 @@ def train_graph(g, MCd):
     )
     #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
-    best_val_loss = np.inf
+    best_val_loss = math.inf
     last_best_e = 0  # marker for early stopping
 
     with tf.Session(graph=g) as sess:

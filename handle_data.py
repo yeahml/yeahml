@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 import pickle
 from tqdm import tqdm
 import os

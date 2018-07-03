@@ -2,6 +2,20 @@ import tensorflow as tf
 import sys
 
 
+def get_tf_dtype(dtype: str):
+    # TODO: add type supports + error handling
+    tf_dtype = None
+
+    if dtype == "float32":
+        tf_dtype = tf.float32
+    elif dtype == "int64":
+        tf_dtype = tf.int64
+    else:
+        sys.exit("Error: Exit: dtype {} not recognized/supported".format(dtype))
+
+    return tf_dtype
+
+
 def get_regularizer_fn(reg_str: str):
 
     # TODO: need to test/validate this contrib

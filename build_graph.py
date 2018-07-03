@@ -3,6 +3,7 @@ import numpy as np
 import sys
 
 from build_hidden import build_hidden_block
+from get_components import get_tf_dtype
 
 # print information about the graph
 from helper import print_tensor_info
@@ -24,20 +25,6 @@ def reset_graph(seed=42):
     tf.reset_default_graph()
     tf.set_random_seed(seed)
     np.random.seed(seed)
-
-
-def get_tf_dtype(dtype: str):
-    # TODO: add type supports + error handling
-    tf_dtype = None
-
-    if dtype == "float32":
-        tf_dtype = tf.float32
-    elif dtype == "int64":
-        tf_dtype = tf.int64
-    else:
-        sys.exit("Error: Exit: dtype {} not recognized/supported".format(dtype))
-
-    return tf_dtype
 
 
 def build_graph(MCd: dict, ACd: dict):

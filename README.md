@@ -132,19 +132,18 @@ The primary motivation is to define and create (simple) models easily (for machi
 
 At the moment the project is being developed around a binary image classification task. In the future, I'd like to support:
 
-- Multi-class classification (Images)
 - Regression
 - Autoencoders
 - GANs
+- Segmentation
 
 ### TODO and in Progress
 
 - update tf_logs dir to be set on each run by a "name". include option to delete current logs as needed
-- add graph to `tf_logs`
-- include different metrics
-- weight/bias regularization
+- support additional metrics
 - capsule layers (and scalar -> vect, vect -> scalar?)
 - regression support (use Cali Housing)
-- multiclass support (use MNIST)
 - add support for transfer learning (loading from a file, freezing)
+- implement a logger, rather than printing to terminal https://docs.python.org/3/howto/logging-cookbook.html
+  - may want to use tf.logger in addition/place of
 - include documentation on what is possible (likely when the project is a little further along)

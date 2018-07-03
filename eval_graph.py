@@ -1,7 +1,6 @@
 import tensorflow as tf
 import pickle
 import os
-import numpy as np
 
 from handle_data import return_batched_iter
 from helper import load_obj, restore_model_params
