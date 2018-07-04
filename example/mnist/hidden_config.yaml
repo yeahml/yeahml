@@ -39,4 +39,4 @@ layers:
       dropout: 0.5
       trainable: True
     saver:
-      load_params: False
+      load_params: True
