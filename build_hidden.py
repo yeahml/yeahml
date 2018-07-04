@@ -45,8 +45,11 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, G_PRINT: bool):
     if not name:
         name = "unnamed_conv_layer"
 
-    # trainable = opts["trainable"]
-    trainable = True
+    try:
+        trainable = opts["trainable"]
+    except KeyError:
+        # trainable by default
+        trainable = True
 
     out = tf.layers.conv2d(
         cur_input,
@@ -87,8 +90,12 @@ def build_dense_layer(cur_input, training, opts: dict, actfn, name: str, G_PRINT
     except KeyError:
         b_reg = None
 
-    # trainable = opts["trainable"]
-    trainable = True
+    try:
+        trainable = opts["trainable"]
+    except KeyError:
+        # trainable by default
+        trainable = True
+
     out = tf.layers.dense(
         inputs=cur_input,
         units=units,

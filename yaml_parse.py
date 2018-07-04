@@ -159,6 +159,12 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     except KeyError:
         pass
 
+    # TODO: this may instead be handled by the log level, e.g. if <= DEBUG
+    try:
+        MCd["full_error"] = MC["overall"]["full_error_message"]
+    except KeyError:
+        MCd["full_error"] = False
+
     # DEV_DIR is a hardcoded value for the directory in which the examples
     # are located. for packing+, this will need to be removed.
     DEV_DIR = "example"

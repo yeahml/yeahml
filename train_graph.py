@@ -2,6 +2,7 @@ import tensorflow as tf
 import math
 from tqdm import tqdm
 import os
+import sys
 
 # TODO: make sure global var still works....
 from handle_data import return_batched_iter
@@ -13,6 +14,7 @@ def train_graph(g, MCd, HCd):
 
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
+    FULL_ERROR = MCd["full_error"]
 
     init_global, init_local = g.get_collection("init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
@@ -54,7 +56,21 @@ def train_graph(g, MCd, HCd):
         # a second init is needed. I don't think this use case will be very common
         # so I will come back and work on this logic later
 
+        # INIT_DEBUG
         # print("TRANSFER INIT : {}".format(MCd["load_params_path"]))
+        # AA = 1
+        # BB = 0
+        # dense_1_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="dense_1")
+        # dense_1_vars = [
+        #     v
+        #     for v in dense_1_vars
+        #     if v.name.rstrip("0123456789").endswith("kernel:")
+        #     or v.name.rstrip("0123456789").endswith("bias:")
+        # ]
+        # print(dense_1_vars)
+        # d1_pre = sess.run(dense_1_vars)
+        # print(d1_pre[AA][BB])
+
         load_names, layer_tensor_params = [], []
         for i, l_name in enumerate(HCd["layers"]):
             try:
@@ -77,10 +93,16 @@ def train_graph(g, MCd, HCd):
                     try:
                         name_str = "{}".format(l_name)
                         layer_tensor = tf.get_collection(
-                            tf.GraphKeys.TRAINABLE_VARIABLES, scope=name_str
+                            tf.GraphKeys.GLOBAL_VARIABLES, scope=name_str
                         )
-                        # print(layer_tensor)
-                        # print("len -----", len(layer_tensor))
+                        # filter for only bias or kernel
+                        layer_tensor = [
+                            l
+                            for l in layer_tensor
+                            if l.name.rstrip("0123456789").endswith("kernel:")
+                            or l.name.rstrip("0123456789").endswith("bias:")
+                        ]
+
                         for t_param in layer_tensor:
                             # the split logic is used to remove the (potentially different) name
                             # for example conv_2/kernel:0 will become kernel:0 which will become "kernel", for which we can
@@ -103,17 +125,36 @@ def train_graph(g, MCd, HCd):
         assert len(load_names) == len(
             layer_tensor_params
         ), "indicated number of params to load and params found are not equal"
-        init_vars = dict(zip(load_names, layer_tensor_params))
 
-        restore_saver = tf.train.Saver(init_vars)
-        # print(MCd["load_params_path"])
-        restore_saver.restore(sess, MCd["load_params_path"])
-        # print(">>>>>>> init_vars restored")
-        # ================= [end] transfer learning
+        ## Initialize indicated vars from file
+        init_vars = dict(zip(load_names, layer_tensor_params))
+        if len(init_vars) > 0:
+            restore_saver = tf.train.Saver(init_vars)
+            try:
+                restore_saver.restore(sess, MCd["load_params_path"])
+            except tf.errors.InvalidArgumentError as err:
+                if FULL_ERROR:
+                    print(err)
+                else:
+                    print(err.message)
+                    print(
+                        "The likely cause of this error is:\n 1) {}\n 2) {}".format(
+                            "The shapes are mismathed (check err message for hint)",
+                            "The naming of the target tensor is mismatched",
+                        )
+                    )
+                    print(
+                        "note: if you wish to see the full error message, please enable 'overall:full_error_message: True'"
+                    )
+                sys.exit("ERROR > EXIT: unable to restore indicated params")
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         tr_iter = return_batched_iter("train", MCd, filenames_ph)
         val_iter = return_batched_iter("val", MCd, filenames_ph)
+
+        # INIT_DEBUG
+        # d1_post = sess.run(dense_1_vars)
+        # print(d1_post[AA][BB])
 
         # tracing options
         try:
@@ -131,6 +172,10 @@ def train_graph(g, MCd, HCd):
         except KeyError:
             run_options = None
             pass
+
+        # INIT_DEBUG
+        # yp_post = sess.run(yp_vars)
+        # print(yp_post)
 
         local_step = 0  # This should be an internal tf counter.
         for e in tqdm(range(1, MCd["epochs"] + 1)):
@@ -235,6 +280,10 @@ def train_graph(g, MCd, HCd):
             summary = sess.run(epoch_validation_write_op)
             val_writer.add_summary(summary, e)
             val_writer.flush()
+
+        # INIT_DEBUG
+        # d1_post = sess.run(dense_1_vars)
+        # print(d1_post[AA][BB])
 
         train_writer.close()
         val_writer.close()

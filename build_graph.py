@@ -260,15 +260,16 @@ def build_graph(MCd: dict, HCd: dict):
 
         # ===================================== tensorboard
         #### scalar
+        # TODO: this should really be TRAINABLE_VARIABLES...
         weights = [
             v
-            for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-            if v.name.endswith("kernel:0")
+            for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+            if v.name.rstrip("0123456789").endswith("kernel:")
         ]
         bias = [
             v
-            for v in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-            if v.name.endswith("bias:0")
+            for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+            if v.name.rstrip("0123456789").endswith("bias:")
         ]
         assert len(weights) == len(bias), "number of weights & bias are not equal"
         layer_names = list(HCd["layers"])
@@ -278,6 +279,7 @@ def build_graph(MCd: dict, HCd: dict):
         # > ideally, this list should be built by inspecting the layer 'type', but for beta
         # > purposes, this works for now.
         layer_names = [l for l in layer_names if not l.startswith("pool")]
+
         assert len(weights) == len(layer_names), "num of w&b not equal to num layers"
 
         hist_list = []

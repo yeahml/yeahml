@@ -16,16 +16,18 @@ layers:
       filters: 32
       kernel_size: 3
       strides: 1
+      trainable: False
     saver:
       load_params: True # default is False
-      load_path: null # in case the default is not usable,
-      load_name: null # in case of (likely) different names, current name is default
+      #load_path: null # in case the default is not usable - TODO: implement logic
+      #load_name: null # in case of (likely) different names, current name is default
   conv_2:
     type: 'conv2d'
     options:
       filters: 64
       kernel_size: 3
       strides: 1
+      trainable: True
     saver:
       load_params: True
   pool_1:
@@ -33,5 +35,8 @@ layers:
   dense_1:
     type: 'dense'
     options:
-      units: 64
+      units: 16
       dropout: 0.5
+      trainable: True
+    saver:
+      load_params: False
