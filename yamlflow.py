@@ -5,7 +5,7 @@ from yaml_parse import extract_dict_and_set_defaults
 
 from build_graph import build_graph
 from train_graph import train_graph
-from eval_graph import eval_graph
+from eval_graph import eval_graph, eval_graph_from_saver
 import os
 
 # TODO: this needs to be handled differently
@@ -33,6 +33,10 @@ _ = train_graph(g, model_config, hidden_config)
 
 ## evaluate graph
 _ = eval_graph(g, model_config)
+
+## same as above, but does not require manual graph creation
+# > will load a graph from the saver path (if present)
+_ = eval_graph_from_saver(model_config)
 
 
 ## Serving
