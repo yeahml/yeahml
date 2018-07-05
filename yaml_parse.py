@@ -153,7 +153,6 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     except KeyError:
         pass
 
-    MCd["print_g_spec"] = MC["overall"]["print_graph_spec"]
     MCd["name"] = MC["overall"]["name"]
 
     try:
@@ -193,8 +192,9 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     create_standard_dirs(MCd["log_dir"], True)
 
     ####### Logging
-    # console
     ERR_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+    ## console
     try:
         temp_c_lvl = MC["overall"]["logging"]["console"]["level"]
         if not temp_c_lvl:
@@ -225,7 +225,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     except KeyError:
         MCd["log_c_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
 
-    # file
+    ## file
     try:
         temp_f_lvl = MC["overall"]["logging"]["file"]["level"]
         if not temp_f_lvl:
@@ -248,13 +248,45 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         MCd["log_f_str"] = MC["overall"]["logging"]["file"]["format_str"]
         if not MCd["log_f_str"]:
             # handle null case
-            MCd["log_f_str"] = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+            MCd[
+                "log_f_str"
+            ] = (
+                "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+            )
         else:
             # TODO: error checking
             pass
     except KeyError:
-        MCd["log_f_str"] = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+        MCd[
+            "log_f_str"
+        ] = (
+            "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+        )
 
+    ## graph level
+    try:
+        temp_g_lvl = MC["overall"]["logging"]["graph_spec"]
+        if temp_g_lvl == True:
+            # support for a simple bool config
+            MCd["log_g_lvl"] = "DEBUG"
+        elif not temp_g_lvl:
+            # handle null case
+            MCd["log_g_lvl"] = "DEBUG"
+        else:
+            temp_g_lvl = temp_g_lvl.upper()
+            if temp_g_lvl not in ERR_LEVELS:
+                sys.exit(
+                    "console level {} not allowed. please select one of {}".format(
+                        temp_g_lvl, ERR_LEVELS
+                    )
+                )
+            else:
+                MCd["log_g_lvl"] = temp_g_lvl
+    except KeyError:
+        MCd["log_g_lvl"] = "DEBUG"
+        pass
+    # hard set the graph info
+    MCd["log_g_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
     # set up logger
     # config_logger(MCd)
 

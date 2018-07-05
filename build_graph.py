@@ -10,7 +10,7 @@ from build_hidden import build_hidden_block
 from get_components import get_tf_dtype
 
 # print information about the graph
-from helper import print_tensor_info
+from helper import fmt_tensor_info
 
 # get tf optimizer
 from get_components import get_optimizer
@@ -39,29 +39,19 @@ def reset_graph(seed=42):
 def build_graph(MCd: dict, HCd: dict):
     # logger = logging.getLogger("build_logger")
     logger = config_logger(MCd, "build")
-    logger.info("build_graph")
+    logger.info("-> START building graph")
 
     try:
         reset_graph_deterministic(MCd["seed"])
     except KeyError:
         reset_graph()
 
-    # G_PRINT is used as bool to determine whether information
-    # about the graph should be printed
-    try:
-        G_PRINT = MCd["print_g_spec"]
-    except KeyError:
-        G_PRINT = False
-    try:
-        G_NAME = MCd["name"]
-    except KeyError:
-        G_NAME = "custom architecture"
-    if G_PRINT:
-        print("========================{}========================".format(G_NAME))
+    g_logger = config_logger(MCd, "graph")
 
     g = tf.Graph()
     with g.as_default():
 
+        g_logger.info("============={}=============".format("GRAPH"))
         #### model architecture
         with tf.name_scope("inputs"):
             logger.info("create inputs")
@@ -74,8 +64,7 @@ def build_graph(MCd: dict, HCd: dict):
             X = tf.placeholder(dtype=x_dtype, shape=(MCd["in_dim"]), name="X_in")
             if MCd["reshape_in_to"]:
                 X = tf.reshape(X, shape=(MCd["reshape_in_to"]), name="data")
-            if G_PRINT:
-                print_tensor_info(X)
+            g_logger.info("{}".format(fmt_tensor_info(X)))
 
             # label input dim/type
             label_dtype = get_tf_dtype(MCd["label_dtype"])
@@ -93,8 +82,8 @@ def build_graph(MCd: dict, HCd: dict):
                 # this is currently needed so that the raw values can be added to a collection
                 # and retrieved later for both converted and not converted values
                 y = y_raw
-        logger.info("create hidden block")
-        hidden = build_hidden_block(X, training, MCd, HCd)
+
+        hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
 
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
 
@@ -104,18 +93,19 @@ def build_graph(MCd: dict, HCd: dict):
         elif MCd["final_type"] == "softmax":
             preds = tf.nn.softmax(logits, name="y_proba")
         else:
+            logger.fatal("preds cannot be created as: {}".format(MCd["final_type"]))
             sys.exit(
                 "final_type: {} -- is not supported or defined.".format(
                     MCd["final_type"]
                 )
             )
+        logger.debug("pred created as {}: {}".format(MCd["final_type"], preds))
 
-        if G_PRINT:
-            print_tensor_info(preds)
+        g_logger.info("{}".format(fmt_tensor_info(preds)))
 
         #### loss logic
         with tf.name_scope("loss"):
-            logger.info("create loss")
+            logger.info("create /loss")
             # TODO: the type of xentropy should be defined in the config
             # > there should also be a check for the type that should be used.
             if MCd["final_type"] == "sigmoid":
@@ -128,11 +118,17 @@ def build_graph(MCd: dict, HCd: dict):
                     logits=logits, labels=y
                 )
             else:
+                logger.fatal(
+                    "xentropy cannot be created as: {}".format(MCd["final_type"])
+                )
                 sys.exit(
                     "final_type: {} -- is not supported or defined.".format(
                         MCd["final_type"]
                     )
                 )
+            logger.debug(
+                "xentropy created as {}: {}".format(MCd["final_type"], xentropy)
+            )
 
             base_loss = tf.reduce_mean(xentropy, name="base_loss")
             # handle regularization losses
@@ -145,22 +141,24 @@ def build_graph(MCd: dict, HCd: dict):
 
         #### optimizer
         with tf.name_scope("train"):
-            logger.info("training params")
+            logger.info("create /train")
             optimizer = get_optimizer(MCd)
-            if G_PRINT:
-                print("opt: {}".format(optimizer._name))
+            g_logger.info("{}".format(optimizer._name))
+
             training_op = optimizer.minimize(batch_loss, name="training_op")
 
         #### init
         with tf.name_scope("init"):
-            logger.info("create init")
+            logger.info("create /init")
             init_global = tf.global_variables_initializer()
             init_local = tf.local_variables_initializer()
 
         #### metrics
         with tf.name_scope("metrics"):
+            logger.info("create /metrics")
             # ================================== performance
             with tf.name_scope("common"):
+                logger.debug("create /metrics/common")
                 if MCd["final_type"] == "sigmoid":
                     y_true_cls = tf.greater_equal(y, 0.5)
                     y_pred_cls = tf.greater_equal(preds, 0.5)
@@ -173,6 +171,7 @@ def build_graph(MCd: dict, HCd: dict):
                 )
                 batch_acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
             with tf.name_scope("train_metrics") as scope:
+                logger.debug("create /metrics/train_metrics")
                 train_auc, train_auc_update = tf.metrics.auc(
                     labels=y, predictions=preds
                 )
@@ -186,6 +185,7 @@ def build_graph(MCd: dict, HCd: dict):
                     train_acc_vars, name="train_met_reset_op"
                 )
             with tf.name_scope("val_metrics") as scope:
+                logger.debug("create /metrics/val_metrics")
                 val_auc, val_auc_update = tf.metrics.auc(labels=y, predictions=preds)
                 val_acc, val_acc_update = tf.metrics.accuracy(
                     labels=y_true_cls, predictions=y_pred_cls
@@ -197,6 +197,7 @@ def build_graph(MCd: dict, HCd: dict):
                     val_acc_vars, name="val_met_reset_op"
                 )
             with tf.name_scope("test_metrics") as scope:
+                logger.debug("create /metrics/test_metrics")
                 test_auc, test_auc_update = tf.metrics.auc(labels=y, predictions=preds)
                 test_acc, test_acc_update = tf.metrics.accuracy(
                     labels=y_true_cls, predictions=y_pred_cls
@@ -210,6 +211,7 @@ def build_graph(MCd: dict, HCd: dict):
 
             # =============================================== loss
             with tf.name_scope("train_loss_eval") as scope:
+                logger.debug("create /metrics/train_loss_eval")
                 train_mean_loss, train_mean_loss_update = tf.metrics.mean(batch_loss)
                 train_loss_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
@@ -218,6 +220,7 @@ def build_graph(MCd: dict, HCd: dict):
                     train_loss_vars, name="train_loss_reset_op"
                 )
             with tf.name_scope("val_loss_eval") as scope:
+                logger.debug("create /metrics/val_loss_eval")
                 val_mean_loss, val_mean_loss_update = tf.metrics.mean(batch_loss)
                 val_loss_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
@@ -226,6 +229,7 @@ def build_graph(MCd: dict, HCd: dict):
                     val_loss_vars, name="val_loss_reset_op"
                 )
             with tf.name_scope("test_loss_eval") as scope:
+                logger.debug("create /metrics/test_loss_eval")
                 test_mean_loss, test_mean_loss_update = tf.metrics.mean(batch_loss)
                 test_loss_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
@@ -281,12 +285,15 @@ def build_graph(MCd: dict, HCd: dict):
             for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
             if v.name.rstrip("0123456789").endswith("kernel:")
         ]
+        logger.debug("create scalar weights: {}".format(weights))
         bias = [
             v
             for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
             if v.name.rstrip("0123456789").endswith("bias:")
         ]
+        logger.debug("create scalar bias: {}".format(weights))
         assert len(weights) == len(bias), "number of weights & bias are not equal"
+        logger.debug("len(weights) == len(bias) = {}".format(len(weights)))
         layer_names = list(HCd["layers"])
         layer_names.append("logits")
         # exclude all pooling layers
@@ -294,7 +301,6 @@ def build_graph(MCd: dict, HCd: dict):
         # > ideally, this list should be built by inspecting the layer 'type', but for beta
         # > purposes, this works for now.
         layer_names = [l for l in layer_names if not l.startswith("pool")]
-
         assert len(weights) == len(layer_names), "num of w&b not equal to num layers"
 
         hist_list = []
@@ -335,11 +341,7 @@ def build_graph(MCd: dict, HCd: dict):
         for node in (epoch_train_write_op, epoch_validation_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
 
-    if G_PRINT:
-        print(
-            "======================={}=========================".format(
-                str(len(G_NAME) * "=")
-            )
-        )
+    g_logger.info("=============={}==============".format("END"))
+    logger.info("[END] building graph")
 
     return g

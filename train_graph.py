@@ -19,11 +19,10 @@ from load_params_onto_layer import init_params_from_file
 
 def train_graph(g, MCd: dict, HCd: dict):
     logger = config_logger(MCd, "train")
-    logger.info("train_graph")
+    logger.info("-> START training graph")
 
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
-    # FULL_ERROR = MCd["full_error"]
 
     init_global, init_local = g.get_collection("init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
@@ -43,7 +42,6 @@ def train_graph(g, MCd: dict, HCd: dict):
     epoch_train_write_op, epoch_validation_write_op, hist_write_op = g.get_collection(
         "tensorboard"
     )
-    #     next_tr_element, next_val_element, _ = g.get_collection("data_sets")
 
     best_val_loss = math.inf
     last_best_e = 0  # marker for early stopping
@@ -102,25 +100,32 @@ def train_graph(g, MCd: dict, HCd: dict):
         except KeyError:
             run_options = None
             pass
+        logger.debug("trace level set: {}".format(run_options))
 
         local_step = 0  # This should be an internal tf counter.
         for e in tqdm(range(1, MCd["epochs"] + 1)):
-            sess.run(
-                [
-                    val_met_reset_op,
-                    val_loss_reset_op,
-                    train_met_reset_op,
-                    train_loss_reset_op,
-                ]
+            logger.info("-> START epoch num: {}".format(e))
+            t_and_v_reset_ops = [
+                val_met_reset_op,
+                val_loss_reset_op,
+                train_met_reset_op,
+                train_loss_reset_op,
+            ]
+            sess.run(t_and_v_reset_ops)
+            logger.debug(
+                "reset train and validation metric accumulators: {}".format(
+                    t_and_v_reset_ops
+                )
             )
 
             # reinitialize training iterator
             tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
             sess.run(tr_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_tr_element = tr_iter.get_next()
+            logger.debug("reinitialize training iterator: {}".format(tfr_f_path))
 
-            # loop entire training set
             # main training loop
+            logger.debug("-> START iterating training dataset")
             while True:
                 try:
                     local_step += 1
@@ -157,6 +162,7 @@ def train_graph(g, MCd: dict, HCd: dict):
                         train_writer.add_summary(hist_str, local_step)
                         train_writer.flush()
                 except tf.errors.OutOfRangeError:
+                    logger.debug("[END] iterating training dataset")
                     break
 
             # write average for epoch
@@ -166,11 +172,13 @@ def train_graph(g, MCd: dict, HCd: dict):
             train_writer.add_summary(summary, e)
             train_writer.flush()
 
-            # run/loop validation
-            # reinitialize validation iterator
+            ## validation
             tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_val"])
             sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
             next_val_element = val_iter.get_next()
+            logger.debug("reinitialize validation iterator: {}".format(tfr_f_path))
+
+            logger.debug("-> START iterating validation dataset")
             while True:
                 try:
                     Xb, yb = sess.run(next_val_element)
@@ -180,31 +188,41 @@ def train_graph(g, MCd: dict, HCd: dict):
                         feed_dict={X: Xb, y_raw: yb},
                     )
                 except tf.errors.OutOfRangeError:
+                    logger.debug("[END] iterating validation dataset")
                     break
 
             # check for (and save) best validation params here
             # TODO: there should be a flag here as desired
             cur_loss, cur_acc = sess.run([val_mean_loss, val_acc])
+            logger.info("epoch {} validation loss: {}".format(e, cur_loss))
             if cur_loss < best_val_loss:
                 last_best_e = e
                 best_val_loss = cur_loss
                 save_path = saver.save(sess, MCd["saver_save"])
-                print("Model checkpoint saved in path: %s" % save_path)
-                print(
+                logger.debug("Model checkpoint saved in path: {}".format(save_path))
+                logger.info(
                     "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(
                         cur_acc * 100, cur_loss
                     )
                 )
+
             # Early stopping conditions will start tracking after the WARM_UP_e period
             if EARLY_STOPPING_e > 0:
-                if e > WARM_UP_e and e - last_best_e > EARLY_STOPPING_e:
-                    # TODO: log early stopping information
-                    print("early stopping")
-                    break
+                if e > WARM_UP_e:
+                    if e - last_best_e > EARLY_STOPPING_e:
+                        logger.debug(
+                            "EARLY STOPPING. val_loss has not improved in {} epochs".format(
+                                WARM_UP_e
+                            )
+                        )
+                        break
+                else:
+                    logger.debug("In warm up period: e {} <= {}".format(e, WARM_UP_e))
 
             summary = sess.run(epoch_validation_write_op)
             val_writer.add_summary(summary, e)
             val_writer.flush()
+            logger.info("[END] epoch num: {}".format(e))
 
         # TL INIT_DEBUG, post training
         # d1_post = sess.run(dense_1_vars)
@@ -212,4 +230,5 @@ def train_graph(g, MCd: dict, HCd: dict):
 
         train_writer.close()
         val_writer.close()
+        logger.info("[END] training graph")
     return sess

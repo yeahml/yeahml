@@ -26,6 +26,7 @@ def config_logger(MCd: dict, log_type: str):
 
     c_fmt = logging.Formatter(MCd["log_c_str"])
     f_fmt = logging.Formatter(MCd["log_f_str"])
+    g_fmt = logging.Formatter(MCd["log_g_str"])
 
     if log_type == "build":
         build_logger = logging.getLogger("build_logger")
@@ -45,33 +46,48 @@ def config_logger(MCd: dict, log_type: str):
     elif log_type == "train":
         train_logger = logging.getLogger("train_logger")
         train_logger.setLevel(logging.DEBUG)  # set base to lowest level
-        ch = logging.StreamHandler()
+        t_ch = logging.StreamHandler()
         t_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "train.log"))
 
-        ch.setLevel(get_level(MCd["log_c_lvl"]))
+        t_ch.setLevel(get_level(MCd["log_c_lvl"]))
         t_fh.setLevel(get_level(MCd["log_f_lvl"]))
 
-        ch.setFormatter(c_fmt)
+        t_ch.setFormatter(c_fmt)
         t_fh.setFormatter(f_fmt)
 
-        train_logger.addHandler(ch)
+        train_logger.addHandler(t_ch)
         train_logger.addHandler(t_fh)
         return train_logger
     elif log_type == "eval":
         eval_logger = logging.getLogger("eval_logger")
         eval_logger.setLevel(logging.DEBUG)  # set base to lowest level
-        ch = logging.StreamHandler()
+        e_ch = logging.StreamHandler()
         e_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "eval.log"))
 
-        ch.setLevel(get_level(MCd["log_c_lvl"]))
+        e_ch.setLevel(get_level(MCd["log_c_lvl"]))
         e_fh.setLevel(get_level(MCd["log_f_lvl"]))
 
         e_fh.setFormatter(f_fmt)
-        ch.setFormatter(c_fmt)
+        e_ch.setFormatter(c_fmt)
 
-        eval_logger.addHandler(ch)
+        eval_logger.addHandler(e_ch)
         eval_logger.addHandler(e_fh)
         return eval_logger
+    elif log_type == "graph":
+        graph_logger = logging.getLogger("graph_logger")
+        graph_logger.setLevel(logging.DEBUG)  # set base to lowest level
+        g_ch = logging.StreamHandler()
+        g_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "graph.log"))
+
+        g_ch.setLevel(get_level(MCd["log_g_lvl"]))
+        g_fh.setLevel(get_level(MCd["log_g_lvl"]))
+
+        g_fh.setFormatter(g_fmt)
+        g_ch.setFormatter(g_fmt)
+
+        graph_logger.addHandler(g_ch)
+        graph_logger.addHandler(g_fh)
+        return graph_logger
     else:
         sys.exit("can't get this logger type: {}".format(log_type))
 

@@ -2,7 +2,6 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'mnist'
-  print_graph_spec: True
   type: 'softmax'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/
   saver:
@@ -16,6 +15,7 @@ overall:
     file:
       level: 'debug'
       format_str: null
+    graph_spec: True
   full_error_message: False # TODO: remove!
 data:
   in: 
@@ -34,7 +34,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 1
+  epochs: 3
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

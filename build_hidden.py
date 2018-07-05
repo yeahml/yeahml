@@ -2,11 +2,14 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-from helper import print_tensor_info
+from helper import fmt_tensor_info
 from get_components import get_regularizer_fn, get_initializer_fn, get_activation_fn
 
+# import custom logging
+from yf_logging import config_logger
 
-def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, G_PRINT: bool):
+
+def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger):
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 
@@ -14,42 +17,50 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, G_PRINT: bool):
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:
         k_init_fn = None
+    logger.debug("k_init_fn set: {}".format(k_init_fn))
 
     try:
         k_reg = get_regularizer_fn(opts["kernel_regularizer"])
     except KeyError:
         k_reg = None
+    logger.debug("k_reg set: {}".format(k_reg))
 
     try:
         b_reg = get_regularizer_fn(opts["bias_regularizer"])
     except KeyError:
         b_reg = None
+    logger.debug("b_reg set: {}".format(b_reg))
 
     filters = opts["filters"]
     try:
         kernel_size = opts["kernel_size"]
     except KeyError:
         kernel_size = 3
+    logger.debug("kernel_size set: {}".format(kernel_size))
 
     try:
         # TODO: create func (w/error handling) for this
         padding = opts["padding"]
     except KeyError:
         padding = "SAME"
+    logger.debug("padding set: {}".format(padding))
 
     try:
         strides = opts["strides"]
     except KeyError:
         strides = 1
+    logger.debug("strides set: {}".format(strides))
 
     if not name:
         name = "unnamed_conv_layer"
+    logger.debug("name set: {}".format(name))
 
     try:
         trainable = opts["trainable"]
     except KeyError:
         # trainable by default
         trainable = True
+    logger.debug("trainable set: {}".format(trainable))
 
     out = tf.layers.conv2d(
         cur_input,
@@ -65,36 +76,43 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, G_PRINT: bool):
         trainable=trainable,
         name=name,
     )
+    logger.debug("Final tensor obj: {}".format(out))
 
-    if G_PRINT:
-        print_tensor_info(out)
-
+    g_logger.info("{}".format(fmt_tensor_info(out)))
+    logger.debug("[End] building: {}".format(name))
     return out
 
 
-def build_dense_layer(cur_input, training, opts: dict, actfn, name: str, G_PRINT: bool):
+def build_dense_layer(
+    cur_input, training, opts: dict, actfn, name: str, logger, g_logger
+):
     units = opts["units"]
+    logger.debug("units set: {}".format(units))
 
     try:
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:
         k_init_fn = None
+    logger.debug("k_init_fn set: {}".format(k_init_fn))
 
     try:
         k_reg = get_regularizer_fn(opts["kernel_regularizer"])
     except KeyError:
         k_reg = None
+    logger.debug("k_reg set: {}".format(k_reg))
 
     try:
         b_reg = get_regularizer_fn(opts["bias_regularizer"])
     except KeyError:
         b_reg = None
+    logger.debug("b_reg set: {}".format(b_reg))
 
     try:
         trainable = opts["trainable"]
     except KeyError:
         # trainable by default
         trainable = True
+    logger.debug("trainable set: {}".format(trainable))
 
     out = tf.layers.dense(
         inputs=cur_input,
@@ -107,18 +125,17 @@ def build_dense_layer(cur_input, training, opts: dict, actfn, name: str, G_PRINT
         name=name,
     )
 
-    if G_PRINT:
-        print_tensor_info(out)
+    logger.debug("tensor obj pre dropout: {}".format(out))
+    g_logger.info("{}".format(fmt_tensor_info(out)))
 
-    ## add dropout
-    # this block isn't very elegant...
+    ## add dropout, if indicated
     try:
         dropout_rate = opts["dropout"]
     except KeyError:
         dropout_rate = None
+    logger.debug("dropout_rate set: {}".format(dropout_rate))
 
     if dropout_rate:
-        # apply dropout
         out = tf.layers.dropout(
             inputs=out,
             rate=dropout_rate,
@@ -127,14 +144,14 @@ def build_dense_layer(cur_input, training, opts: dict, actfn, name: str, G_PRINT
             training=training,
             name=None,
         )
+        logger.debug("tensor obj post dropout: {}".format(out))
+        g_logger.info(">> dropout: {}".format(dropout_rate))
 
-        if G_PRINT:
-            print(">> dropout: {}".format(dropout_rate))
-
+    logger.debug("[End] building: {}".format(name))
     return out
 
 
-def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
+def build_pool_layer(cur_input, training, opts: dict, name: str, logger, g_logger):
 
     try:
         if opts:
@@ -143,6 +160,7 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             pool_size = [2, 2]
     except KeyError:
         pool_size = [2, 2]
+    logger.debug("pool_size set: {}".format(pool_size))
 
     try:
         if opts:
@@ -151,9 +169,11 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             strides = 2
     except KeyError:
         strides = 2
+    logger.debug("strides set: {}".format(strides))
 
     if not name:
         name = "unnamed_pool2d_layer"
+    logger.debug("name set: {}".format(name))
 
     try:
         if opts:
@@ -164,6 +184,7 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             sys.exit("pool type {} is not allowed".format(pool_type))
     except KeyError:
         pool_type = "max"
+    logger.debug("pool_type set: {}".format(pool_type))
 
     if pool_type == "max":
         out = tf.layers.max_pooling2d(
@@ -174,14 +195,13 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             cur_input, pool_size=pool_size, strides=strides, padding="valid", name=name
         )
     else:
-        # for future implementations
+        # for future pooling implementations
         sys.exit("pool type {} is not yet implemented".format(pool_type))
 
-    if G_PRINT:
-        print_tensor_info(out)
+    logger.debug("tensor obj pre dropout: {}".format(out))
+    g_logger.info("{}".format(fmt_tensor_info(out)))
 
-    ## add dropout
-    # this block isn't very elegant...
+    ## add dropout, if indicated
     try:
         if opts:
             dropout_rate = opts["dropout"]
@@ -189,9 +209,9 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             dropout_rate = None
     except KeyError:
         dropout_rate = None
+    logger.debug("dropout_rate set: {}".format(dropout_rate))
 
     if dropout_rate:
-        # apply dropout
         out = tf.layers.dropout(
             inputs=out,
             rate=dropout_rate,
@@ -200,13 +220,17 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, G_PRINT: bool):
             training=training,
             name=None,
         )
-        if G_PRINT:
-            print(">> dropout: {}".format(dropout_rate))
+        logger.debug("tensor obj post dropout: {}".format(out))
+        g_logger.info(">> dropout: {}".format(dropout_rate))
+
+    logger.debug("[End] building: {}".format(name))
 
     return out
 
 
-def build_hidden_block(X, training, MCd: dict, HCd: dict):
+def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
+    # logger = config_logger(MCd, "build")
+    logger.info("-> START building hidden block")
     # in: X
     # out: last layer before logits
 
@@ -214,17 +238,13 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict):
     # the next iteration it will be the input to the following layer
     cur_input = X
 
-    # G_PRINT is used as bool to determine whether information
-    # about the graph should be printed
-    try:
-        G_PRINT = MCd["print_g_spec"]
-    except:
-        G_PRINT = False
-        pass
-
     # build each layer based on the (ordered) yaml specification
+    logger.debug("loop+start building layers: {}".format(HCd["layers"].keys()))
     for i, l_name in enumerate(HCd["layers"]):
         layer_info = HCd["layers"][str(l_name)]
+        logger.debug(
+            "-> START building layer: {} with opts: {}".format(l_name, layer_info)
+        )
 
         try:
             opts = layer_info["options"]
@@ -236,18 +256,22 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict):
             actfn_str = layer_info["activation"]
             actfn = get_activation_fn(actfn_str)
         except KeyError:
-            # TODO: this seems dumb..
             try:
                 actfn = get_activation_fn(MCd["def_act"])
             except KeyError:
                 # the reasoning here is that the relu is subjectively the most
                 # common/default activation function in DNNs, but I don't LOVE this
                 actfn = get_activation_fn("relu")
+        logger.debug("activation set: {}".format(actfn))
 
         ltype = layer_info["type"].lower()
         if ltype == "conv2d":
-            cur_input = build_conv2d_layer(cur_input, opts, actfn, l_name, G_PRINT)
+            logger.debug("START building: {}".format(ltype))
+            cur_input = build_conv2d_layer(
+                cur_input, opts, actfn, l_name, logger, g_logger
+            )
         elif ltype == "dense":
+            logger.debug("-> START building: {}".format(ltype))
             # ---- this block is 'dumb' but works --------------
             # this is necessary because if the last block was a pool
             # or conv, we need to flatten layer before we add a dense layer
@@ -258,15 +282,21 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict):
                 # maybe remove np dependency cur_input.get_shape().as_list()[1:]
                 last_shape = int(np.prod(cur_input.get_shape()[1:]))
                 cur_input = tf.reshape(cur_input, shape=[-1, last_shape])
-                if G_PRINT:
-                    print(">> flatten: {}".format(cur_input.shape))
+                logger.debug("reshaped tensor: {}".format(cur_input))
+                g_logger.info(">> flatten: {}".format(cur_input.shape))
             # --------------------------------------------------
             cur_input = build_dense_layer(
-                cur_input, training, opts, actfn, l_name, G_PRINT
+                cur_input, training, opts, actfn, l_name, logger, g_logger
             )
         elif ltype == "pooling2d":
-            cur_input = build_pool_layer(cur_input, training, opts, l_name, G_PRINT)
+            logger.debug("-> START building: {}".format(ltype))
+            cur_input = build_pool_layer(
+                cur_input, training, opts, l_name, logger, g_logger
+            )
         else:
-            print("ruh roh.. this is currently a fatal err")
+            logger.fatal("unable to build layer type: {}".format(ltype))
+            sys.exit("unable to build layer type: {}".format(ltype))
+
+    logger.info("[END] building hidden block")
 
     return cur_input
