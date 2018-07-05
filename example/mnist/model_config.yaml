@@ -6,10 +6,17 @@ overall:
   type: 'softmax'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/
   saver:
-    save_params_name: "best_params_ckpt"
+    save_params_name: "best_params_saver"
     load_params_path: "./example/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   # trace: Null
-  full_error_message: False
+  logging:
+    console:
+      level: 'critical'
+      format_str: null
+    file:
+      level: 'debug'
+      format_str: null
+  full_error_message: False # TODO: remove!
 data:
   in: 
     dim: [784]
@@ -45,3 +52,8 @@ hidden:
   #   h_flip: True
   #   #rotate: 0
   #   max_brightness: 0.2
+
+# todo implement
+# advanced:
+#   resources:
+#     GPU_thresh: 0.9

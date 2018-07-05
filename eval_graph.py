@@ -3,8 +3,12 @@ import os
 
 from handle_data import return_batched_iter
 
+# import custom logging
+from yf_logging import config_logger
+
 
 def eval_graph(g, MCd):
+    logger = config_logger(MCd, "eval")
     with tf.Session(graph=g) as sess:
         saver = tf.train.Saver()
         X, y_raw, training, training_op = g.get_collection("main_ops")
@@ -50,6 +54,8 @@ def eval_graph(g, MCd):
 
 
 def eval_graph_from_saver(MCd):
+    logger = config_logger(MCd, "eval")
+    logger.info("eval_graph_from_saver")
 
     # with tf.Session(graph=g) as sess:
     with tf.Session() as sess:

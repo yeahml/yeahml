@@ -3,6 +3,9 @@ import tensorflow as tf
 # import numpy as np
 import sys
 
+# import custom logging
+from yf_logging import config_logger
+
 from build_hidden import build_hidden_block
 from get_components import get_tf_dtype
 
@@ -12,8 +15,11 @@ from helper import print_tensor_info
 # get tf optimizer
 from get_components import get_optimizer
 
+
 # Helper to make the output "consistent"
 def reset_graph_deterministic(seed=42):
+    # logger = logging.getLogger("build_logger")
+    # logger.info("reset_graph_deterministic")
     # there is no option for deterministic behavior yet...
     # > tf issue https://github.com/tensorflow/tensorflow/issues/18096
     # os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
@@ -23,12 +29,17 @@ def reset_graph_deterministic(seed=42):
 
 
 def reset_graph(seed=42):
+    # logger = logging.getLogger("build_logger")
+    # logger.info("reset_graph")
     tf.reset_default_graph()
     tf.set_random_seed(seed)
     # np.random.seed(seed)
 
 
 def build_graph(MCd: dict, HCd: dict):
+    # logger = logging.getLogger("build_logger")
+    logger = config_logger(MCd, "build")
+    logger.info("build_graph")
 
     try:
         reset_graph_deterministic(MCd["seed"])
@@ -53,6 +64,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         #### model architecture
         with tf.name_scope("inputs"):
+            logger.info("create inputs")
             # TODO: input dimension logic (currently hardcoded)
             training = tf.placeholder_with_default(False, shape=(), name="training")
 
@@ -81,7 +93,7 @@ def build_graph(MCd: dict, HCd: dict):
                 # this is currently needed so that the raw values can be added to a collection
                 # and retrieved later for both converted and not converted values
                 y = y_raw
-
+        logger.info("create hidden block")
         hidden = build_hidden_block(X, training, MCd, HCd)
 
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
@@ -103,6 +115,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         #### loss logic
         with tf.name_scope("loss"):
+            logger.info("create loss")
             # TODO: the type of xentropy should be defined in the config
             # > there should also be a check for the type that should be used.
             if MCd["final_type"] == "sigmoid":
@@ -132,6 +145,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         #### optimizer
         with tf.name_scope("train"):
+            logger.info("training params")
             optimizer = get_optimizer(MCd)
             if G_PRINT:
                 print("opt: {}".format(optimizer._name))
@@ -139,6 +153,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         #### init
         with tf.name_scope("init"):
+            logger.info("create init")
             init_global = tf.global_variables_initializer()
             init_local = tf.local_variables_initializer()
 
@@ -293,6 +308,7 @@ def build_graph(MCd: dict, HCd: dict):
                 hist_list.append(b_hist)
 
         hist_write_op = tf.summary.merge(hist_list, name="histogram_write_op")
+        logger.debug("{} hist opts written".format(hist_list))
 
         # TODO: would like to combine val+train on the same graph
         epoch_train_loss_scalar = tf.summary.scalar("loss/train", train_mean_loss)

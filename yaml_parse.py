@@ -3,6 +3,8 @@ import yaml
 import shutil
 import os
 import sys
+import logging
+from yf_logging import config_logger
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -40,6 +42,8 @@ def create_model_and_hidden_config(path: str) -> tuple:
         # TODO: this needs error checking/handling, empty case
         h_config = m_config["hidden"]
 
+    m_config, h_config = extract_dict_and_set_defaults(m_config, h_config)
+
     return (m_config, h_config)
 
 
@@ -66,8 +70,11 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     # I like to keep this as a backup in case I run into issues with
     # the saver files
     maybe_create_dir(root_dir + "/best_params")
-    # `tf_logs/` will hold the logs that will be visable in tensorboard
+    # `tf_logs/` will hold the logs that will be visible in tensorboard
     maybe_create_dir(root_dir + "/tf_logs")
+
+    # `yf_logs/` will hold the custom logs
+    maybe_create_dir(root_dir + "/yf_logs")
 
 
 def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
@@ -184,6 +191,72 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     )
     # wipe is set to true for now
     create_standard_dirs(MCd["log_dir"], True)
+
+    ####### Logging
+    # console
+    ERR_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    try:
+        temp_c_lvl = MC["overall"]["logging"]["console"]["level"]
+        if not temp_c_lvl:
+            # handle null case
+            MCd["log_c_lvl"] = "CRITICAL"
+        else:
+            temp_c_lvl = temp_c_lvl.upper()
+            if temp_c_lvl not in ERR_LEVELS:
+                sys.exit(
+                    "console level {} not allowed. please select one of {}".format(
+                        temp_c_lvl, ERR_LEVELS
+                    )
+                )
+            else:
+                MCd["log_c_lvl"] = temp_c_lvl
+    except KeyError:
+        MCd["log_c_lvl"] = "CRITICAL"
+        pass
+
+    try:
+        MCd["log_c_str"] = MC["overall"]["logging"]["console"]["format_str"]
+        if not MCd["log_c_str"]:
+            # handle null case
+            MCd["log_c_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
+        else:
+            # TODO: error checking
+            pass
+    except KeyError:
+        MCd["log_c_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
+
+    # file
+    try:
+        temp_f_lvl = MC["overall"]["logging"]["file"]["level"]
+        if not temp_f_lvl:
+            # handle null case
+            MCd["log_f_lvl"] = "CRITICAL"
+        else:
+            temp_f_lvl = temp_f_lvl.upper()
+            if temp_f_lvl not in ERR_LEVELS:
+                sys.exit(
+                    "console level {} not allowed. please select one of {}".format(
+                        temp_f_lvl, ERR_LEVELS
+                    )
+                )
+            else:
+                MCd["log_f_lvl"] = temp_f_lvl.upper()
+    except KeyError:
+        MCd["log_f_lvl"] = "CRITICAL"
+
+    try:
+        MCd["log_f_str"] = MC["overall"]["logging"]["file"]["format_str"]
+        if not MCd["log_f_str"]:
+            # handle null case
+            MCd["log_f_str"] = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+        else:
+            # TODO: error checking
+            pass
+    except KeyError:
+        MCd["log_f_str"] = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+
+    # set up logger
+    # config_logger(MCd)
 
     return (MCd, HC)
 

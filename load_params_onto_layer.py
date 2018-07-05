@@ -51,11 +51,8 @@ def init_params_from_file(sess, MCd: dict, HCd: dict):
                         load_names.append(load_name + "/" + p_name)
                         layer_tensor_params.append(t_param)
 
-                    # layer_tensor = g.get_tensor_by_name("{}:{}".format(l_name))
                 except:
                     sys.exit("unable to get {}".format(l_name))
-
-                # print("let's do some TL on {}".format(HCd["layers"][l_name]))
         except KeyError:
             # no init from saver
             pass

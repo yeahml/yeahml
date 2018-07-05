@@ -4,6 +4,10 @@ from tqdm import tqdm
 import os
 import sys
 
+# import custom logging
+from yf_logging import config_logger
+
+
 # TODO: make sure global var still works....
 from handle_data import return_batched_iter
 
@@ -14,6 +18,8 @@ from load_params_onto_layer import init_params_from_file
 
 
 def train_graph(g, MCd: dict, HCd: dict):
+    logger = config_logger(MCd, "train")
+    logger.info("train_graph")
 
     EARLY_STOPPING_e = MCd["early_stopping_e"]  # default is preset to 0
     WARM_UP_e = MCd["warm_up_epochs"]  # default is 3
