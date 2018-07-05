@@ -4,7 +4,6 @@ import shutil
 import os
 import sys
 import logging
-from yf_logging import config_logger
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -48,7 +47,7 @@ def create_model_and_hidden_config(path: str) -> tuple:
 
 
 # helper to create dirs if they don't already exist
-def maybe_create_dir(dir_path: str):
+def maybe_create_dir(dir_path: str) -> None:
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
         print("{} created".format(dir_path))
@@ -164,12 +163,6 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         MCd["image_standardize"] = MC["train"]["image_standardize"]
     except KeyError:
         pass
-
-    # TODO: this may instead be handled by the log level, e.g. if <= DEBUG
-    try:
-        MCd["full_error"] = MC["overall"]["full_error_message"]
-    except KeyError:
-        MCd["full_error"] = False
 
     # DEV_DIR is a hardcoded value for the directory in which the examples
     # are located. for packing+, this will need to be removed.
@@ -287,8 +280,6 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         pass
     # hard set the graph info
     MCd["log_g_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
-    # set up logger
-    # config_logger(MCd)
 
     return (MCd, HC)
 

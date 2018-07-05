@@ -10,6 +10,8 @@ The goal of the core implementation is as follows:
 
 Where documentation+examples for the main configuration file can be found [here](./documentation_helper/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./documentation_helper/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./documentation_helper/configuration_files/layers/conv2d.md), [pooling](./documentation_helper/configuration_files/layers/pooling2d.md), and [dense](./documentation_helper/configuration_files/layers/dense.md) are also included.
 
+## Main use
+
 ```python
 import yamlflow as yf
 
@@ -28,23 +30,39 @@ _ = yf.train_graph(g, model_config)
 _ = yf.eval_graph(g, model_config)
 ```
 
+### Configuration Files
+
 The model config may look similar to the following:
 
 ```yaml
-overall:
-  name: 'cats vs dogs'
-  print_graph_spec: True
-  type: 'classification'
-  options: 'sigmoid'
+  name: 'mnist'
+  type: 'softmax'
+  experiment_dir: 'trial_01'
+  saver:
+    save_params_name: "best_params_saver"
+    load_params_path: "./example/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   trace: 'full'
+  logging:
+    console:
+      level: 'critical'
+      format_str: null
+    file:
+      level: 'debug'
+      format_str: null
+    graph_spec: True
 data:
-  in_dim: [150, 150, 3]
-  output_dim: [1]
-  TFR_dir: './example/cats_v_dogs_01/data/record_holder/150'
-saver:
-  save_pparams: 'best_params'
-tensorboard:
-  log_dir: 'trial_01'
+  in:
+    dim: [784]
+    dtype: 'float32'
+    reshape_to: [28, 28, 1]
+  label:
+    dim: [10]
+    dtype: 'float32'
+  TFR:
+    dir: './example/mnist/data/'
+    train: 'train.tfrecords'
+    validation: 'validation.tfrecords'
+    test: 'test.tfrecords'
 hyper_parameters:
   lr: 0.00001
   batch_size: 16
@@ -52,16 +70,17 @@ hyper_parameters:
   optimizer: 'adam'
   default_activation: 'elu'
   shuffle_buffer: 128
-  early_stopping_epochs: 3 # will break if validation loss does not improve after 3
-  warm_up_epochs: 5 # won't start checking for early stopping until after 5 epochs
+  early_stopping:
+    epochs: 3
+    warm_up_epochs: 5
 hidden:
-  yaml: './example/cats_v_dogs_01/hidden_config.yaml'
-train:
-  image_standardize: True
-  augmentation:
-    aug_val: True
-    v_flip: True
-    h_flip: True
+  yaml: './example/mnist/hidden_config.yaml'
+#train:
+  #image_standardize: True
+  #augmentation:
+    #aug_val: True
+    #v_flip: True
+    #h_flip: True
 ```
 
 The hidden layer architecture config (where the path to this file is specified above by (`hidden:yaml`) may look similiar to the following:
@@ -71,43 +90,32 @@ layers:
   conv_1:
     type: 'conv2d'
     options:
-      filters: 16
-      kernel_size: 3
-      strides: 2
-  pool_1:
-    type: 'pooling2d'
-    options:
-      pool_type: "avg"
-  conv_2:
-    type: 'conv2d'
-    options:
       filters: 32
       kernel_size: 3
       strides: 1
-  pool_2:
-    type: 'pooling2d'
-  conv_3:
+      trainable: False # default is True
+    saver:
+      load_params: True # default is False
+  conv_2:
     type: 'conv2d'
     options:
       filters: 64
       kernel_size: 3
       strides: 1
-  pool_3:
+    saver:
+      load_params: True
+  pool_1:
     type: 'pooling2d'
-    options:
-      pool_type: "max"
-      dropout: 0.5
   dense_1:
-    type: 'dense'
-    options:
-      units: 64
-      dropout: 0.5
-  dense_2:
     type: 'dense'
     options:
       units: 16
       dropout: 0.5
+    saver:
+      load_params: True
 ```
+
+### TensorBoard
 
 After training, tensorboard can be used to inspect the graph and metrics by issuing the following command: `tensorboard --logdir "tf_logs/"` which will open tensorboard and display figures similar to those below.
 
@@ -117,6 +125,19 @@ Where the image on the left is of the specified graph (in the architecture confi
 ![Example of TensorFlow metrics in tensorboard -- showing scalars and histogram][tensorboard_scalar]
 
 Where the image on the right shows the training and validation metrics during training (computed over the entire iteration) and the right shows histograms of the parameters (weights+biases) calculated during training.
+
+### Logging
+
+Logging, if enabled, will produce the following log files:
+
+- `build.log`
+  - will output information about building the graph
+- `train.log`
+  - will output information about training the graph
+- `graph.log`
+  - will output human readable, basic, information about the graph
+- `eval.log`
+  - will output information about evaluating the graph
 
 ## Getting Started
 

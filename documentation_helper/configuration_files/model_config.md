@@ -8,13 +8,22 @@ TODO: Will be updated after sections have been more logical locations. As of rig
 ```yaml
 # basic information
 overall:
-  name: 'cats vs dogs'
-  # will print basic graph information to the terminal
-  print_graph_spec: <bool> # 
+  name: 'cats_vs_dogs'
   type: 'softmax' # REQUIRED ['softmax', 'sigmoid'] pick one
-  # 'full' does both hardware and software
-  trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None
-
+  experiment_dir: '<str>' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
+  trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None,'full' does both hardware and software
+  saver:
+    save_params_name: "<str>" # "best_params_saver" > location to save the best parameters (graph weights+biases)
+    load_params_path: "./path/to/saved/params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
+  # trace: Null
+  logging:
+    console: # log information to the console
+      level: 'critical' # console level
+      format_str: null # OPTIONAL: custom format string
+    file: # log information to the file
+      level: 'debug' # console level
+      format_str: null # OPTIONAL: custom format string
+    graph_spec: True # will print human readable graph information to the terminal
 # information about the data being used
 data:
   in:
@@ -31,14 +40,6 @@ data:
     validation: 'file.name' # 'validation.tfrecords'
     test: 'file.name' #' test.tfrecords'
 
-# location to save the best parameters (graph weights)
-saver:
-  save_pparams: "<dir name : str>" # 'best_params'
-
-# where should the logs be stored
-tensorboard:
-  log_dir: "<dir name : str>" # 'trial_01'
-
 # model hyperparameters
 hyper_parameters:
   lr: <int> # 0.00001
@@ -53,7 +54,7 @@ hyper_parameters:
     warm_up_epochs: <int> # OPTIONAL - default behavior is 5
 
 # What do the hidden layers look like?
-hidden_config:
+hidden:
   yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 
 # information about the data for training + eval.. This heading is poorly chosen and will likely change
