@@ -81,15 +81,15 @@ def _parse_function(
     parse_shape: list,
 ):
 
-    # labelName = str(set_type) + "/label"
-    # featureName = str(set_type) + "/image_raw"
     # TODO: these names are important / should be listed in the main config
-    featureName = "image"
-    labelName = "label"
+    featureName = "/image"
+    labelName = "/label"
+    iid = "/iid"
 
     feature = {
         featureName: tf.FixedLenFeature([], tf.string),
         labelName: tf.FixedLenFeature([], tf.int64),
+        iid: tf.FixedLenFeature([], tf.string),
     }
 
     # decode
@@ -98,13 +98,17 @@ def _parse_function(
     # convert image data from string to number
 
     # TODO: these datatypes are important / should be listed in the main config
-    image = tf.decode_raw(parsed_features[featureName], tf.int8)
+    # image = tf.decode_raw(parsed_features[featureName], tf.int8)
+    image = tf.decode_raw(parsed_features[featureName], tf.float32)
     # TODO: these values should be acquired from the yaml
     image = tf.reshape(image, parse_shape)
     label = tf.cast(parsed_features[labelName], tf.int64)
+    inst_id = parsed_features[iid]
 
     # TODO: One hot as needed here......
-    label = tf.one_hot(label, depth=10)
+    ONEHOT = False
+    if ONEHOT:
+        label = tf.one_hot(label, depth=10)
 
     # Augmentation
     if aug_opts:
@@ -122,7 +126,7 @@ def _parse_function(
     if standardize_img:
         image = tf.image.per_image_standardization(image)
 
-    return image, label
+    return image, label, inst_id
 
 
 def return_batched_iter(set_type: str, MCd: dict, filenames_ph):

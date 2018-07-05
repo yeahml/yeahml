@@ -35,6 +35,7 @@ _ = yf.eval_graph(g, model_config)
 The model config may look similar to the following:
 
 ```yaml
+overall:
   name: 'mnist'
   type: 'softmax'
   experiment_dir: 'trial_01'
@@ -160,11 +161,22 @@ At the moment the project is being developed around a binary image classificatio
 
 ### TODO and in Progress
 
-- update tf_logs dir to be set on each run by a "name". include option to delete current logs as needed
+- handle instance id when not present in the dasaset (mnist) - include warning
+- include 'WIPE' option to delete current logs as needed
 - support additional metrics
 - capsule layers (and scalar -> vect, vect -> scalar?)
 - regression support (use Cali Housing)
-- add support for transfer learning (loading from a file, freezing)
-- implement a logger, rather than printing to terminal https://docs.python.org/3/howto/logging-cookbook.html
-  - may want to use tf.logger in addition/place of
 - include documentation on what is possible (likely when the project is a little further along)
+- don't wipe directories when running eval
+- handle class imbalance (this is a bit loaded...)
+- find way to simplify/standarize input type (beyond the current three tfrecords)
+- find way to automate the reshaping of the label from the batch
+- output preds csv (with format string) -- could be useful for competitions
+- load params from specified paths for specified layers (beyond the default file)
+  - this could be, potentially, useful for concatenation layer
+- basic sanity check for building the parse/config file
+- support type and name declarations from config for parsing tf records
+- logging for initializing weights
+  - remove FULL_ERROR
+- resource management/device placement
+- config option for one_hot -- currently requires manual input

@@ -1,68 +1,61 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
-  name: 'cats_vs_dogs'
-  #verbosity: 0
-  print_graph_spec: True
-  #tf_log_level: 'warn' # TODO: use
-  # will need to investigate disabling cudnn > nondeterministic backprop
-  #deterministic: null # not currently possible
-  #rand_seed: 42 # TODO: use
-  # regression, segmentation, GAN, autoencode
+  name: 'cats_v_dogs_01'
   type: 'sigmoid'
-  experiment_dir: 'trial_01'
+  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
-    save_params_name: "best_params_ckpt"
-    #load_pparams: null
-    #save_graph: null
-    # if load model, then the architecture+implementation is void
-    #load_graph: null
-  #report_level: 1 # use to print model arch (output size)
-  # trace: 'full'
-  # performance:
-  #   # default (auc, acc,loss)
-  #   eval:
-  #     - 'sensitivity'
-  #     - 'precision'
-  #     - 'F1'
+    save_params_name: "best_params_saver"
+    load_params_path: "./example/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
+  # trace: Null
+  logging:
+    console:
+      level: 'critical'
+      format_str: null
+    file:
+      level: 'debug'
+      format_str: null
+    graph_spec: True
+    # TODO: preds
+    # TODO: preds csv? w/fmt string
 data:
   in: 
     dim: [150, 150, 3]
     dtype: 'float32'
-    #reshape_to: [28, 28, 1] # TODO: use
+    #reshape_to: [28, 28, 1]
   label:
     dim: [1]
     dtype: 'int64'
-  TFR: 
+  TFR:
     dir: './example/cats_v_dogs_01/data/record_holder/150'
     train: 'train.tfrecords'
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
-  # TODO: train/val/test split, kfold?
-  # TODO: augmentation?
-  # TODO: preprocessing
-#tensorboard:
-  # if null, a default location will be created/selected
-  
 hyper_parameters:
   optimizer: 'adam'
-  lr: 0.00001
-  batch_size: 16
-  epochs: 3 # for quick testing
+  lr: 0.0001
+  batch_size: 32
+  epochs: 3
   default_activation: 'elu'
   shuffle_buffer: 128
-  early_stopping:
-    epochs: 2
-    warm_up_epochs: 5
+  # early_stopping:
+  #   epochs: 3
+  #   warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
   yaml: './example/cats_v_dogs_01/hidden_config.yaml'
 train:
   image_standardize: True
+
   # augmentation:
   #   aug_val: True
   #   v_flip: True
   #   h_flip: True
   #   #rotate: 0
   #   max_brightness: 0.2
+
+# todo implement
+# advanced:
+#   resources:
+#     GPU_thresh: 0.9

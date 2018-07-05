@@ -8,7 +8,7 @@ def init_params_from_file(sess, MCd: dict, HCd: dict):
     # a second init is needed. I don't think this use case will be very common
     # so I will come back and work on this logic later
 
-    FULL_ERROR = MCd["full_error"]
+    FULL_ERROR = True
     load_names, layer_tensor_params = [], []
     for i, l_name in enumerate(HCd["layers"]):
         try:

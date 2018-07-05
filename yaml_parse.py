@@ -269,7 +269,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             temp_g_lvl = temp_g_lvl.upper()
             if temp_g_lvl not in ERR_LEVELS:
                 sys.exit(
-                    "console level {} not allowed. please select one of {}".format(
+                    "log level {} not allowed. please select one of {}".format(
                         temp_g_lvl, ERR_LEVELS
                     )
                 )
@@ -280,6 +280,31 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         pass
     # hard set the graph info
     MCd["log_g_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
+
+    ## preds level
+    try:
+        temp_p_lvl = MC["overall"]["logging"]["graph_spec"]
+        if temp_p_lvl == True:
+            # support for a simple bool config
+            MCd["log_p_lvl"] = "DEBUG"
+        elif not temp_p_lvl:
+            # handle null case
+            MCd["log_p_lvl"] = "DEBUG"
+        else:
+            temp_p_lvl = temp_p_lvl.upper()
+            if temp_p_lvl not in ERR_LEVELS:
+                sys.exit(
+                    "log level {} not allowed. please select one of {}".format(
+                        temp_p_lvl, ERR_LEVELS
+                    )
+                )
+            else:
+                MCd["log_p_lvl"] = temp_p_lvl
+    except KeyError:
+        MCd["log_p_lvl"] = "DEBUG"
+        pass
+    # hard set the graph info
+    MCd["log_p_str"] = "[%(levelname)-8s] %(message)s"
 
     return (MCd, HC)
 

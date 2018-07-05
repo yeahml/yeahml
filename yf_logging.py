@@ -22,11 +22,11 @@ def config_logger(MCd: dict, log_type: str):
 
         return level
 
-        # formatting
-
+    # formatting
     c_fmt = logging.Formatter(MCd["log_c_str"])
     f_fmt = logging.Formatter(MCd["log_f_str"])
     g_fmt = logging.Formatter(MCd["log_g_str"])
+    p_fmt = logging.Formatter(MCd["log_p_str"])
 
     if log_type == "build":
         build_logger = logging.getLogger("build_logger")
@@ -88,6 +88,23 @@ def config_logger(MCd: dict, log_type: str):
         graph_logger.addHandler(g_ch)
         graph_logger.addHandler(g_fh)
         return graph_logger
+    elif log_type == "preds":
+        preds_logger = logging.getLogger("preds_logger")
+        preds_logger.setLevel(logging.DEBUG)  # set base to lowest level
+        p_ch = logging.StreamHandler()
+        p_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "preds.log"))
+
+        p_ch.setLevel(
+            get_level("CRITICAL")
+        )  # by default, don't log < critical to terminal
+        p_fh.setLevel(get_level(MCd["log_p_lvl"]))
+
+        p_fh.setFormatter(p_fmt)
+        p_ch.setFormatter(p_fmt)
+
+        preds_logger.addHandler(p_ch)
+        preds_logger.addHandler(p_fh)
+        return preds_logger
     else:
         sys.exit("can't get this logger type: {}".format(log_type))
 

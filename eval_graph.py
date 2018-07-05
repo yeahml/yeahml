@@ -1,10 +1,9 @@
 import tensorflow as tf
 import os
+import numpy as np
 
-from handle_data import return_batched_iter
-
-# import custom logging
-from yf_logging import config_logger
+from handle_data import return_batched_iter  # datasets from tfrecords
+from yf_logging import config_logger  # custom logging
 
 
 def eval_graph(g, MCd):
@@ -33,12 +32,17 @@ def eval_graph(g, MCd):
         next_test_element = test_iter.get_next()
         while True:
             try:
-                Xb, yb = sess.run(next_test_element)
-                # yb = np.reshape(yb, (yb.shape[0], 1))
+                Xb, yb, ib = sess.run(next_test_element)
+                yb = np.reshape(yb, (yb.shape[0], 1))
                 sess.run(
                     [test_auc_update, test_acc_update, test_mean_loss_update],
                     feed_dict={X: Xb, y_raw: yb},
                 )
+                xpp, xgt, xpc = sess.run(
+                    [preds, y_true_cls, y_pred_cls], feed_dict={X: Xb, y_raw: yb}
+                )
+                # xiid = sess.run(inst_id_ph, feed_dict={y_raw: ib})
+                print(ib)
             except tf.errors.OutOfRangeError:
                 break
 
@@ -56,6 +60,7 @@ def eval_graph(g, MCd):
 def eval_graph_from_saver(MCd):
     logger = config_logger(MCd, "eval")
     logger.info("eval_graph_from_saver")
+    preds_logger = config_logger(MCd, "preds")
 
     # with tf.Session(graph=g) as sess:
     with tf.Session() as sess:
@@ -85,12 +90,22 @@ def eval_graph_from_saver(MCd):
         next_test_element = test_iter.get_next()
         while True:
             try:
-                Xb, yb = sess.run(next_test_element)
-                # yb = np.reshape(yb, (yb.shape[0], 1))
+                Xb, yb, ib = sess.run(next_test_element)
+                yb = np.reshape(yb, (yb.shape[0], 1))
                 sess.run(
                     [test_auc_update, test_acc_update, test_mean_loss_update],
                     feed_dict={X: Xb, y_raw: yb},
                 )
+                xpp, xgt, xpc = sess.run(
+                    [preds, y_true_cls, y_pred_cls], feed_dict={X: Xb, y_raw: yb}
+                )
+                for i, v in enumerate(ib):
+                    preds_logger.info(
+                        "{:17}: pred: {:1}, true: {:1}, conf: {:.5f}".format(
+                            str(v), bool(xpc[i]), bool(xgt[i]), xpp[i][0]
+                        )
+                    )
+
             except tf.errors.OutOfRangeError:
                 break
 

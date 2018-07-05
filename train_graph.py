@@ -3,18 +3,11 @@ import math
 from tqdm import tqdm
 import os
 import sys
+import numpy as np
 
-# import custom logging
-from yf_logging import config_logger
-
-
-# TODO: make sure global var still works....
-from handle_data import return_batched_iter
-
-# from helper import load_obj, save_obj, get_model_params
-
-# used for loading params
-from load_params_onto_layer import init_params_from_file
+from yf_logging import config_logger  # custom logging
+from handle_data import return_batched_iter  # datasets
+from load_params_onto_layer import init_params_from_file  # loading params
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -129,8 +122,8 @@ def train_graph(g, MCd: dict, HCd: dict):
             while True:
                 try:
                     local_step += 1
-                    data, target = sess.run(next_tr_element)
-                    # target = np.reshape(target, (target.shape[0], 1))
+                    data, target, _ = sess.run(next_tr_element)
+                    target = np.reshape(target, (target.shape[0], 1))
                     if run_options != None:
                         sess.run(
                             [training_op],
@@ -181,8 +174,8 @@ def train_graph(g, MCd: dict, HCd: dict):
             logger.debug("-> START iterating validation dataset")
             while True:
                 try:
-                    Xb, yb = sess.run(next_val_element)
-                    # yb = np.reshape(yb, (yb.shape[0], 1))
+                    Xb, yb, _ = sess.run(next_val_element)
+                    yb = np.reshape(yb, (yb.shape[0], 1))
                     sess.run(
                         [val_auc_update, val_acc_update, val_mean_loss_update],
                         feed_dict={X: Xb, y_raw: yb},
