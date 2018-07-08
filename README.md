@@ -4,7 +4,9 @@
 [tensorboard_graph]: ./misc/tensorboard_graph.png
 [tensorboard_scalar]: ./misc/tensorboard_scalar.png
 
-<div style="text-align:center"><img src="./misc/yf_logo_draft_01.png" width="200"></div>
+<p align="center">
+<img src="./misc/yf_logo_draft_02.png" width="300">
+</p>
 
 YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).
 
