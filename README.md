@@ -164,7 +164,6 @@ At the moment the project is being developed around a binary image classificatio
 - handle instance id when not present in the dasaset (mnist) - include warning
 - include 'WIPE' option to delete current logs as needed
 - support additional metrics
-- capsule layers (and scalar -> vect, vect -> scalar?)
 - regression support (use Cali Housing)
 - include documentation on what is possible (likely when the project is a little further along)
 - don't wipe directories when running eval
@@ -180,3 +179,23 @@ At the moment the project is being developed around a binary image classificatio
   - remove FULL_ERROR
 - resource management/device placement
 - config option for one_hot -- currently requires manual input
+- An option for displaying sample outputs during training/evaluation
+- allow prediction from regular values
+  - not just tfrecords. This will also be important for serving implications
+- Binary classification with the IMDB dataset
+- Support `opts` for the optimizer
+- Support different types of loss functions (right now these are hardcoded by (type)
+
+### TODO: stretch
+
+- An option for implementing ~smooth grad + for visualizations/ interpret-ability
+- capsule layers (and scalar -> vect, vect -> scalar?)
+- methodolgy for reducing model size for serving - plot performance as the dtype of operations are reduced / can some operations be removed from the graph?
+- support k fold cross validation
+- prepackaged models + params trained on well known datasets
+
+#### Notes
+
+Why YAML?
+
+> Simply, because I wanted support for comments. Though x,y,or z may be ``better'' configuration types, yaml was selected for its general popularity and support for comments. I'm open to changing this in the future -- doing so would only require parsing the new config standard into the expect python dict -- but at the moment it isn't a top priority for me personally.  Additionally, since the interface/functionality will likely change dramatically, I think it would be best to stick with the one config file option (yaml) for now.
