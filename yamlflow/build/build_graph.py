@@ -1,19 +1,13 @@
 import tensorflow as tf
-
-# import numpy as np
 import sys
 
-# import custom logging
-from yf_logging import config_logger
+# import numpy as np # flatten op
 
-from build_hidden import build_hidden_block
-from get_components import get_tf_dtype
-
-# print information about the graph
-from helper import fmt_tensor_info
-
-# get tf optimizer
-from get_components import get_optimizer
+from yamlflow.log.yf_logging import config_logger
+from yamlflow.build.build_hidden import build_hidden_block
+from yamlflow.build.get_components import get_tf_dtype
+from yamlflow.build.get_components import get_optimizer
+from yamlflow.helper import fmt_tensor_info
 
 
 # Helper to make the output "consistent"

@@ -2,11 +2,13 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-from helper import fmt_tensor_info
-from get_components import get_regularizer_fn, get_initializer_fn, get_activation_fn
-
-# import custom logging
-from yf_logging import config_logger
+from yamlflow.helper import fmt_tensor_info
+from yamlflow.build.get_components import (
+    get_regularizer_fn,
+    get_initializer_fn,
+    get_activation_fn,
+)
+from yamlflow.log.yf_logging import config_logger  # custom logging
 
 
 def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger):

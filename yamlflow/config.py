@@ -5,6 +5,11 @@ import os
 import sys
 import logging
 
+## Basic Error Checking
+# TODO: There should be some ~basic error checking here against design
+# do the metrics make sense for the problem? layer order? est. param size?
+# > maybe this belongs in "build graph?"
+
 
 def parse_yaml_from_path(path: str) -> dict:
     # return python dict from yaml path
@@ -166,7 +171,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
 
     # DEV_DIR is a hardcoded value for the directory in which the examples
     # are located. for packing+, this will need to be removed.
-    DEV_DIR = "example"
+    DEV_DIR = "examples"
     # BEST_PARAMS_DIR is a hardcoded value that must match the created dir in
     # create_standard_dirs
     BEST_PARAMS_DIR = "best_params"

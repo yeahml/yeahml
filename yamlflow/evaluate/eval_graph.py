@@ -2,8 +2,8 @@ import tensorflow as tf
 import os
 import numpy as np
 
-from handle_data import return_batched_iter  # datasets from tfrecords
-from yf_logging import config_logger  # custom logging
+from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yamlflow.log.yf_logging import config_logger  # custom logging
 
 
 def eval_graph(g, MCd):

@@ -1,12 +1,12 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
-  name: 'mnist'
-  type: 'softmax'
+  name: 'cats_v_dogs_01'
+  type: 'sigmoid'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
-    load_params_path: "./example/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
+    load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   # trace: Null
   logging:
     console:
@@ -16,16 +16,18 @@ overall:
       level: 'debug'
       format_str: null
     graph_spec: True
+    # TODO: preds
+    # TODO: preds csv? w/fmt string
 data:
   in: 
-    dim: [784]
+    dim: [150, 150, 3]
     dtype: 'float32'
-    reshape_to: [28, 28, 1]
+    #reshape_to: [28, 28, 1]
   label:
-    dim: [10]
-    dtype: 'float32'
+    dim: [1]
+    dtype: 'int64'
   TFR:
-    dir: './example/mnist/data/'
+    dir: './examples/cats_v_dogs_01/data/record_holder/150'
     train: 'train.tfrecords'
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
@@ -42,9 +44,10 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './example/mnist/hidden_config.yaml'
-# train:
-#   image_standardize: True
+  yaml: './examples/cats_v_dogs_01/hidden_config.yaml'
+train:
+  image_standardize: True
+
   # augmentation:
   #   aug_val: True
   #   v_flip: True

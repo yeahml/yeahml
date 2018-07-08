@@ -5,9 +5,9 @@ import os
 import sys
 import numpy as np
 
-from yf_logging import config_logger  # custom logging
-from handle_data import return_batched_iter  # datasets
-from load_params_onto_layer import init_params_from_file  # loading params
+from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yamlflow.log.yf_logging import config_logger  # custom logging
+from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
 
 
 def train_graph(g, MCd: dict, HCd: dict):
