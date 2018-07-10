@@ -9,7 +9,7 @@ TODO: Will be updated after sections have been more logical locations. As of rig
 # basic information
 overall:
   name: 'cats_vs_dogs'
-  type: 'softmax' # REQUIRED ['softmax', 'sigmoid'] pick one
+  loss_fn: 'softmax' # REQUIRED ['softmax', 'sigmoid'] pick one
   experiment_dir: '<str>' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None,'full' does both hardware and software
   saver:

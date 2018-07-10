@@ -82,18 +82,16 @@ def build_graph(MCd: dict, HCd: dict):
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
 
         # TODO: there are now three locations where the type of problem alters code choices
-        if MCd["final_type"] == "sigmoid":
+        if MCd["loss_fn"] == "sigmoid":
             preds = tf.sigmoid(logits, name="y_proba")
-        elif MCd["final_type"] == "softmax":
+        elif MCd["loss_fn"] == "softmax":
             preds = tf.nn.softmax(logits, name="y_proba")
         else:
-            logger.fatal("preds cannot be created as: {}".format(MCd["final_type"]))
+            logger.fatal("preds cannot be created as: {}".format(MCd["loss_fn"]))
             sys.exit(
-                "final_type: {} -- is not supported or defined.".format(
-                    MCd["final_type"]
-                )
+                "final_type: {} -- is not supported or defined.".format(MCd["loss_fn"])
             )
-        logger.debug("pred created as {}: {}".format(MCd["final_type"], preds))
+        logger.debug("pred created as {}: {}".format(MCd["loss_fn"], preds))
 
         g_logger.info("{}".format(fmt_tensor_info(preds)))
 
@@ -102,27 +100,23 @@ def build_graph(MCd: dict, HCd: dict):
             logger.info("create /loss")
             # TODO: the type of xentropy should be defined in the config
             # > there should also be a check for the type that should be used.
-            if MCd["final_type"] == "sigmoid":
+            if MCd["loss_fn"] == "sigmoid":
                 xentropy = tf.nn.sigmoid_cross_entropy_with_logits(
                     logits=logits, labels=y
                 )
-            elif MCd["final_type"] == "softmax":
+            elif MCd["loss_fn"] == "softmax":
                 # why v2? see here: https://bit.ly/2z3NJ8n
                 xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
                     logits=logits, labels=y
                 )
             else:
-                logger.fatal(
-                    "xentropy cannot be created as: {}".format(MCd["final_type"])
-                )
+                logger.fatal("xentropy cannot be created as: {}".format(MCd["loss_fn"]))
                 sys.exit(
                     "final_type: {} -- is not supported or defined.".format(
-                        MCd["final_type"]
+                        MCd["loss_fn"]
                     )
                 )
-            logger.debug(
-                "xentropy created as {}: {}".format(MCd["final_type"], xentropy)
-            )
+            logger.debug("xentropy created as {}: {}".format(MCd["loss_fn"], xentropy))
 
             base_loss = tf.reduce_mean(xentropy, name="base_loss")
             # handle regularization losses
@@ -153,10 +147,10 @@ def build_graph(MCd: dict, HCd: dict):
             # ================================== performance
             with tf.name_scope("common"):
                 logger.debug("create /metrics/common")
-                if MCd["final_type"] == "sigmoid":
+                if MCd["loss_fn"] == "sigmoid":
                     y_true_cls = tf.greater_equal(y, 0.5)
                     y_pred_cls = tf.greater_equal(preds, 0.5)
-                elif MCd["final_type"] == "softmax":
+                elif MCd["loss_fn"] == "softmax":
                     y_true_cls = tf.argmax(y, 1)
                     y_pred_cls = tf.argmax(preds, 1)
 

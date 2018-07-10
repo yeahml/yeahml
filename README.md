@@ -41,7 +41,7 @@ The model config may look similar to the following:
 ```yaml
 overall:
   name: 'mnist'
-  type: 'softmax'
+  loss_fn: 'softmax'
   experiment_dir: 'trial_01'
   saver:
     save_params_name: "best_params_saver"
@@ -186,7 +186,7 @@ At the moment the project is being developed around a binary image classificatio
 - basic sanity check for building the parse/config file
 - support type and name declarations from config for parsing tf records
 - logging for initializing weights
-  - remove FULL_ERROR
+  - remove `FULL_ERROR`
 - resource management/device placement
 - config option for one_hot -- currently requires manual input
 - An option for displaying sample outputs during training/evaluation
@@ -197,6 +197,7 @@ At the moment the project is being developed around a binary image classificatio
 - Support different types of loss functions (right now these are hardcoded by (type)
 - [sphinx](http://www.sphinx-doc.org/en/master/) documentation
 
+
 ### TODO: stretch
 
 - An option for implementing ~smooth grad + for visualizations/ interpret-ability
@@ -204,6 +205,7 @@ At the moment the project is being developed around a binary image classificatio
 - methodolgy for reducing model size for serving - plot performance as the dtype of operations are reduced / can some operations be removed from the graph?
 - support k fold cross validation
 - prepackaged models + params trained on well known datasets
+- support custom loss functions (likely through link to .py file?)
 
 #### Notes
 

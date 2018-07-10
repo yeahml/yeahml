@@ -146,7 +146,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
     MCd["load_params_path"] = MC["overall"]["saver"]["load_params_path"]
 
-    MCd["final_type"] = MC["overall"]["type"]
+    MCd["loss_fn"] = MC["overall"]["loss_fn"]
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]
     except KeyError:

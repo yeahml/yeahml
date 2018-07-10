@@ -2,7 +2,7 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'cats_v_dogs_01'
-  type: 'sigmoid'
+  loss_fn: 'sigmoid'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
