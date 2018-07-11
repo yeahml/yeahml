@@ -26,3 +26,7 @@ examples/mnist/saved_params/best_params/
 examples/cats_v_dogs_01/make_records/\.ipynb_checkpoints/
 
 examples/iris/make_records/\.ipynb_checkpoints/
+
+examples/iris/make_records/raw/
+
+examples/cali_housing/make_records/\.ipynb_checkpoints/

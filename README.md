@@ -12,8 +12,6 @@ YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily)
 
 The goal of the core implementation is as follows:
 
-Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
-
 ## Main use
 
 ```python
@@ -33,6 +31,8 @@ _ = yf.train_graph(g, model_config)
 ## evaluate graph
 _ = yf.eval_graph(g, model_config)
 ```
+
+Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
 
 ### Configuration Files
 
@@ -88,7 +88,7 @@ hidden:
     #h_flip: True
 ```
 
-The hidden layer architecture config (where the path to this file is specified above by (`hidden:yaml`) may look similiar to the following:
+The hidden layer architecture config (where the path to this file is specified above by (`hidden:yaml`) may look similar to the following:
 
 ```yaml
 layers:
@@ -146,18 +146,17 @@ Logging, if enabled, will produce the following log files:
 - `train.log`
   - Contains information about training the graph [Information + Example](./docs/logs/train.md)
 
-
 ## Getting Started
 
 There is currently two example projects [cats vs dogs (binary classification)](./examples/cats_v_dogs_01/) and [mnist (multi-class classification)](./examples/mnist/) that the `example.py` file implements.
 
-Main documentation is ongoing+work in progress. Please reachout if you have questions/concerns.
+Main documentation is ongoing+work in progress. Please reach out if you have questions/concerns.
 
 **If anyone would like to attempt to use or modify this project, feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)**
 
 ## Motivation
 
-The primary motivation is to define and create (simple) models easily (for machines and humans). The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a seperate project (TODO: inlude link once made) that will attempt to generate/analyze architectures.
+The primary motivation is to define and create (simple) models easily (for machines and humans). The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a separate project (TODO: include link once made) that will attempt to generate/analyze architectures.
 
 ### Future Goals
 
@@ -168,17 +167,16 @@ At the moment the project is being developed around a binary image classificatio
 3. Autoencoders
 4. GANs
 
-
 ### TODO and in Progress
 
-- handle instance id when not present in the dasaset (mnist) - include warning
+- handle instance id when not present in the dataset (mnist) - include warning
 - include 'WIPE' option to delete current logs as needed
 - support additional metrics
 - regression support (use Cali Housing)
 - include documentation on what is possible (likely when the project is a little further along)
 - don't wipe directories when running eval
 - handle class imbalance (this is a bit loaded...)
-- find way to simplify/standarize input type (beyond the current three tfrecords)
+- find way to simplify/standardize input type (beyond the current three tfrecords)
 - find way to automate the reshaping of the label from the batch
 - output preds csv (with format string) -- could be useful for competitions
 - load params from specified paths for specified layers (beyond the default file)
@@ -196,16 +194,22 @@ At the moment the project is being developed around a binary image classificatio
 - Support `opts` for the optimizer
 - Support different types of loss functions (right now these are hardcoded by (type)
 - [sphinx](http://www.sphinx-doc.org/en/master/) documentation
-
+- Batch normalization layer
+- Support for concatenation (would allow for the creation of custom modules -- similar to inception)
+- Depthwise separable convolutions
+- support k fold cross validation
 
 ### TODO: stretch
 
 - An option for implementing ~smooth grad + for visualizations/ interpret-ability
 - capsule layers (and scalar -> vect, vect -> scalar?)
-- methodolgy for reducing model size for serving - plot performance as the dtype of operations are reduced / can some operations be removed from the graph?
-- support k fold cross validation
+- methodology for reducing model size for serving - plot performance as the dtype of operations are reduced / can some operations be removed from the graph?
 - prepackaged models + params trained on well known datasets
 - support custom loss functions (likely through link to .py file?)
+- Break from single sequential pattern
+  - Support for multi-input
+  - Support for multi-output
+- Hyperparameter optimization (hyperopt support?)
 
 #### Notes
 
