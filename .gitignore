@@ -30,3 +30,9 @@ examples/iris/make_records/\.ipynb_checkpoints/
 examples/iris/make_records/raw/
 
 examples/cali_housing/make_records/\.ipynb_checkpoints/
+
+examples/cali_housing/make_records/prep_csv/
+
+examples/cali_housing/make_records/raw_split/
+
+examples/cali_housing/make_records/raw/
