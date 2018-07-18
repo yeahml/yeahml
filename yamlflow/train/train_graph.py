@@ -9,6 +9,7 @@ from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tf
 from yamlflow.log.yf_logging import config_logger  # custom logging
 from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
 from yamlflow.build.get_components import get_run_options
+from yamlflow.helper import fmt_metric_summary
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -131,6 +132,8 @@ def train_graph(g, MCd: dict, HCd: dict):
 
             # write average for epoch
             summary = sess.run(epoch_train_write_op)
+            summary_dict = fmt_metric_summary(summary)
+            logger.info("epoch {} training metrics: {}".format(e, summary_dict))
             if run_options != None:
                 train_writer.add_run_metadata(run_metadata, "step%d" % e)
             train_writer.add_summary(summary, e)
@@ -181,9 +184,12 @@ def train_graph(g, MCd: dict, HCd: dict):
                     logger.debug("In warm up period: e {} <= {}".format(e, WARM_UP_e))
 
             summary = sess.run(epoch_validation_write_op)
+            summary_dict = fmt_metric_summary(summary)
             val_writer.add_summary(summary, e)
             val_writer.flush()
-            logger.info("[END] epoch num: {}".format(e))
+            logger.info(
+                "[END] epoch num: {} validation metrics: {}".format(e, summary_dict)
+            )
 
         train_writer.close()
         val_writer.close()

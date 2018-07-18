@@ -94,9 +94,8 @@ def config_logger(MCd: dict, log_type: str):
         p_ch = logging.StreamHandler()
         p_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "preds.log"))
 
-        p_ch.setLevel(
-            get_level("CRITICAL")
-        )  # by default, don't log < critical to terminal
+        # by default, don't log < critical to terminal
+        p_ch.setLevel(get_level("CRITICAL"))
         p_fh.setLevel(get_level(MCd["log_p_lvl"]))
 
         p_fh.setFormatter(p_fmt)

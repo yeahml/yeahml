@@ -4,6 +4,7 @@ import numpy as np
 
 from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yamlflow.log.yf_logging import config_logger  # custom logging
+from yamlflow.helper import fmt_metric_summary
 
 
 # TODO: this will need to be updated to match ..from_saver.
@@ -65,7 +66,7 @@ def eval_graph(g, MCd):
 
 def eval_graph_from_saver(MCd):
     logger = config_logger(MCd, "eval")
-    logger.info("eval_graph_from_saver")
+    logger.debug("eval_graph_from_saver")
     preds_logger = config_logger(MCd, "preds")
 
     # with tf.Session(graph=g) as sess:
@@ -115,11 +116,6 @@ def eval_graph_from_saver(MCd):
                 break
 
         summary = sess.run(epoch_test_write_op)
-        # TODO: move this into a helper function w/reasonable parsing
-        summary_proto = tf.Summary()
-        summary_proto.ParseFromString(summary)
-        summaries = {}
-        for val in summary_proto.value:
-            # NOTE: Assuming scalar summaries
-            summaries[val.tag] = val.simple_value
-        print(summaries)
+        summary_dict = fmt_metric_summary(summary)
+        logger.info("Test metrics: {}".format(summary_dict))
+        print(summary_dict)  # can also increase stdout log level
