@@ -113,7 +113,7 @@ def eval_graph_from_saver(MCd):
                 y_gt, y_p = sess.run([y_true, y_pred], feed_dict={X: Xb, y_raw: yb})
                 for i, _ in enumerate(Xb):
                     # TODO: determine sane way to include v.. maybe if number features < n?
-                    logger.debug(
+                    preds_logger.info(
                         "{} gt: {} p: {}".format(temp_ind + i, y_gt[i], y_p[i])
                     )
 
