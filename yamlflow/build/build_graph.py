@@ -153,22 +153,18 @@ def build_graph(MCd: dict, HCd: dict):
         with tf.name_scope("metrics"):
             logger.info("create /metrics")
             if MCd["metrics_type"] == "classification":
-                # ================================== classification performance
+                # classification performance
                 with tf.name_scope("common"):
                     logger.debug("create /metrics/common")
                     if MCd["loss_fn"] == "sigmoid":
-                        y_true_cls = tf.greater_equal(y, 0.5)
-                        y_pred_cls = tf.greater_equal(preds, 0.5)
+                        y_true = tf.greater_equal(y, 0.5)
+                        y_pred = tf.greater_equal(preds, 0.5)
                     elif MCd["loss_fn"] == "softmax":
-                        y_true_cls = tf.argmax(y, 1)
-                        y_pred_cls = tf.argmax(preds, 1)
-
-                    correct_prediction = tf.equal(
-                        y_pred_cls, y_true_cls, name="correct_predictions"
-                    )
-                    batch_acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                        y_true = tf.argmax(y, 1)
+                        y_pred = tf.argmax(preds, 1)
             else:
-                pass
+                y_true = y
+                y_pred = preds
 
             # TODO: these three metric creations (tr/val/test) could likely be made
             # in a single function with a param for "type". This would prevent any accidental
@@ -182,7 +178,7 @@ def build_graph(MCd: dict, HCd: dict):
                         labels=y, predictions=preds
                     )
                     train_acc, train_acc_update = tf.metrics.accuracy(
-                        labels=y_true_cls, predictions=y_pred_cls
+                        labels=y_true, predictions=y_pred
                     )
                     train_mets_report = tf.group(train_auc, train_acc)
                     train_mets_update = tf.group(train_auc_update, train_acc_update)
@@ -216,7 +212,7 @@ def build_graph(MCd: dict, HCd: dict):
                         labels=y, predictions=preds
                     )
                     val_acc, val_acc_update = tf.metrics.accuracy(
-                        labels=y_true_cls, predictions=y_pred_cls
+                        labels=y_true, predictions=y_pred
                     )
                     val_mets_report = tf.group(val_auc, val_acc)
                     val_mets_update = tf.group(val_auc_update, val_acc_update)
@@ -247,7 +243,7 @@ def build_graph(MCd: dict, HCd: dict):
                         labels=y, predictions=preds
                     )
                     test_acc, test_acc_update = tf.metrics.accuracy(
-                        labels=y_true_cls, predictions=y_pred_cls
+                        labels=y_true, predictions=y_pred
                     )
                     test_mets_report = tf.group(test_auc, test_acc)
                     test_mets_update = tf.group(test_auc_update, test_acc_update)
@@ -311,13 +307,8 @@ def build_graph(MCd: dict, HCd: dict):
 
         g.add_to_collection("preds", preds)
 
-        if MCd["metrics_type"] == "classification":
-            for node in (y_true_cls, y_pred_cls, correct_prediction):
-                g.add_to_collection("classification_preds", node)
-        else:
-            # TODO: this is where any important ops for regression+other types
-            # will belong
-            pass
+        for node in (y_true, y_pred):
+            g.add_to_collection("gt_and_pred", node)
 
         # performance metrics operations
         for node in (train_mets_report, train_mets_update, train_mets_reset):

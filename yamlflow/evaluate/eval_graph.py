@@ -77,10 +77,7 @@ def eval_graph_from_saver(MCd):
         g = tf.get_default_graph()
         X, y_raw, training, training_op = g.get_collection("main_ops")
         preds = g.get_collection("preds")
-        if MCd["metrics_type"] == "classification":
-            y_true_cls, y_pred_cls, correct_prediction = g.get_collection(
-                "classification_preds"
-            )
+        y_true, y_pred = g.get_collection("gt_and_pred")
         test_mets_report, test_mets_update, test_mets_reset = g.get_collection(
             "test_metrics"
         )
@@ -101,6 +98,7 @@ def eval_graph_from_saver(MCd):
         sess.run(test_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
 
         next_test_element = test_iter.get_next()
+        # TODO: temp_ind needs to be replaced with the real index
         temp_ind = 0
         while True:
             temp_ind += 1
@@ -112,6 +110,13 @@ def eval_graph_from_saver(MCd):
                     [test_mets_update, test_mean_loss_update],
                     feed_dict={X: Xb, y_raw: yb},
                 )
+                y_gt, y_p = sess.run([y_true, y_pred], feed_dict={X: Xb, y_raw: yb})
+                for i, _ in enumerate(Xb):
+                    # TODO: determine sane way to include v.. maybe if number features < n?
+                    logger.debug(
+                        "{} gt: {} p: {}".format(temp_ind + i, y_gt[i], y_p[i])
+                    )
+
             except tf.errors.OutOfRangeError:
                 break
 

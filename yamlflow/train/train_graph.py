@@ -22,10 +22,6 @@ def train_graph(g, MCd: dict, HCd: dict):
     init_global, init_local = g.get_collection("init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
     preds = g.get_collection("preds")
-    if MCd["metrics_type"] == "classification":
-        y_true_cls, y_pred_cls, correct_prediction = g.get_collection(
-            "classification_preds"
-        )
 
     # performance metrics operations
     train_mets_report, train_mets_update, train_mets_reset_op = g.get_collection(
