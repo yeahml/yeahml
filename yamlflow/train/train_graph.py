@@ -57,27 +57,9 @@ def train_graph(g, MCd: dict, HCd: dict):
         sess.run([init_global, init_local])
         saver = tf.train.Saver()  # create after initializing variables
 
-        ## TL, INIT_DEBUG, pre loading
-        # print("TRANSFER INIT : {}".format(MCd["load_params_path"]))
-        # AA, BB = 1, 0
-        # dense_1_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="dense_1")
-        # dense_1_vars = [
-        #     v
-        #     for v in dense_1_vars
-        #     if v.name.rstrip("0123456789").endswith("kernel:")
-        #     or v.name.rstrip("0123456789").endswith("bias:")
-        # ]
-        # # print(dense_1_vars)
-        # d1_pre = sess.run(dense_1_vars)
-        # print(d1_pre[AA][BB])
-
         # initialize variables from file as specified (as used in transfer learning)
         # TODO: I would rather this have a successful return, rather than act as a method
         init_params_from_file(sess, MCd, HCd)
-
-        # TL, INIT_DEBUG, post loading
-        # d1_post = sess.run(dense_1_vars)
-        # print(d1_post[AA][BB])
 
         filenames_ph = tf.placeholder(tf.string, shape=[None])
         tr_iter = return_batched_iter("train", MCd, filenames_ph)
@@ -85,20 +67,20 @@ def train_graph(g, MCd: dict, HCd: dict):
 
         # tracing options
         try:
-            if MCd["trace_level"].lower() == "full":
+            temp_trace_level = MCd["trace_level"].lower()
+            if temp_trace_level == "full":
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            elif MCd["trace_level"].lower() == "software":
+            elif temp_trace_level == "software":
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.SOFTWARE_TRACE)
-            elif MCd["trace_level"].lower() == "hardware":
+            elif temp_trace_level == "hardware":
                 run_options = tf.RunOptions(trace_level=tf.RunOptions.HARDWARE_TRACE)
-            elif MCd["trace_level"].lower() == "None":
+            elif temp_trace_level == "None":
                 run_options = None
             else:
                 run_options = None
             run_metadata = tf.RunMetadata()
         except KeyError:
             run_options = None
-            pass
         logger.debug("trace level set: {}".format(run_options))
 
         local_step = 0  # This should be an internal tf counter.
@@ -139,23 +121,12 @@ def train_graph(g, MCd: dict, HCd: dict):
                             run_metadata=run_metadata,
                         )
                         sess.run(
-                            [
-                                # train_auc_update,
-                                # train_acc_update,
-                                train_mets_update,
-                                train_mean_loss_update,
-                            ],
+                            [train_mets_update, train_mean_loss_update],
                             feed_dict={X: data, y_raw: target, training: True},
                         )
                     else:
                         sess.run(
-                            [
-                                training_op,
-                                # train_auc_update,
-                                # train_acc_update,
-                                train_mets_update,
-                                train_mean_loss_update,
-                            ],
+                            [training_op, train_mets_update, train_mean_loss_update],
                             feed_dict={X: data, y_raw: target, training: True},
                         )
                     if local_step % 20 == 0:
@@ -168,6 +139,7 @@ def train_graph(g, MCd: dict, HCd: dict):
                     break
 
             # write average for epoch
+
             summary = sess.run(epoch_train_write_op)
             if run_options != None:
                 train_writer.add_run_metadata(run_metadata, "step%d" % e)

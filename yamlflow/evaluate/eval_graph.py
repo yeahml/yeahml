@@ -86,7 +86,8 @@ def eval_graph_from_saver(MCd):
         test_mean_loss, test_mean_loss_update, test_loss_reset_op = g.get_collection(
             "test_loss"
         )
-        test_auc, test_acc = g.get_collection("test_report")
+        # index is used here to return the node (not a list of the node)
+        epoch_test_write_op = g.get_collection("tensorboard_test")[0]
 
         # restore_model_params(model_params=best_params, g=g, sess=sess)
         saver.restore(sess, MCd["saver_save"])
@@ -110,43 +111,15 @@ def eval_graph_from_saver(MCd):
                     [test_mets_update, test_mean_loss_update],
                     feed_dict={X: Xb, y_raw: yb},
                 )
-                xpp = sess.run(preds, feed_dict={X: Xb, y_raw: yb})
-                # if MCd["metrics_type"] == "classification":
-                #     xgt, xpc = sess.run(
-                #         [y_true_cls, y_pred_cls], feed_dict={X: Xb, y_raw: yb}
-                #     )
-                #     for i, v in enumerate(xgt):
-                #         preds_logger.info(
-                #             "i {:6}: pred: {:1}, true: {:1}, conf: {:.5f}".format(
-                #                 str(temp_ind), bool(xpc[i]), bool(v), xpp[i][0]
-                #             )
-                #         )
-
-                # for i, v in enumerate(ib):
-                #     preds_logger.info(
-                #         "{:17}: pred: {:1}, true: {:1}, conf: {:.5f}".format(
-                #             str(v), bool(xpc[i]), bool(xgt[i]), xpp[i][0]
-                #         )
-                #     )
-
             except tf.errors.OutOfRangeError:
                 break
 
-        # report final summary values
-        final_auc, final_acc, final_test_loss = sess.run(
-            [test_auc, test_acc, test_mean_loss]
-        )
-        # TODO: this logic will need to be updated to reflect/match the indicated metrics
-        if MCd["metrics_type"] == "classification":
-            print(
-                "test auc: {:.3f}% acc: {:.3f}% loss: {:.5f}".format(
-                    final_auc * 100, final_acc * 100, final_test_loss
-                )
-            )
-        else:
-            # TODO: match supported types
-            print(
-                "test rmse: {:.3f}% loss: {:.5f}".format(
-                    final_test_report, final_test_loss
-                )
-            )
+        summary = sess.run(epoch_test_write_op)
+        # TODO: move this into a helper function w/reasonable parsing
+        summary_proto = tf.Summary()
+        summary_proto.ParseFromString(summary)
+        summaries = {}
+        for val in summary_proto.value:
+            # NOTE: Assuming scalar summaries
+            summaries[val.tag] = val.simple_value
+        print(summaries)

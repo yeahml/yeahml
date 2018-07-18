@@ -30,7 +30,7 @@ def parse_yaml_from_path(path: str) -> dict:
 
 
 def create_model_and_hidden_config(path: str) -> tuple:
-    # return the model and archtitecture configuration dicts
+    # return the model and architecture configuration dicts
     m_config = parse_yaml_from_path(path)
     if not m_config:
         sys.exit(

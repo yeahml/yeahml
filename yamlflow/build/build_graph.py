@@ -401,6 +401,16 @@ def build_graph(MCd: dict, HCd: dict):
             name="epoch_validation_write_op",
         )
 
+        # ===== epoch, test - Only used for Evaluation, not currently added to TensorBoard
+        epoch_test_loss_scalar = tf.summary.scalar("loss/test", test_mean_loss)
+        epoch_test_acc_scalar = tf.summary.scalar("acc/test", test_acc)
+        epoch_test_auc_scalar = tf.summary.scalar("auc/test", test_auc)
+        epoch_test_write_op = tf.summary.merge(
+            [epoch_test_loss_scalar, epoch_test_acc_scalar, epoch_test_auc_scalar],
+            name="epoch_test_write_op",
+        )
+        g.add_to_collection("tensorboard_test", epoch_test_write_op)
+
         for node in (epoch_train_write_op, epoch_validation_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
 
