@@ -72,6 +72,9 @@ def train_graph(g, MCd: dict, HCd: dict):
         logger.debug("trace level set: {}".format(run_options))
 
         local_step = 0  # This should be an internal tf counter.
+
+        next_tr_element = tr_iter.get_next()
+        next_val_element = val_iter.get_next()
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             logger.info("-> START epoch num: {}".format(e))
             t_and_v_reset_ops = [
@@ -90,7 +93,7 @@ def train_graph(g, MCd: dict, HCd: dict):
             # reinitialize training iterator
             tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
             sess.run(tr_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
-            next_tr_element = tr_iter.get_next()
+
             logger.debug("reinitialize training iterator: {}".format(tfr_f_path))
 
             # main training loop
@@ -138,7 +141,6 @@ def train_graph(g, MCd: dict, HCd: dict):
             ## validation
             tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_val"])
             sess.run(val_iter.initializer, feed_dict={filenames_ph: [tfr_f_path]})
-            next_val_element = val_iter.get_next()
             logger.debug("reinitialize validation iterator: {}".format(tfr_f_path))
 
             logger.debug("-> START iterating validation dataset")
