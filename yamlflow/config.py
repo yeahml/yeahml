@@ -109,6 +109,21 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         MCd["output_dim"].insert(0, None)  # add batching
     MCd["label_dtype"] = MC["data"]["label"]["dtype"]
 
+    try:
+        temp_one_hot = MC["data"]["label"]["one_hot"]
+        if temp_one_hot != False and temp_one_hot != True:
+            sys.exit(
+            "Error > Exiting: data:label:one_hot {} unsupported. Please use True or False".format(
+                temp_one_hot
+            )
+        )
+        MCd["label_one_hot"] = temp_one_hot
+    except KeyError:
+        # None in this case is representative of not using one hot encoding
+        MCd["label_one_hot"] = False
+
+
+
     # currently required
     MCd["TFR_dir"] = MC["data"]["TFR"]["dir"]
     MCd["TFR_train"] = MC["data"]["TFR"]["train"]

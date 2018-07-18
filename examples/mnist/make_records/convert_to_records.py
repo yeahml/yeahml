@@ -66,8 +66,8 @@ def convert_to(data_set, name):
                         # "height": _int64_feature(rows),
                         # "width": _int64_feature(cols),
                         # "depth": _int64_feature(depth),
-                        "label": _int64_feature(label),
-                        "image": _bytes_feature(image_raw),
+                        "/label": _int64_feature(label),
+                        "/image": _bytes_feature(image_raw),
                     }
                 )
             )

@@ -24,6 +24,7 @@ data:
   label:
     dim: [10]
     dtype: 'float32'
+    one_hot: True
   TFR:
     dir: './examples/mnist/data/'
     train: 'train.tfrecords'
@@ -33,7 +34,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 3
+  epochs: 1
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

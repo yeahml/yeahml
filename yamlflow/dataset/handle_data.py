@@ -79,17 +79,19 @@ def _parse_function(
     standardize_img: bool,
     aug_opts: dict,
     parse_shape: list,
+    one_hot: bool,
+    output_dim: int,
 ):
 
     # TODO: these names are important / should be listed in the main config
     featureName = "/image"
     labelName = "/label"
-    iid = "/iid"
+    # iid = "/iid"
 
     feature = {
         featureName: tf.FixedLenFeature([], tf.string),
         labelName: tf.FixedLenFeature([], tf.int64),
-        iid: tf.FixedLenFeature([], tf.string),
+        # iid: tf.FixedLenFeature([], tf.string),
     }
 
     # decode
@@ -98,17 +100,17 @@ def _parse_function(
     # convert image data from string to number
 
     # TODO: these datatypes are important / should be listed in the main config
-    # image = tf.decode_raw(parsed_features[featureName], tf.int8)
-    image = tf.decode_raw(parsed_features[featureName], tf.float32)
+    image = tf.decode_raw(parsed_features[featureName], tf.int8)
+    # image = tf.decode_raw(parsed_features[featureName], tf.float32)
     # TODO: these values should be acquired from the yaml
     image = tf.reshape(image, parse_shape)
     label = tf.cast(parsed_features[labelName], tf.int64)
-    inst_id = parsed_features[iid]
+    # inst_id = parsed_features[iid]
 
     # TODO: One hot as needed here......
-    ONEHOT = False
-    if ONEHOT:
-        label = tf.one_hot(label, depth=10)
+    if one_hot:
+        # [-1] needed to remove the added batching
+        label = tf.one_hot(label, depth=output_dim)
 
     # Augmentation
     if aug_opts:
@@ -126,7 +128,8 @@ def _parse_function(
     if standardize_img:
         image = tf.image.per_image_standardization(image)
 
-    return image, label, inst_id
+    # return image, label, inst_id
+    return image, label
 
 
 def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
@@ -156,7 +159,15 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
 
     dataset = tf.data.TFRecordDataset(filenames_ph)
     dataset = dataset.map(
-        lambda x: _parse_function(x, set_type, standardize_img, aug_opts, parse_shape)
+        lambda x: _parse_function(
+            x,
+            set_type,
+            standardize_img,
+            aug_opts,
+            parse_shape,
+            MCd["label_one_hot"],
+            MCd["output_dim"][-1],  # used for one_hot encoding
+        )
     )  # Parse the record into tensors.
     if set_type != "test":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
