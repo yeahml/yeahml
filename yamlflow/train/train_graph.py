@@ -19,13 +19,19 @@ def train_graph(g, MCd: dict, HCd: dict):
 
     init_global, init_local = g.get_collection("init")
     X, y_raw, training, training_op = g.get_collection("main_ops")
-    preds, y_true_cls, y_pred_cls, _ = g.get_collection("preds")
-    train_auc, train_auc_update, train_acc, train_acc_update, train_met_reset_op = g.get_collection(
+    preds = g.get_collection("preds")
+    if MCd["metrics_type"] == "classification":
+        y_true_cls, y_pred_cls, correct_prediction = g.get_collection(
+            "classification_preds"
+        )
+
+    # performance metrics operations
+    train_mets_report, train_mets_update, train_mets_reset_op = g.get_collection(
         "train_metrics"
     )
-    val_auc, val_auc_update, val_acc, val_acc_update, val_met_reset_op = g.get_collection(
-        "val_metrics"
-    )
+    val_mets_report, val_mets_update, val_mets_reset = g.get_collection("val_metrics")
+
+    # report loss operations
     train_mean_loss, train_mean_loss_update, train_loss_reset_op = g.get_collection(
         "train_loss"
     )
@@ -99,9 +105,9 @@ def train_graph(g, MCd: dict, HCd: dict):
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             logger.info("-> START epoch num: {}".format(e))
             t_and_v_reset_ops = [
-                val_met_reset_op,
+                val_mets_reset,
                 val_loss_reset_op,
-                train_met_reset_op,
+                train_mets_reset_op,
                 train_loss_reset_op,
             ]
             sess.run(t_and_v_reset_ops)
@@ -122,8 +128,9 @@ def train_graph(g, MCd: dict, HCd: dict):
             while True:
                 try:
                     local_step += 1
-                    data, target, _ = sess.run(next_tr_element)
-                    target = np.reshape(target, (target.shape[0], 1))
+                    # data, target, _ = sess.run(next_tr_element)
+                    data, target = sess.run(next_tr_element)
+                    # target = np.reshape(target, (target.shape[0], 1))
                     if run_options != None:
                         sess.run(
                             [training_op],
@@ -133,8 +140,9 @@ def train_graph(g, MCd: dict, HCd: dict):
                         )
                         sess.run(
                             [
-                                train_auc_update,
-                                train_acc_update,
+                                # train_auc_update,
+                                # train_acc_update,
+                                train_mets_update,
                                 train_mean_loss_update,
                             ],
                             feed_dict={X: data, y_raw: target, training: True},
@@ -143,8 +151,9 @@ def train_graph(g, MCd: dict, HCd: dict):
                         sess.run(
                             [
                                 training_op,
-                                train_auc_update,
-                                train_acc_update,
+                                # train_auc_update,
+                                # train_acc_update,
+                                train_mets_update,
                                 train_mean_loss_update,
                             ],
                             feed_dict={X: data, y_raw: target, training: True},
@@ -174,10 +183,11 @@ def train_graph(g, MCd: dict, HCd: dict):
             logger.debug("-> START iterating validation dataset")
             while True:
                 try:
-                    Xb, yb, _ = sess.run(next_val_element)
-                    yb = np.reshape(yb, (yb.shape[0], 1))
+                    # Xb, yb, _ = sess.run(next_val_element)
+                    Xb, yb = sess.run(next_val_element)
+                    # yb = np.reshape(yb, (yb.shape[0], 1))
                     sess.run(
-                        [val_auc_update, val_acc_update, val_mean_loss_update],
+                        [val_mets_update, val_mean_loss_update],
                         feed_dict={X: Xb, y_raw: yb},
                     )
                 except tf.errors.OutOfRangeError:
@@ -186,18 +196,14 @@ def train_graph(g, MCd: dict, HCd: dict):
 
             # check for (and save) best validation params here
             # TODO: there should be a flag here as desired
-            cur_loss, cur_acc = sess.run([val_mean_loss, val_acc])
+            cur_loss = sess.run(val_mean_loss)
             logger.info("epoch {} validation loss: {}".format(e, cur_loss))
             if cur_loss < best_val_loss:
                 last_best_e = e
                 best_val_loss = cur_loss
                 save_path = saver.save(sess, MCd["saver_save"])
                 logger.debug("Model checkpoint saved in path: {}".format(save_path))
-                logger.info(
-                    "best params saved: val acc: {:.3f}% val loss: {:.4f}".format(
-                        cur_acc * 100, cur_loss
-                    )
-                )
+                logger.info("best params saved: val loss: {:.4f}".format(cur_loss))
 
             # Early stopping conditions will start tracking after the WARM_UP_e period
             if EARLY_STOPPING_e > 0:

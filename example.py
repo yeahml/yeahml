@@ -10,9 +10,10 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Core Logic
 
 ## Config files for currently supported modes
-sigmoid_example = "./examples/cats_v_dogs_01/model_config.yaml"
-# softmax_example = "./examples/mnist/model_config.yaml"
-model_config, hidden_config = yf.create_model_and_hidden_config(sigmoid_example)
+# example = "./examples/cats_v_dogs_01/model_config.yaml" # sigmoid example
+example = "./examples/mnist/model_config.yaml"  # softmax example
+# example = "./examples/cali_housing/model_config.yaml"  # softmax example
+model_config, hidden_config = yf.create_model_and_hidden_config(example)
 
 
 ## build graph

@@ -32,3 +32,5 @@ examples/cali_housing/make_records/raw_split/
 examples/cali_housing/make_records/raw/
 examples/cali_housing/make_records/tf_records/
 examples/cali_housing/data/*.tfrecords
+
+examples/cali/trial_01/yf_logs/

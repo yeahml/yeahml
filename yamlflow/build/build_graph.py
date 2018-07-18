@@ -79,6 +79,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
 
+        # this will act as the output layer for regression
         logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
 
         # TODO: there are now three locations where the type of problem alters code choices
@@ -86,6 +87,8 @@ def build_graph(MCd: dict, HCd: dict):
             preds = tf.sigmoid(logits, name="y_proba")
         elif MCd["loss_fn"] == "softmax":
             preds = tf.nn.softmax(logits, name="y_proba")
+        elif MCd["loss_fn"] == "mse" or MCd["loss_fn"] == "rmse":
+            preds = logits
         else:
             logger.fatal("preds cannot be created as: {}".format(MCd["loss_fn"]))
             sys.exit(
@@ -106,9 +109,14 @@ def build_graph(MCd: dict, HCd: dict):
                 )
             elif MCd["loss_fn"] == "softmax":
                 # why v2? see here: https://bit.ly/2z3NJ8n
-                xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
-                    logits=logits, labels=y
+                # xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
+                #    logits=logits, labels=y
+                # )
+                xentropy = tf.losses.softmax_cross_entropy(
+                    onehot_labels=y, logits=logits
                 )
+            elif MCd["loss_fn"] == "mse" or MCd["loss_fn"] == "rmse":
+                xentropy = tf.losses.mean_squared_error(labels=y, predictions=preds)
             else:
                 logger.fatal("xentropy cannot be created as: {}".format(MCd["loss_fn"]))
                 sys.exit(
@@ -144,57 +152,126 @@ def build_graph(MCd: dict, HCd: dict):
         #### metrics
         with tf.name_scope("metrics"):
             logger.info("create /metrics")
-            # ================================== performance
-            with tf.name_scope("common"):
-                logger.debug("create /metrics/common")
-                if MCd["loss_fn"] == "sigmoid":
-                    y_true_cls = tf.greater_equal(y, 0.5)
-                    y_pred_cls = tf.greater_equal(preds, 0.5)
-                elif MCd["loss_fn"] == "softmax":
-                    y_true_cls = tf.argmax(y, 1)
-                    y_pred_cls = tf.argmax(preds, 1)
+            if MCd["metrics_type"] == "classification":
+                # ================================== classification performance
+                with tf.name_scope("common"):
+                    logger.debug("create /metrics/common")
+                    if MCd["loss_fn"] == "sigmoid":
+                        y_true_cls = tf.greater_equal(y, 0.5)
+                        y_pred_cls = tf.greater_equal(preds, 0.5)
+                    elif MCd["loss_fn"] == "softmax":
+                        y_true_cls = tf.argmax(y, 1)
+                        y_pred_cls = tf.argmax(preds, 1)
 
-                correct_prediction = tf.equal(
-                    y_pred_cls, y_true_cls, name="correct_predictions"
-                )
-                batch_acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+                    correct_prediction = tf.equal(
+                        y_pred_cls, y_true_cls, name="correct_predictions"
+                    )
+                    batch_acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            else:
+                pass
+
+            # TODO: these three metric creations (tr/val/test) could likely be made
+            # in a single function with a param for "type". This would prevent any accidental
+            # inconsistencies when creating metrics for each type
+            # TODO: groups may be able to be made dynamically by appending() all the report and
+            # and update operations to a lists which are then passed to the group
             with tf.name_scope("train_metrics") as scope:
-                logger.debug("create /metrics/train_metrics")
-                train_auc, train_auc_update = tf.metrics.auc(
-                    labels=y, predictions=preds
-                )
-                train_acc, train_acc_update = tf.metrics.accuracy(
-                    labels=y_true_cls, predictions=y_pred_cls
-                )
-                train_acc_vars = tf.contrib.framework.get_variables(
+                if MCd["metrics_type"] == "classification":
+                    logger.debug("create /metrics/train_metrics [classification]")
+                    train_auc, train_auc_update = tf.metrics.auc(
+                        labels=y, predictions=preds
+                    )
+                    train_acc, train_acc_update = tf.metrics.accuracy(
+                        labels=y_true_cls, predictions=y_pred_cls
+                    )
+                    train_mets_report = tf.group(train_auc, train_acc)
+                    train_mets_update = tf.group(train_auc_update, train_acc_update)
+                elif MCd["metrics_type"] == "regression":
+                    logger.debug("create /metrics/train_metrics [regression]")
+                    train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(
+                        labels=y, predictions=preds
+                    )
+                    train_mets_report = tf.group(train_rmse)
+                    train_mets_update = tf.group(train_rmse_update)
+                else:
+                    # although the error should be caught in the config. the exit error
+                    # is kept until the supported types are pulled from in a config file
+                    # rather than being hardcoded as a list in config.py
+                    sys.exit(
+                        "train metrics type {} is unsupported".format(
+                            MCd["metrics_type"]
+                        )
+                    )
+
+                train_met_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
-                train_met_reset_op = tf.variables_initializer(
-                    train_acc_vars, name="train_met_reset_op"
+                train_mets_reset = tf.variables_initializer(
+                    train_met_vars, name="train_mets_reset"
                 )
             with tf.name_scope("val_metrics") as scope:
-                logger.debug("create /metrics/val_metrics")
-                val_auc, val_auc_update = tf.metrics.auc(labels=y, predictions=preds)
-                val_acc, val_acc_update = tf.metrics.accuracy(
-                    labels=y_true_cls, predictions=y_pred_cls
-                )
+                if MCd["metrics_type"] == "classification":
+                    logger.debug("create /metrics/val_metrics [classification]")
+                    val_auc, val_auc_update = tf.metrics.auc(
+                        labels=y, predictions=preds
+                    )
+                    val_acc, val_acc_update = tf.metrics.accuracy(
+                        labels=y_true_cls, predictions=y_pred_cls
+                    )
+                    val_mets_report = tf.group(val_auc, val_acc)
+                    val_mets_update = tf.group(val_auc_update, val_acc_update)
+                elif MCd["metrics_type"] == "regression":
+                    logger.debug("create /metrics/val_metrics [regression]")
+                    val_rmse, val_rmse_update = tf.metrics.root_mean_squared_error(
+                        labels=y, predictions=preds
+                    )
+                    val_mets_report = tf.group(val_rmse)
+                    val_mets_update = tf.group(val_rmse_update)
+                else:
+                    # although the error should be caught in the config. the exit error
+                    # is kept until the supported types are pulled from in a config file
+                    # rather than being hardcoded as a list in config.py
+                    sys.exit(
+                        "val metrics type {} is unsupported".format(MCd["metrics_type"])
+                    )
                 val_acc_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
-                val_met_reset_op = tf.variables_initializer(
-                    val_acc_vars, name="val_met_reset_op"
+                val_mets_reset = tf.variables_initializer(
+                    val_acc_vars, name="val_mets_reset"
                 )
             with tf.name_scope("test_metrics") as scope:
-                logger.debug("create /metrics/test_metrics")
-                test_auc, test_auc_update = tf.metrics.auc(labels=y, predictions=preds)
-                test_acc, test_acc_update = tf.metrics.accuracy(
-                    labels=y_true_cls, predictions=y_pred_cls
-                )
+                if MCd["metrics_type"] == "classification":
+                    logger.debug("create /metrics/test_metrics [classification]")
+                    test_auc, test_auc_update = tf.metrics.auc(
+                        labels=y, predictions=preds
+                    )
+                    test_acc, test_acc_update = tf.metrics.accuracy(
+                        labels=y_true_cls, predictions=y_pred_cls
+                    )
+                    test_mets_report = tf.group(test_auc, test_acc)
+                    test_mets_update = tf.group(test_auc_update, test_acc_update)
+                elif MCd["metrics_type"] == "regression":
+                    logger.debug("create /metrics/test_metrics [regression]")
+                    test_rmse, test_rmse_update = tf.metrics.root_mean_squared_error(
+                        labels=y, predictions=preds
+                    )
+                    test_mets_report = tf.group(test_rmse)
+                    test_mets_update = tf.group(test_rmse_update)
+                else:
+                    # although the error should be caught in the config. the exit error
+                    # is kept until the supported types are pulled from in a config file
+                    # rather than being hardcoded as a list in config.py
+                    sys.exit(
+                        "test metrics type {} is unsupported".format(
+                            MCd["metrics_type"]
+                        )
+                    )
                 test_acc_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
-                test_acc_reset_op = tf.variables_initializer(
-                    test_acc_vars, name="test_met_reset_op"
+                test_mets_reset = tf.variables_initializer(
+                    test_acc_vars, name="test_mets_reset"
                 )
 
             # =============================================== loss
@@ -231,38 +308,36 @@ def build_graph(MCd: dict, HCd: dict):
             g.add_to_collection("init", node)
         for node in (X, y_raw, training, training_op):
             g.add_to_collection("main_ops", node)
-        for node in (preds, y_true_cls, y_pred_cls, correct_prediction):
-            g.add_to_collection("preds", node)
-        for node in (
-            train_auc,
-            train_auc_update,
-            train_acc,
-            train_acc_update,
-            train_met_reset_op,
-        ):
+
+        g.add_to_collection("preds", preds)
+
+        if MCd["metrics_type"] == "classification":
+            for node in (y_true_cls, y_pred_cls, correct_prediction):
+                g.add_to_collection("classification_preds", node)
+        else:
+            # TODO: this is where any important ops for regression+other types
+            # will belong
+            pass
+
+        # performance metrics operations
+        for node in (train_mets_report, train_mets_update, train_mets_reset):
             g.add_to_collection("train_metrics", node)
-        for node in (
-            val_auc,
-            val_auc_update,
-            val_acc,
-            val_acc_update,
-            val_met_reset_op,
-        ):
+        for node in (val_mets_report, val_mets_update, val_mets_reset):
             g.add_to_collection("val_metrics", node)
-        for node in (
-            test_auc,
-            test_auc_update,
-            test_acc,
-            test_acc_update,
-            test_acc_reset_op,
-        ):
+        for node in (test_mets_report, test_mets_update, test_mets_reset):
             g.add_to_collection("test_metrics", node)
+        for node in (test_auc, test_acc):
+            g.add_to_collection("test_report", node)
+
+        # loss metrics operations
         for node in (train_mean_loss, train_mean_loss_update, train_loss_reset_op):
             g.add_to_collection("train_loss", node)
         for node in (val_mean_loss, val_mean_loss_update, val_loss_reset_op):
             g.add_to_collection("val_loss", node)
         for node in (test_mean_loss, test_mean_loss_update, test_loss_reset_op):
             g.add_to_collection("test_loss", node)
+
+        # logits
         g.add_to_collection("logits", logits)
 
         # ===================================== tensorboard

@@ -16,6 +16,8 @@ overall:
       level: 'debug'
       format_str: null
     graph_spec: True
+  metrics: 
+    type: 'classification'
 data:
   in: 
     dim: [784]

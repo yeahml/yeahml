@@ -113,16 +113,14 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         temp_one_hot = MC["data"]["label"]["one_hot"]
         if temp_one_hot != False and temp_one_hot != True:
             sys.exit(
-            "Error > Exiting: data:label:one_hot {} unsupported. Please use True or False".format(
-                temp_one_hot
+                "Error > Exiting: data:label:one_hot {} unsupported. Please use True or False".format(
+                    temp_one_hot
+                )
             )
-        )
         MCd["label_one_hot"] = temp_one_hot
     except KeyError:
         # None in this case is representative of not using one hot encoding
         MCd["label_one_hot"] = False
-
-
 
     # currently required
     MCd["TFR_dir"] = MC["data"]["TFR"]["dir"]
@@ -159,9 +157,36 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     ### architecture
     # TODO: implement after graph can be created...
     MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
-    MCd["load_params_path"] = MC["overall"]["saver"]["load_params_path"]
 
-    MCd["loss_fn"] = MC["overall"]["loss_fn"]
+    try:
+        MCd["load_params_path"] = MC["overall"]["saver"]["load_params_path"]
+    except KeyError:
+        # no params will be loaded from previously trained params
+        pass
+
+    # convert to lowercase for consistency
+    MCd["loss_fn"] = MC["overall"]["loss_fn"].lower()
+
+    try:
+        # TODO: these types+options should come from a config
+        METRIC_TYPES = ["classification", "regression"]
+        temp_met_type = MC["overall"]["metrics"]["type"]
+        temp_met_type = temp_met_type.lower()
+        if temp_met_type not in METRIC_TYPES:
+            sys.exit(
+                "metric type {} not allowed. please select one of {}".format(
+                    temp_met_type, METRIC_TYPES
+                )
+            )
+        else:
+            MCd["metrics_type"] = temp_met_type
+    except:
+        sys.exit(
+            "overall:metrics:type: was not specified. please select one of {}".format(
+                METRIC_TYPES
+            )
+        )
+
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]
     except KeyError:
@@ -263,18 +288,14 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             # handle null case
             MCd[
                 "log_f_str"
-            ] = (
-                "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
-            )
+            ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
         else:
             # TODO: error checking
             pass
     except KeyError:
         MCd[
             "log_f_str"
-        ] = (
-            "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
-        )
+        ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
 
     ## graph level
     try:
