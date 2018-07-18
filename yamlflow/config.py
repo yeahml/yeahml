@@ -193,7 +193,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         pass
 
     try:
-        MCd["trace_level"] = MC["overall"]["trace"]
+        MCd["trace_level"] = MC["overall"]["trace"].lower()
     except KeyError:
         pass
 

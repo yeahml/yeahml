@@ -8,6 +8,7 @@ import numpy as np
 from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yamlflow.log.yf_logging import config_logger  # custom logging
 from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
+from yamlflow.build.get_components import get_run_options
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -67,17 +68,7 @@ def train_graph(g, MCd: dict, HCd: dict):
 
         # tracing options
         try:
-            temp_trace_level = MCd["trace_level"].lower()
-            if temp_trace_level == "full":
-                run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            elif temp_trace_level == "software":
-                run_options = tf.RunOptions(trace_level=tf.RunOptions.SOFTWARE_TRACE)
-            elif temp_trace_level == "hardware":
-                run_options = tf.RunOptions(trace_level=tf.RunOptions.HARDWARE_TRACE)
-            elif temp_trace_level == "None":
-                run_options = None
-            else:
-                run_options = None
+            run_options = get_run_options(MCd["trace_level"])
             run_metadata = tf.RunMetadata()
         except KeyError:
             run_options = None
@@ -139,7 +130,6 @@ def train_graph(g, MCd: dict, HCd: dict):
                     break
 
             # write average for epoch
-
             summary = sess.run(epoch_train_write_op)
             if run_options != None:
                 train_writer.add_run_metadata(run_metadata, "step%d" % e)
@@ -194,10 +184,6 @@ def train_graph(g, MCd: dict, HCd: dict):
             val_writer.add_summary(summary, e)
             val_writer.flush()
             logger.info("[END] epoch num: {}".format(e))
-
-        # TL INIT_DEBUG, post training
-        # d1_post = sess.run(dense_1_vars)
-        # print(d1_post[AA][BB])
 
         train_writer.close()
         val_writer.close()

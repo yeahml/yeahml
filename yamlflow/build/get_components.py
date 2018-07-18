@@ -176,3 +176,19 @@ def get_initializer_fn(init_str: str):
         # TODO: Error
         init_fn = None
     return init_fn
+
+
+def get_run_options(temp_trace_level: str):
+
+    if temp_trace_level == "full":
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+    elif temp_trace_level == "software":
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.SOFTWARE_TRACE)
+    elif temp_trace_level == "hardware":
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.HARDWARE_TRACE)
+    elif temp_trace_level == "None":
+        run_options = None
+    else:
+        run_options = None
+
+    return run_options
