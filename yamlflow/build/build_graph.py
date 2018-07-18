@@ -417,38 +417,45 @@ def build_graph(MCd: dict, HCd: dict):
         logger.debug("{} hist opts written".format(hist_list))
 
         # TODO: would like to combine val+train on the same graph
+        # TODO: these three blocks should be abstracted into a helper to avoid inconsistencies
+        #### epoch, validation
+        train_scalars = []
+        for t in train_mets_report_ops:
+            name_str = t.name.split("/")[-2]
+            tmp_str = name_str + "/train"
+            temp_scalar = tf.summary.scalar(tmp_str, t)
+            train_scalars.append(temp_scalar)
         epoch_train_loss_scalar = tf.summary.scalar("loss/train", train_mean_loss)
-        epoch_train_acc_scalar = tf.summary.scalar("acc/train", train_acc)
-        epoch_train_auc_scalar = tf.summary.scalar("auc/train", train_auc)
+        train_scalars.append(epoch_train_loss_scalar)
         epoch_train_write_op = tf.summary.merge(
-            [epoch_train_loss_scalar, epoch_train_acc_scalar, epoch_train_auc_scalar],
-            name="epoch_train_write_op",
+            train_scalars, name="epoch_train_write_op"
         )
 
-        # ===== epoch, validation
-        epoch_validation_loss_scalar = tf.summary.scalar("loss/val", val_mean_loss)
-        epoch_validation_acc_scalar = tf.summary.scalar("acc/val", val_acc)
-        epoch_validation_auc_scalar = tf.summary.scalar("auc/val", val_auc)
-        epoch_validation_write_op = tf.summary.merge(
-            [
-                epoch_validation_loss_scalar,
-                epoch_validation_acc_scalar,
-                epoch_validation_auc_scalar,
-            ],
-            name="epoch_validation_write_op",
-        )
+        #### epoch, validation
+        val_scalars = []
+        for t in val_mets_report_ops:
+            name_str = t.name.split("/")[-2]
+            tmp_str = name_str + "/val"
+            temp_scalar = tf.summary.scalar(tmp_str, t)
+            val_scalars.append(temp_scalar)
+        epoch_val_loss_scalar = tf.summary.scalar("loss/val", val_mean_loss)
+        val_scalars.append(epoch_val_loss_scalar)
+        epoch_val_write_op = tf.summary.merge(val_scalars, name="epoch_val_write_op")
 
-        # ===== epoch, test - Only used for Evaluation, not currently added to TensorBoard
+        #### epoch, test - Only used for Evaluation, not currently added to TensorBoard
+        test_scalars = []
+        for t in test_mets_report_ops:
+            name_str = t.name.split("/")[-2]
+            tmp_str = name_str + "/test"
+            temp_scalar = tf.summary.scalar(tmp_str, t)
+            test_scalars.append(temp_scalar)
         epoch_test_loss_scalar = tf.summary.scalar("loss/test", test_mean_loss)
-        epoch_test_acc_scalar = tf.summary.scalar("acc/test", test_acc)
-        epoch_test_auc_scalar = tf.summary.scalar("auc/test", test_auc)
-        epoch_test_write_op = tf.summary.merge(
-            [epoch_test_loss_scalar, epoch_test_acc_scalar, epoch_test_auc_scalar],
-            name="epoch_test_write_op",
-        )
+        test_scalars.append(epoch_test_loss_scalar)
+        epoch_test_write_op = tf.summary.merge(test_scalars, name="epoch_test_write_op")
+
         g.add_to_collection("tensorboard_test", epoch_test_write_op)
 
-        for node in (epoch_train_write_op, epoch_validation_write_op, hist_write_op):
+        for node in (epoch_train_write_op, epoch_val_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
 
     g_logger.info("=============={}==============".format("END"))
