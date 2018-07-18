@@ -171,24 +171,37 @@ def build_graph(MCd: dict, HCd: dict):
             # inconsistencies when creating metrics for each type
             # TODO: groups may be able to be made dynamically by appending() all the report and
             # and update operations to a lists which are then passed to the group
+
+            #### Train
+            train_mets_report_ops = []
+            train_mets_update_ops = []
             with tf.name_scope("train_metrics") as scope:
                 if MCd["metrics_type"] == "classification":
                     logger.debug("create /metrics/train_metrics [classification]")
+                    # AUC
                     train_auc, train_auc_update = tf.metrics.auc(
                         labels=y, predictions=preds
                     )
+                    train_mets_report_ops.append(train_auc)
+                    train_mets_update_ops.append(train_auc_update)
+
+                    # Accuracy
                     train_acc, train_acc_update = tf.metrics.accuracy(
                         labels=y_true, predictions=y_pred
                     )
-                    train_mets_report = tf.group(train_auc, train_acc)
-                    train_mets_update = tf.group(train_auc_update, train_acc_update)
+                    train_mets_report_ops.append(train_acc)
+                    train_mets_update_ops.append(train_acc_update)
+
                 elif MCd["metrics_type"] == "regression":
                     logger.debug("create /metrics/train_metrics [regression]")
+
+                    # RMSE
                     train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(
                         labels=y, predictions=preds
                     )
-                    train_mets_report = tf.group(train_rmse)
-                    train_mets_update = tf.group(train_rmse_update)
+                    train_mets_report_ops.append(train_rmse)
+                    train_mets_update_ops.append(train_rmse_update)
+
                 else:
                     # although the error should be caught in the config. the exit error
                     # is kept until the supported types are pulled from in a config file
@@ -198,31 +211,46 @@ def build_graph(MCd: dict, HCd: dict):
                             MCd["metrics_type"]
                         )
                     )
-
+                # Group metrics
+                train_mets_report = tf.group(train_mets_report_ops)
+                train_mets_update = tf.group(train_mets_update_ops)
                 train_met_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
                 train_mets_reset = tf.variables_initializer(
                     train_met_vars, name="train_mets_reset"
                 )
+
+            #### Validation
+            val_mets_report_ops = []
+            val_mets_update_ops = []
             with tf.name_scope("val_metrics") as scope:
                 if MCd["metrics_type"] == "classification":
                     logger.debug("create /metrics/val_metrics [classification]")
+
+                    # AUC
                     val_auc, val_auc_update = tf.metrics.auc(
                         labels=y, predictions=preds
                     )
+                    val_mets_report_ops.append(val_auc)
+                    val_mets_update_ops.append(val_auc_update)
+
+                    # Accuracy
                     val_acc, val_acc_update = tf.metrics.accuracy(
                         labels=y_true, predictions=y_pred
                     )
-                    val_mets_report = tf.group(val_auc, val_acc)
-                    val_mets_update = tf.group(val_auc_update, val_acc_update)
+                    val_mets_report_ops.append(val_acc)
+                    val_mets_update_ops.append(val_acc_update)
+
                 elif MCd["metrics_type"] == "regression":
                     logger.debug("create /metrics/val_metrics [regression]")
+
+                    # RMSE
                     val_rmse, val_rmse_update = tf.metrics.root_mean_squared_error(
                         labels=y, predictions=preds
                     )
-                    val_mets_report = tf.group(val_rmse)
-                    val_mets_update = tf.group(val_rmse_update)
+                    val_mets_report_ops.append(val_rmse)
+                    val_mets_update_ops.append(val_rmse_update)
                 else:
                     # although the error should be caught in the config. the exit error
                     # is kept until the supported types are pulled from in a config file
@@ -230,30 +258,48 @@ def build_graph(MCd: dict, HCd: dict):
                     sys.exit(
                         "val metrics type {} is unsupported".format(MCd["metrics_type"])
                     )
+
+                # Group metrics
+                val_mets_report = tf.group(val_mets_report_ops)
+                val_mets_update = tf.group(val_mets_update_ops)
                 val_acc_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
                 val_mets_reset = tf.variables_initializer(
                     val_acc_vars, name="val_mets_reset"
                 )
+
+            #### Test
+            test_mets_report_ops = []
+            test_mets_update_ops = []
             with tf.name_scope("test_metrics") as scope:
                 if MCd["metrics_type"] == "classification":
                     logger.debug("create /metrics/test_metrics [classification]")
+
+                    # AUC
                     test_auc, test_auc_update = tf.metrics.auc(
                         labels=y, predictions=preds
                     )
+                    test_mets_report_ops.append(test_auc)
+                    test_mets_update_ops.append(test_auc_update)
+
+                    # ACC
                     test_acc, test_acc_update = tf.metrics.accuracy(
                         labels=y_true, predictions=y_pred
                     )
-                    test_mets_report = tf.group(test_auc, test_acc)
-                    test_mets_update = tf.group(test_auc_update, test_acc_update)
+                    test_mets_report_ops.append(test_acc)
+                    test_mets_update_ops.append(test_acc_update)
+
                 elif MCd["metrics_type"] == "regression":
                     logger.debug("create /metrics/test_metrics [regression]")
+
+                    # RMSE
                     test_rmse, test_rmse_update = tf.metrics.root_mean_squared_error(
                         labels=y, predictions=preds
                     )
-                    test_mets_report = tf.group(test_rmse)
-                    test_mets_update = tf.group(test_rmse_update)
+                    test_mets_report_ops.append(test_rmse)
+                    test_mets_update_ops.append(test_rmse_update)
+
                 else:
                     # although the error should be caught in the config. the exit error
                     # is kept until the supported types are pulled from in a config file
@@ -263,6 +309,8 @@ def build_graph(MCd: dict, HCd: dict):
                             MCd["metrics_type"]
                         )
                     )
+                test_mets_report = tf.group(test_mets_report_ops)
+                test_mets_update = tf.group(test_mets_update_ops)
                 test_acc_vars = tf.contrib.framework.get_variables(
                     scope, collection=tf.GraphKeys.LOCAL_VARIABLES
                 )
@@ -317,8 +365,6 @@ def build_graph(MCd: dict, HCd: dict):
             g.add_to_collection("val_metrics", node)
         for node in (test_mets_report, test_mets_update, test_mets_reset):
             g.add_to_collection("test_metrics", node)
-        for node in (test_auc, test_acc):
-            g.add_to_collection("test_report", node)
 
         # loss metrics operations
         for node in (train_mean_loss, train_mean_loss_update, train_loss_reset_op):
