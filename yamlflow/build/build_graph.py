@@ -422,6 +422,9 @@ def build_graph(MCd: dict, HCd: dict):
         train_scalars = []
         for t in train_mets_report_ops:
             name_str = t.name.split("/")[-2]
+            if name_str == "train_metrics":
+                # single metric case
+                name_str = t.name.split("/")[-1]
             tmp_str = name_str + "/train"
             temp_scalar = tf.summary.scalar(tmp_str, t)
             train_scalars.append(temp_scalar)
@@ -435,6 +438,9 @@ def build_graph(MCd: dict, HCd: dict):
         val_scalars = []
         for t in val_mets_report_ops:
             name_str = t.name.split("/")[-2]
+            if name_str == "val_metrics":
+                # single metric case
+                name_str = t.name.split("/")[-1]
             tmp_str = name_str + "/val"
             temp_scalar = tf.summary.scalar(tmp_str, t)
             val_scalars.append(temp_scalar)
@@ -446,6 +452,9 @@ def build_graph(MCd: dict, HCd: dict):
         test_scalars = []
         for t in test_mets_report_ops:
             name_str = t.name.split("/")[-2]
+            if name_str == "test_metrics":
+                # single metric case
+                name_str = t.name.split("/")[-1]
             tmp_str = name_str + "/test"
             temp_scalar = tf.summary.scalar(tmp_str, t)
             test_scalars.append(temp_scalar)

@@ -1,42 +1,37 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
-  name: 'mnist'
-  loss_fn: 'softmax'
+  name: 'cali_housing'
+  loss_fn: 'RMSE'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
-    load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
-  # trace: Null
   logging:
     console:
       level: 'critical'
-      format_str: null
     file:
       level: 'debug'
-      format_str: null
     graph_spec: True
-  metrics: 
-    type: 'classification'
+  metrics:
+    type: 'regression'
 data:
   in: 
-    dim: [784]
+    dim: [8]
     dtype: 'float32'
-    reshape_to: [28, 28, 1]
   label:
-    dim: [10]
+    dim: [1]
     dtype: 'float32'
-    one_hot: True
   TFR:
-    dir: './examples/mnist/data/'
+    dir: './examples/cali_housing/data/'
     train: 'train.tfrecords'
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
 hyper_parameters:
   optimizer: 'adam'
-  lr: 0.0001
+  lr: 0.003
   batch_size: 32
-  epochs: 2
+  # 200 epochs = 3:47min on 1080ti
+  epochs: 200
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:
@@ -45,17 +40,5 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './examples/mnist/hidden_config.yaml'
-# train:
-#   image_standardize: True
-  # augmentation:
-  #   aug_val: True
-  #   v_flip: True
-  #   h_flip: True
-  #   #rotate: 0
-  #   max_brightness: 0.2
-
-# todo implement
-# advanced:
-#   resources:
-#     GPU_thresh: 0.9
+  yaml: './examples/cali_housing/hidden_config.yaml'
+ 

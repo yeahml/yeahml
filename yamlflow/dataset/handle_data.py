@@ -84,14 +84,24 @@ def _parse_function(
 ):
 
     # TODO: these names are important / should be listed in the main config
-    featureName = "/image"
+    # featureName = "/image"
+    # labelName = "/label"
+    # # iid = "/iid"
+
+    # feature = {
+    #     featureName: tf.FixedLenFeature([], tf.string),
+    #     labelName: tf.FixedLenFeature([], tf.int64),
+    #     # iid: tf.FixedLenFeature([], tf.string),
+    # }
+    featureName = "/features"
     labelName = "/label"
-    # iid = "/iid"
+    iid = "/iid"
 
     feature = {
-        featureName: tf.FixedLenFeature([], tf.string),
-        labelName: tf.FixedLenFeature([], tf.int64),
-        # iid: tf.FixedLenFeature([], tf.string),
+        # I don't belive there are any missing values so I'm unsure why allow_missing is needed
+        featureName: tf.FixedLenSequenceFeature([], tf.float32, allow_missing=True),
+        labelName: tf.FixedLenFeature([], tf.float32),
+        iid: tf.FixedLenFeature([], tf.int64),
     }
 
     # decode
@@ -100,12 +110,18 @@ def _parse_function(
     # convert image data from string to number
 
     # TODO: these datatypes are important / should be listed in the main config
-    image = tf.decode_raw(parsed_features[featureName], tf.int8)
-    # image = tf.decode_raw(parsed_features[featureName], tf.float32)
-    # TODO: these values should be acquired from the yaml
-    image = tf.reshape(image, parse_shape)
-    label = tf.cast(parsed_features[labelName], tf.int64)
-    # inst_id = parsed_features[iid]
+    # image = tf.decode_raw(parsed_features[featureName], tf.int8)
+    # # image = tf.decode_raw(parsed_features[featureName], tf.float32)
+    # # TODO: these values should be acquired from the yaml
+    # image = tf.reshape(image, parse_shape)
+    # label = tf.cast(parsed_features[labelName], tf.int64)
+    # # inst_id = parsed_features[iid]
+
+    image = parsed_features[featureName]
+    # image = parsed_features[iid]
+    label = parsed_features[labelName]
+
+    # image = parsed_features[labelName]
 
     # TODO: One hot as needed here......
     if one_hot:

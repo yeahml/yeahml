@@ -103,7 +103,7 @@ def train_graph(g, MCd: dict, HCd: dict):
                     local_step += 1
                     # data, target, _ = sess.run(next_tr_element)
                     data, target = sess.run(next_tr_element)
-                    # target = np.reshape(target, (target.shape[0], 1))
+                    target = np.reshape(target, (target.shape[0], 1))
                     if run_options != None:
                         sess.run(
                             [training_op],
@@ -148,7 +148,7 @@ def train_graph(g, MCd: dict, HCd: dict):
                 try:
                     # Xb, yb, _ = sess.run(next_val_element)
                     Xb, yb = sess.run(next_val_element)
-                    # yb = np.reshape(yb, (yb.shape[0], 1))
+                    yb = np.reshape(yb, (yb.shape[0], 1))
                     sess.run(
                         [val_mets_update, val_mean_loss_update],
                         feed_dict={X: Xb, y_raw: yb},

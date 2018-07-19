@@ -11,8 +11,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 ## Config files for currently supported modes
 # example = "./examples/cats_v_dogs_01/model_config.yaml" # sigmoid example
-example = "./examples/mnist/model_config.yaml"  # softmax example
-# example = "./examples/cali_housing/model_config.yaml"  # regression example
+# example = "./examples/mnist/model_config.yaml"  # softmax example
+example = "./examples/cali_housing/model_config.yaml"  # regression example
 model_config, hidden_config = yf.create_model_and_hidden_config(example)
 
 

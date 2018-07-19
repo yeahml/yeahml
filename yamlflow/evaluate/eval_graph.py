@@ -105,7 +105,7 @@ def eval_graph_from_saver(MCd):
             try:
                 # Xb, yb, ib = sess.run(next_test_element)
                 Xb, yb = sess.run(next_test_element)
-                # yb = np.reshape(yb, (yb.shape[0], 1))
+                yb = np.reshape(yb, (yb.shape[0], 1))
                 sess.run(
                     [test_mets_update, test_mean_loss_update],
                     feed_dict={X: Xb, y_raw: yb},
