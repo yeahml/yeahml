@@ -36,6 +36,12 @@ def train_graph(g, MCd: dict, HCd: dict):
     val_mean_loss, val_mean_loss_update, val_loss_reset_op = g.get_collection(
         "val_loss"
     )
+    t_v_reset_ops = [
+        val_mets_reset,
+        val_loss_reset_op,
+        train_mets_reset_op,
+        train_loss_reset_op,
+    ]
     epoch_train_write_op, epoch_validation_write_op, hist_write_op = g.get_collection(
         "tensorboard"
     )
@@ -77,16 +83,10 @@ def train_graph(g, MCd: dict, HCd: dict):
         next_val_element = val_iter.get_next()
         for e in tqdm(range(1, MCd["epochs"] + 1)):
             logger.info("-> START epoch num: {}".format(e))
-            t_and_v_reset_ops = [
-                val_mets_reset,
-                val_loss_reset_op,
-                train_mets_reset_op,
-                train_loss_reset_op,
-            ]
-            sess.run(t_and_v_reset_ops)
+            sess.run(t_v_reset_ops)
             logger.debug(
                 "reset train and validation metric accumulators: {}".format(
-                    t_and_v_reset_ops
+                    t_v_reset_ops
                 )
             )
 

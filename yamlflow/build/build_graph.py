@@ -7,6 +7,7 @@ from yamlflow.log.yf_logging import config_logger
 from yamlflow.build.build_hidden import build_hidden_block
 from yamlflow.build.get_components import get_tf_dtype
 from yamlflow.build.get_components import get_optimizer
+from yamlflow.build.helper import build_mets_write_op
 from yamlflow.helper import fmt_tensor_info
 
 
@@ -417,55 +418,20 @@ def build_graph(MCd: dict, HCd: dict):
         logger.debug("{} hist opts written".format(hist_list))
 
         # TODO: would like to combine val+train on the same graph
-        # TODO: these three blocks should be abstracted into a helper to avoid inconsistencies
-        #### epoch, validation
-        train_scalars = []
-        for t in train_mets_report_ops:
-            name_str = t.name.split("/")[-2]
-            if name_str == "train_metrics":
-                # single metric case
-                name_str = t.name.split("/")[-1]
-            tmp_str = name_str + "/train"
-            temp_scalar = tf.summary.scalar(tmp_str, t)
-            train_scalars.append(temp_scalar)
-        epoch_train_loss_scalar = tf.summary.scalar("loss/train", train_mean_loss)
-        train_scalars.append(epoch_train_loss_scalar)
-        epoch_train_write_op = tf.summary.merge(
-            train_scalars, name="epoch_train_write_op"
+        # build metrics write op for tensorboard + reporting
+        # test is only used for .evaluation, not currently added to TensorBoard
+        train_write_op = build_mets_write_op(
+            train_mets_report_ops, train_mean_loss, "train"
+        )
+        val_write_op = build_mets_write_op(val_mets_report_ops, val_mean_loss, "val")
+        test_write_op = build_mets_write_op(
+            test_mets_report_ops, test_mean_loss, "test"
         )
 
-        #### epoch, validation
-        val_scalars = []
-        for t in val_mets_report_ops:
-            name_str = t.name.split("/")[-2]
-            if name_str == "val_metrics":
-                # single metric case
-                name_str = t.name.split("/")[-1]
-            tmp_str = name_str + "/val"
-            temp_scalar = tf.summary.scalar(tmp_str, t)
-            val_scalars.append(temp_scalar)
-        epoch_val_loss_scalar = tf.summary.scalar("loss/val", val_mean_loss)
-        val_scalars.append(epoch_val_loss_scalar)
-        epoch_val_write_op = tf.summary.merge(val_scalars, name="epoch_val_write_op")
-
-        #### epoch, test - Only used for Evaluation, not currently added to TensorBoard
-        test_scalars = []
-        for t in test_mets_report_ops:
-            name_str = t.name.split("/")[-2]
-            if name_str == "test_metrics":
-                # single metric case
-                name_str = t.name.split("/")[-1]
-            tmp_str = name_str + "/test"
-            temp_scalar = tf.summary.scalar(tmp_str, t)
-            test_scalars.append(temp_scalar)
-        epoch_test_loss_scalar = tf.summary.scalar("loss/test", test_mean_loss)
-        test_scalars.append(epoch_test_loss_scalar)
-        epoch_test_write_op = tf.summary.merge(test_scalars, name="epoch_test_write_op")
-
-        g.add_to_collection("tensorboard_test", epoch_test_write_op)
-
-        for node in (epoch_train_write_op, epoch_val_write_op, hist_write_op):
+        # tensorboard collections
+        for node in (train_write_op, val_write_op, hist_write_op):
             g.add_to_collection("tensorboard", node)
+        g.add_to_collection("tensorboard_test", test_write_op)
 
     g_logger.info("=============={}==============".format("END"))
     logger.info("[END] building graph")
