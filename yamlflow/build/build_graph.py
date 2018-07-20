@@ -7,7 +7,7 @@ from yamlflow.log.yf_logging import config_logger
 from yamlflow.build.build_hidden import build_hidden_block
 from yamlflow.build.get_components import get_tf_dtype
 from yamlflow.build.get_components import get_optimizer
-from yamlflow.build.helper import build_mets_write_op
+from yamlflow.build.helper import build_mets_write_op, build_loss_ops
 from yamlflow.helper import fmt_tensor_info
 
 
@@ -319,34 +319,16 @@ def build_graph(MCd: dict, HCd: dict):
                     test_acc_vars, name="test_mets_reset"
                 )
 
-            # =============================================== loss
-            with tf.name_scope("train_loss_eval") as scope:
-                logger.debug("create /metrics/train_loss_eval")
-                train_mean_loss, train_mean_loss_update = tf.metrics.mean(batch_loss)
-                train_loss_vars = tf.contrib.framework.get_variables(
-                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
-                )
-                train_loss_reset_op = tf.variables_initializer(
-                    train_loss_vars, name="train_loss_reset_op"
-                )
-            with tf.name_scope("val_loss_eval") as scope:
-                logger.debug("create /metrics/val_loss_eval")
-                val_mean_loss, val_mean_loss_update = tf.metrics.mean(batch_loss)
-                val_loss_vars = tf.contrib.framework.get_variables(
-                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
-                )
-                val_loss_reset_op = tf.variables_initializer(
-                    val_loss_vars, name="val_loss_reset_op"
-                )
-            with tf.name_scope("test_loss_eval") as scope:
-                logger.debug("create /metrics/test_loss_eval")
-                test_mean_loss, test_mean_loss_update = tf.metrics.mean(batch_loss)
-                test_loss_vars = tf.contrib.framework.get_variables(
-                    scope, collection=tf.GraphKeys.LOCAL_VARIABLES
-                )
-                test_loss_reset_op = tf.variables_initializer(
-                    test_loss_vars, name="test_loss_rest_op"
-                )
+            # ============== loss
+            train_mean_loss, train_mean_loss_update, train_loss_reset_op = build_loss_ops(
+                batch_loss=batch_loss, set_type="train"
+            )
+            val_mean_loss, val_mean_loss_update, val_loss_reset_op = build_loss_ops(
+                batch_loss=batch_loss, set_type="val"
+            )
+            test_mean_loss, test_mean_loss_update, test_loss_reset_op = build_loss_ops(
+                batch_loss=batch_loss, set_type="test"
+            )
 
         # --- create collections
         for node in (init_global, init_local):

@@ -19,3 +19,15 @@ def build_mets_write_op(met_ops: list, loss_op, set_type: str):
     write_op = tf.summary.merge(scalars, name=write_op_name)
     return write_op
 
+
+def build_loss_ops(batch_loss, set_type: str) -> tuple:
+    scope_str = set_type + "_loss_eval"
+    reset_str = set_type + "_loss_reset_op"
+    with tf.name_scope(scope_str) as scope:
+        mean_loss, mean_loss_update = tf.metrics.mean(batch_loss)
+        loss_vars = tf.contrib.framework.get_variables(
+            scope, collection=tf.GraphKeys.LOCAL_VARIABLES
+        )
+        loss_reset = tf.variables_initializer(loss_vars, name=reset_str)
+    return (mean_loss, mean_loss_update, loss_reset)
+
