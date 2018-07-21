@@ -42,7 +42,7 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
         met_set = set(["auc", "accuracy"])
 
     elif MCd["metrics_type"] == "regression":
-        met_set = set(["rmse"])
+        met_set = set(["rmse", "mae"])
 
     else:
         # although the error should be caught in the config. the exit error
@@ -55,11 +55,8 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
     scope_str = set_type + "_metrics"
     reset_str = set_type + "_mets_reset"
 
-    # TODO: metrics selection will need to be more fine-grained
-
     with tf.name_scope(scope_str) as scope:
         if "auc" in met_set:
-            # AUC
             train_auc, train_auc_update = tf.metrics.auc(
                 labels=y_trues, predictions=y_preds
             )
@@ -67,7 +64,6 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             update_ops.append(train_auc_update)
 
         if "accuracy" in met_set:
-            # Accuracy
             train_acc, train_acc_update = tf.metrics.accuracy(
                 labels=y_trues, predictions=y_preds
             )
@@ -75,12 +71,18 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             update_ops.append(train_acc_update)
 
         if "rmse" in met_set:
-            # RMSE
             train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(
                 labels=y_trues, predictions=y_preds
             )
             report_ops_list.append(train_rmse)
             update_ops.append(train_rmse_update)
+
+        if "mae" in met_set:
+            train_mae, train_mae_update = tf.metrics.mean_absolute_error(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(train_mae)
+            update_ops.append(train_mae_update)
 
         # Group metrics
         mets_report_group = tf.group(report_ops_list)
