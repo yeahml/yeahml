@@ -34,6 +34,22 @@ def build_loss_ops(batch_loss, set_type: str) -> tuple:
 
 
 def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
+
+    # TODO: these will be created in the config. this will allow for pre-defined
+    # standard metrics for different types of problems as well as the ability to
+    # dynamically add different metric types
+    if MCd["metrics_type"] == "classification":
+        met_set = set(["auc", "accuracy"])
+
+    elif MCd["metrics_type"] == "regression":
+        met_set = set(["rmse"])
+
+    else:
+        # although the error should be caught in the config. the exit error
+        # is kept until the supported types are pulled from in a config file
+        # rather than being hardcoded as a list in config.py
+        sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
+
     report_ops_list = []
     update_ops = []
     scope_str = set_type + "_metrics"
@@ -42,7 +58,7 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
     # TODO: metrics selection will need to be more fine-grained
 
     with tf.name_scope(scope_str) as scope:
-        if MCd["metrics_type"] == "classification":
+        if "auc" in met_set:
             # AUC
             train_auc, train_auc_update = tf.metrics.auc(
                 labels=y_trues, predictions=y_preds
@@ -50,24 +66,21 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             report_ops_list.append(train_auc)
             update_ops.append(train_auc_update)
 
+        if "accuracy" in met_set:
             # Accuracy
             train_acc, train_acc_update = tf.metrics.accuracy(
                 labels=y_trues, predictions=y_preds
             )
             report_ops_list.append(train_acc)
             update_ops.append(train_acc_update)
-        elif MCd["metrics_type"] == "regression":
+
+        if "rmse" in met_set:
             # RMSE
             train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(
                 labels=y_trues, predictions=y_preds
             )
             report_ops_list.append(train_rmse)
             update_ops.append(train_rmse_update)
-        else:
-            # although the error should be caught in the config. the exit error
-            # is kept until the supported types are pulled from in a config file
-            # rather than being hardcoded as a list in config.py
-            sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
 
         # Group metrics
         mets_report_group = tf.group(report_ops_list)

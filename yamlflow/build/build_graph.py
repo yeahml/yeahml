@@ -171,12 +171,6 @@ def build_graph(MCd: dict, HCd: dict):
                 y_true = y
                 y_pred = preds
 
-            # TODO: these three metric creations (tr/val/test) could likely be made
-            # in a single function with a param for "type". This would prevent any accidental
-            # inconsistencies when creating metrics for each type
-            # TODO: groups may be able to be made dynamically by appending() all the report and
-            # and update operations to a lists which are then passed to the group
-
             ### performance metrics
             # TODO: rename y_true to y_trues and y_pred to y_preds
             train_report_ops_list, train_mets_report_group, train_mets_update_group, train_mets_reset = create_metrics_ops(
