@@ -172,7 +172,6 @@ At the moment the project is being developed around a binary image classificatio
 - handle instance id when not present in the dataset (mnist) - include warning
 - include 'WIPE' option to delete current logs as needed
 - support additional metrics
-- regression support (use Cali Housing)
 - include documentation on what is possible (likely when the project is a little further along)
 - don't wipe directories when running eval
 - handle class imbalance (this is a bit loaded...)
@@ -184,7 +183,6 @@ At the moment the project is being developed around a binary image classificatio
 - basic sanity check for building the parse/config file
 - support type and name declarations from config for parsing tf records
 - logging for initializing weights
-  - remove `FULL_ERROR`
 - resource management/device placement
 - config option for one_hot -- currently requires manual input
 - An option for displaying sample outputs during training/evaluation
@@ -194,10 +192,14 @@ At the moment the project is being developed around a binary image classificatio
 - Support `opts` for the optimizer
 - Support different types of loss functions (right now these are hardcoded by (type)
 - [sphinx](http://www.sphinx-doc.org/en/master/) documentation
+- Add docstrings to each function
 - Batch normalization layer
 - Support for concatenation (would allow for the creation of custom modules -- similar to inception)
 - Depthwise separable convolutions
 - support k fold cross validation
+- make config mapping dictionary read only [related SO](https://stackoverflow.com/questions/19022868/how-to-make-dictionary-read-only-in-python)
+- update graph printing/logging methodology -- more table like
+- add confusion matrix for classification problems
 
 ### TODO: stretch
 

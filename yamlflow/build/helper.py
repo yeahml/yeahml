@@ -35,20 +35,7 @@ def build_loss_ops(batch_loss, set_type: str) -> tuple:
 
 def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
 
-    # TODO: these will be created in the config. this will allow for pre-defined
-    # standard metrics for different types of problems as well as the ability to
-    # dynamically add different metric types
-    if MCd["metrics_type"] == "classification":
-        met_set = set(["auc", "accuracy"])
-
-    elif MCd["metrics_type"] == "regression":
-        met_set = set(["rmse", "mae"])
-
-    else:
-        # although the error should be caught in the config. the exit error
-        # is kept until the supported types are pulled from in a config file
-        # rather than being hardcoded as a list in config.py
-        sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
+    met_set = MCd["met_set"]
 
     report_ops_list = []
     update_ops = []
@@ -69,6 +56,20 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             )
             report_ops_list.append(train_acc)
             update_ops.append(train_acc_update)
+
+        if "precision" in met_set:
+            train_precision, train_precision_update = tf.metrics.precision(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(train_precision)
+            update_ops.append(train_precision_update)
+
+        if "recall" in met_set:
+            train_recall, train_recall_update = tf.metrics.recall(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(train_recall)
+            update_ops.append(train_recall_update)
 
         if "rmse" in met_set:
             train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(

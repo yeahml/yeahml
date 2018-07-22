@@ -167,6 +167,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # convert to lowercase for consistency
     MCd["loss_fn"] = MC["overall"]["loss_fn"].lower()
 
+    ## "type" of problem (will set the default performance metrics)
     try:
         # TODO: these types+options should come from a config
         METRIC_TYPES = ["classification", "regression"]
@@ -186,6 +187,18 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
                 METRIC_TYPES
             )
         )
+    # set default metrics for the specified type
+    if MCd["metrics_type"] == "classification":
+        met_set = set(["auc", "accuracy", "precision", "recall"])
+
+    elif MCd["metrics_type"] == "regression":
+        met_set = set(["rmse", "mae"])
+    else:
+        # although the error should be caught in the config. the exit error
+        # is kept until the supported types are pulled from in a config file
+        # rather than being hardcoded as a list in config.py
+        sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
+    MCd["met_set"] = met_set
 
     try:
         MCd["seed"] = MC["overall"]["rand_seed"]
@@ -288,14 +301,18 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             # handle null case
             MCd[
                 "log_f_str"
-            ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+            ] = (
+                "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+            )
         else:
             # TODO: error checking
             pass
     except KeyError:
         MCd[
             "log_f_str"
-        ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+        ] = (
+            "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
+        )
 
     ## graph level
     try:
