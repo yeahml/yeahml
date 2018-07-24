@@ -44,3 +44,5 @@ examples/segmentation/make_records/raw/ISIC-2017_Training_Data/
 examples/segmentation/make_records/raw/ISIC-2017_Training_Part1_GroundTruth/
 examples/segmentation/make_records/numpy_prep/224_224/
 examples/segmentation/make_records/numpy_final/224_224/
+
+examples/segmentation/data/224_224/
