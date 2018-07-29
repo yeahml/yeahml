@@ -346,8 +346,13 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
 
         ltype = layer_info["type"].lower()
         if ltype == "conv2d":
-            logger.debug("START building: {}".format(ltype))
+            logger.debug("-> START building: {}".format(ltype))
             cur_input = build_conv2d_layer(
+                cur_input, opts, actfn, l_name, logger, g_logger
+            )
+        elif ltype == "deconv2d":
+            logger.debug("-> START building: {}".format(ltype))
+            cur_input = build_conv2d_transpose_layer(
                 cur_input, opts, actfn, l_name, logger, g_logger
             )
         elif ltype == "dense":

@@ -170,7 +170,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     ## "type" of problem (will set the default performance metrics)
     try:
         # TODO: these types+options should come from a config
-        METRIC_TYPES = ["classification", "regression"]
+        METRIC_TYPES = ["classification", "regression", "segmentation"]
         temp_met_type = MC["overall"]["metrics"]["type"]
         temp_met_type = temp_met_type.lower()
         if temp_met_type not in METRIC_TYPES:
@@ -190,9 +190,10 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # set default metrics for the specified type
     if MCd["metrics_type"] == "classification":
         met_set = set(["auc", "accuracy", "precision", "recall"])
-
     elif MCd["metrics_type"] == "regression":
         met_set = set(["rmse", "mae"])
+    elif MCd["metrics_type"] == "segmentation":
+        met_set = set(["iou"])
     else:
         # although the error should be caught in the config. the exit error
         # is kept until the supported types are pulled from in a config file

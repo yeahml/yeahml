@@ -85,6 +85,16 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             report_ops_list.append(train_mae)
             update_ops.append(train_mae_update)
 
+        if "iou" in met_set:
+            mean_iou, mean_iou_update = tf.metrics.mean_iou(
+                labels=y_trues,
+                predictions=y_preds,
+                num_classes=MCd["num_classes"],
+                weights=None,
+            )
+            report_ops_list.append(mean_iou)
+            update_ops.append(mean_iou_update)
+
         # Group metrics
         mets_report_group = tf.group(report_ops_list)
         mets_update_group = tf.group(update_ops)

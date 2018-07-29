@@ -137,6 +137,8 @@ def get_activation_fn(act_str: str):
     # act_fn = tf.nn.leay_relu
     elif act_str == "relu6":
         act_fn = tf.nn.relu6
+    elif act_str == "identity":
+        act_fn = tf.identity
     else:
         # TODO: Error logging
         # the reasoning here is that the relu is subjectively the most
