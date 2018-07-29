@@ -1,0 +1,38 @@
+layers:
+  conv_1:
+    type: 'conv2d'
+    options:
+      filters: 16
+      kernel_size: 3
+      strides: 2
+  conv_2:
+    type: 'conv2d'
+    options:
+      filters: 32
+      kernel_size: 3
+      strides: 2
+  conv_3:
+    type: 'conv2d'
+    options:
+      filters: 64
+      kernel_size: 3
+      strides: 1
+  deconv_1:
+    type: 'deconv2d'
+    options:
+      filters: 32
+      kernel_size: 3
+      strides: 1
+  deconv_2:
+    type: 'deconv2d'
+    options:
+      filters: 16
+      kernel_size: 3
+      strides: 2
+  deconv_3:
+    type: 'deconv2d'
+    options:
+      filters: 2
+      kernel_size: 3
+      strides: 2
+    activation: 'identity'

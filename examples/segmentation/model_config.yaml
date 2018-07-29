@@ -1,0 +1,44 @@
+# all paths are relative to yaml/execution?
+# TODO: naming/structure will need to be improved
+overall:
+  name: 'segmentation'
+  loss_fn: 'softmax_segmentation_temp' # TODO: this will need to be fixed
+  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
+  saver:
+    save_params_name: "best_params_saver"
+  logging:
+    console:
+      level: 'critical'
+    file:
+      level: 'debug'
+    graph_spec: True
+  metrics:
+    type: 'segmentation'
+  num_classes: 2
+data:
+  in:
+    dim: [224, 224, 3]
+    dtype: 'float32'
+  label:
+    dim: [224, 224, 3]
+    dtype: 'float32'
+  TFR:
+    dir: './examples/segmentation/data/224_224'
+    train: 'train.tfrecords'
+    validation: 'validation.tfrecords'
+    test: 'test.tfrecords'
+hyper_parameters:
+  optimizer: 'adam'
+  lr: 0.001
+  batch_size: 16
+  epochs: 20 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
+  default_activation: 'elu'
+  shuffle_buffer: 128
+  early_stopping:
+    epochs: 10
+    warm_up_epochs: 5
+hidden:
+  # TODO: maybe this could also be a .py file containing a graph
+  # > (clear input/output would need to be defined)
+  yaml: './examples/segmentation/hidden_config.yaml'
+ 
