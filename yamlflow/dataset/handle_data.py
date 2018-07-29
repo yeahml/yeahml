@@ -93,15 +93,24 @@ def _parse_function(
     #     labelName: tf.FixedLenFeature([], tf.int64),
     #     # iid: tf.FixedLenFeature([], tf.string),
     # }
-    featureName = "/features"
-    labelName = "/label"
-    iid = "/iid"
+    # featureName = "/features"
+    # labelName = "/label"
+    # iid = "/iid"
 
+    # feature = {
+    #     # I don't believe there are any missing values so I'm unsure why allow_missing is needed
+    #     featureName: tf.FixedLenSequenceFeature([], tf.float32, allow_missing=True),
+    #     labelName: tf.FixedLenFeature([], tf.float32),
+    #     iid: tf.FixedLenFeature([], tf.int64),
+    # }
+
+    # segmentation
+
+    featureName = "/image"
+    labelName = "/label"
     feature = {
-        # I don't belive there are any missing values so I'm unsure why allow_missing is needed
-        featureName: tf.FixedLenSequenceFeature([], tf.float32, allow_missing=True),
-        labelName: tf.FixedLenFeature([], tf.float32),
-        iid: tf.FixedLenFeature([], tf.int64),
+        featureName: tf.FixedLenFeature([], tf.string),
+        labelName: tf.FixedLenFeature([], tf.string),
     }
 
     # decode
@@ -116,10 +125,14 @@ def _parse_function(
     # image = tf.reshape(image, parse_shape)
     # label = tf.cast(parsed_features[labelName], tf.int64)
     # # inst_id = parsed_features[iid]
+    image = tf.decode_raw(parsed_features[featureName], tf.float32)
+    image = tf.reshape(image, [224, 224, 3])
+    label = tf.decode_raw(parsed_features[labelName], tf.float32)
+    label = tf.reshape(label, [224, 224])
 
-    image = parsed_features[featureName]
+    # image = parsed_features[featureName]
     # image = parsed_features[iid]
-    label = parsed_features[labelName]
+    # label = parsed_features[labelName]
 
     # image = parsed_features[labelName]
 

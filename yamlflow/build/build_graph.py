@@ -1,7 +1,6 @@
 import tensorflow as tf
 import sys
-
-# import numpy as np # flatten op
+import numpy as np
 
 from yamlflow.log.yf_logging import config_logger
 from yamlflow.build.build_hidden import build_hidden_block
@@ -73,7 +72,7 @@ def build_graph(MCd: dict, HCd: dict):
 
             # TODO: revamp this conversion. I think for metrics they will need to be
             # consistent, but in general, this should be handled more carefully as it
-            # will break in certain situations.
+            # will break in certain situations (e.g. segmentation)
             # > int64 probably shouldn't be mapped to float32
             if MCd["label_dtype"].startswith("int"):
                 y = tf.cast(y_raw, tf.float32, name="label")
@@ -84,15 +83,18 @@ def build_graph(MCd: dict, HCd: dict):
 
         hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
 
-        # this will act as the output layer for regression
-        logits = tf.layers.dense(hidden, MCd["output_dim"][-1], name="logits")
-
         # TODO: there are now three locations where the type of problem alters code choices
         if MCd["loss_fn"] == "sigmoid":
+            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
             preds = tf.sigmoid(logits, name="y_proba")
         elif MCd["loss_fn"] == "softmax":
+            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
+            preds = tf.nn.softmax(logits, name="y_proba")
+        elif MCd["loss_fn"] == "softmax_segmentation_temp":
+            logits = hidden
             preds = tf.nn.softmax(logits, name="y_proba")
         elif MCd["loss_fn"] == "mse" or MCd["loss_fn"] == "rmse":
+            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
             preds = logits
         else:
             logger.fatal("preds cannot be created as: {}".format(MCd["loss_fn"]))
@@ -120,6 +122,18 @@ def build_graph(MCd: dict, HCd: dict):
                 xentropy = tf.losses.softmax_cross_entropy(
                     onehot_labels=y, logits=logits
                 )
+            elif MCd["loss_fn"] == "softmax_segmentation_temp":
+                y = tf.cast(y, tf.int32, name="label")
+                y_true_hot = tf.one_hot(y, depth=MCd["num_classes"], axis=3)
+                xentropy = tf.reduce_mean(
+                    -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
+                )
+                class_weights = np.asarray(
+                    [1.0, 8.75]
+                )  # hardcoded values previously determined
+                xentropy = xentropy * class_weights
+                # loss_temp = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_truth, logits=logit))
+
             elif MCd["loss_fn"] == "mse" or MCd["loss_fn"] == "rmse":
                 xentropy = tf.losses.mean_squared_error(labels=y, predictions=preds)
             else:
@@ -167,6 +181,9 @@ def build_graph(MCd: dict, HCd: dict):
                     elif MCd["loss_fn"] == "softmax":
                         y_true = tf.argmax(y, 1)
                         y_pred = tf.argmax(preds, 1)
+            elif MCd["loss_fn"] == "softmax_segmentation_temp":
+                y_true = y_true_hot
+                y_pred = preds
             else:
                 y_true = y
                 y_pred = preds
@@ -248,7 +265,10 @@ def build_graph(MCd: dict, HCd: dict):
         assert len(weights) == len(bias), "number of weights & bias are not equal"
         logger.debug("len(weights) == len(bias) = {}".format(len(weights)))
         layer_names = list(HCd["layers"])
-        layer_names.append("logits")
+
+        # TODO: hardcoded way of removing logits from segmentation development
+        if MCd["loss_fn"] != "softmax_segmentation_temp":
+            layer_names.append("logits")
         # exclude all pooling layers
         # TODO: this logic assumes that the layer name corresponds to the type of layer
         # > ideally, this list should be built by inspecting the layer 'type', but for beta

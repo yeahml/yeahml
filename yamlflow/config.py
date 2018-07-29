@@ -89,6 +89,13 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
 
     MCd = {}
 
+    # TODO: this is a temp+new object in the dict
+    try:
+        MCd["num_classes"] = MC["overall"]["num_classes"]
+    except KeyError:
+        # no params will be loaded from previously trained params
+        pass
+
     MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
 
     ## inputs

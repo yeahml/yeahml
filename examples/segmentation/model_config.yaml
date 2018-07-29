@@ -20,7 +20,7 @@ data:
     dim: [224, 224, 3]
     dtype: 'float32'
   label:
-    dim: [224, 224, 3]
+    dim: [224, 224]
     dtype: 'float32'
   TFR:
     dir: './examples/segmentation/data/224_224'
