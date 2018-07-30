@@ -10,6 +10,8 @@ def get_tf_dtype(dtype: str):
         tf_dtype = tf.float32
     elif dtype == "int64":
         tf_dtype = tf.int64
+    elif dtype == "string":
+        tf_dtype = tf.string
     else:
         sys.exit("Error: Exit: dtype {} not recognized/supported".format(dtype))
 

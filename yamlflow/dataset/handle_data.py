@@ -3,6 +3,8 @@ import pickle
 from tqdm import tqdm
 import os
 
+from yamlflow.build.get_components import get_tf_dtype
+
 
 def augment_image(img_tensor, aug_opts: dict):
 
@@ -73,6 +75,17 @@ def augment_image(img_tensor, aug_opts: dict):
     return img_tensor
 
 
+def get_parse_type(parse_dict: dict):
+    tfr_obj = None
+    if parse_dict["tftype"] == "fixedlenfeature":
+        tfr_obj = tf.FixedLenFeature([], get_tf_dtype(parse_dict["in_type"]))
+    elif parse_dict["tftype"] == "fixedlensequencefeature":
+        tfr_obj = tf.FixedLenSequenceFeature(
+            [], get_tf_dtype(parse_dict["in_type"]), allow_missing=True
+        )
+    return tfr_obj
+
+
 def _parse_function(
     example_proto,
     set_type: str,
@@ -81,67 +94,44 @@ def _parse_function(
     parse_shape: list,
     one_hot: bool,
     output_dim: int,
+    data_in_dict: dict,
+    data_out_dict: dict,
+    tfr_parse_dict: dict,
 ):
 
-    # TODO: these names are important / should be listed in the main config
-    # featureName = "/image"
-    # labelName = "/label"
-    # # iid = "/iid"
+    # TODO: this logic is sloppy.. and needs to be better organized
 
-    # feature = {
-    #     featureName: tf.FixedLenFeature([], tf.string),
-    #     labelName: tf.FixedLenFeature([], tf.int64),
-    #     # iid: tf.FixedLenFeature([], tf.string),
-    # }
-    # featureName = "/features"
-    # labelName = "/label"
-    # iid = "/iid"
+    f_dict = tfr_parse_dict["feature"]
+    featureName = f_dict["name"]
 
-    # feature = {
-    #     # I don't believe there are any missing values so I'm unsure why allow_missing is needed
-    #     featureName: tf.FixedLenSequenceFeature([], tf.float32, allow_missing=True),
-    #     labelName: tf.FixedLenFeature([], tf.float32),
-    #     iid: tf.FixedLenFeature([], tf.int64),
-    # }
+    l_dict = tfr_parse_dict["label"]
+    labelName = l_dict["name"]
 
-    # segmentation
-
-    featureName = "/image"
-    labelName = "/label"
-    feature = {
-        featureName: tf.FixedLenFeature([], tf.string),
-        labelName: tf.FixedLenFeature([], tf.string),
-    }
+    feature = {featureName: get_parse_type(f_dict), labelName: get_parse_type(l_dict)}
 
     # decode
     parsed_features = tf.parse_single_example(example_proto, features=feature)
 
-    # convert image data from string to number
+    if f_dict["in_type"] == "string":
+        image = tf.decode_raw(
+            parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
+        )
+        image = tf.reshape(image, data_in_dict["dim"])
+    else:
+        image = parsed_features[featureName]
 
-    # TODO: these datatypes are important / should be listed in the main config
-    # image = tf.decode_raw(parsed_features[featureName], tf.int8)
-    # # image = tf.decode_raw(parsed_features[featureName], tf.float32)
-    # # TODO: these values should be acquired from the yaml
-    # image = tf.reshape(image, parse_shape)
-    # label = tf.cast(parsed_features[labelName], tf.int64)
-    # # inst_id = parsed_features[iid]
-    image = tf.decode_raw(parsed_features[featureName], tf.float32)
-    image = tf.reshape(image, [224, 224, 3])
-    label = tf.decode_raw(parsed_features[labelName], tf.float32)
-    label = tf.reshape(label, [224, 224])
-
-    # image = parsed_features[featureName]
-    # image = parsed_features[iid]
-    # label = parsed_features[labelName]
-
-    # image = parsed_features[labelName]
+    if l_dict["in_type"] == "string":
+        label = tf.decode_raw(parsed_features[labelName], get_tf_dtype(l_dict["dtype"]))
+        label = tf.reshape(label, data_out_dict["dim"])
+    else:
+        label = parsed_features[labelName]
 
     # TODO: One hot as needed here......
     if one_hot:
         # [-1] needed to remove the added batching
         label = tf.one_hot(label, depth=output_dim)
 
-    # Augmentation
+    # augmentation
     if aug_opts:
         if set_type == "train":
             image = augment_image(image, aug_opts)
@@ -196,6 +186,9 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
             parse_shape,
             MCd["label_one_hot"],
             MCd["output_dim"][-1],  # used for one_hot encoding
+            MCd["data_in_dict"],
+            MCd["data_out_dict"],
+            MCd["TFR_parse"],
         )
     )  # Parse the record into tensors.
     if set_type != "test":

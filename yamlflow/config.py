@@ -99,7 +99,8 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
 
     ## inputs
-    MCd["in_dim"] = MC["data"]["in"]["dim"]
+    # copy is used to prevent overwriting underlying data
+    MCd["in_dim"] = MC["data"]["in"]["dim"].copy()
     if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
         MCd["in_dim"].insert(0, None)  # add batching
     MCd["in_dtype"] = MC["data"]["in"]["dtype"]
@@ -111,7 +112,8 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         # None in this case is representative of not reshaping
         MCd["reshape_in_to"] = None
 
-    MCd["output_dim"] = MC["data"]["label"]["dim"]
+    # copy is used to prevent overwriting underlying data
+    MCd["output_dim"] = MC["data"]["label"]["dim"].copy()
     if MCd["output_dim"][0]:  # as oppposed to [None, x, y, z]
         MCd["output_dim"].insert(0, None)  # add batching
     MCd["label_dtype"] = MC["data"]["label"]["dtype"]
@@ -134,6 +136,12 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     MCd["TFR_train"] = MC["data"]["TFR"]["train"]
     MCd["TFR_test"] = MC["data"]["TFR"]["test"]
     MCd["TFR_val"] = MC["data"]["TFR"]["validation"]
+
+    # TODO: this is a first draft for this type of organization and will
+    # will likely be changed
+    MCd["data_in_dict"] = MC["data"]["in"]
+    MCd["data_out_dict"] = MC["data"]["label"]
+    MCd["TFR_parse"] = MC["data"]["TFR_parse"]
 
     ########### hyperparameters
     MCd["lr"] = MC["hyper_parameters"]["lr"]

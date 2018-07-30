@@ -22,6 +22,17 @@ data:
   label:
     dim: [224, 224]
     dtype: 'float32'
+  TFR_parse:
+    feature:
+      name: "/image"
+      dtype: "float32"
+      tftype: "fixedlenfeature"
+      in_type: "string"
+    label:
+      name: "/label"
+      dtype: "float32"
+      tftype: "fixedlenfeature"
+      in_type: "string"
   TFR:
     dir: './examples/segmentation/data/224_224'
     train: 'train.tfrecords'
