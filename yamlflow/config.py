@@ -208,7 +208,7 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     elif MCd["metrics_type"] == "regression":
         met_set = set(["rmse", "mae"])
     elif MCd["metrics_type"] == "segmentation":
-        met_set = set(["iou"])
+        met_set = set(["iou", "tn", "tp", "fn", "fp"])
     else:
         # although the error should be caught in the config. the exit error
         # is kept until the supported types are pulled from in a config file

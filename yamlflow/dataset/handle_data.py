@@ -107,12 +107,15 @@ def _parse_function(
     l_dict = tfr_parse_dict["label"]
     labelName = l_dict["name"]
 
-    feature = {featureName: get_parse_type(f_dict), labelName: get_parse_type(l_dict)}
+    feature_dict = {
+        featureName: get_parse_type(f_dict),
+        labelName: get_parse_type(l_dict),
+    }
 
     # decode
-    parsed_features = tf.parse_single_example(example_proto, features=feature)
+    parsed_features = tf.parse_single_example(example_proto, features=feature_dict)
 
-    if f_dict["in_type"] == "string":
+    if f_dict["in_type"] == "string" and f_dict["dtype"] != "string":
         image = tf.decode_raw(
             parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
         )

@@ -43,47 +43,72 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
     reset_str = set_type + "_mets_reset"
 
     with tf.name_scope(scope_str) as scope:
-        if "auc" in met_set:
-            train_auc, train_auc_update = tf.metrics.auc(
+
+        if "fp" in met_set:
+            fp, fp_update = tf.metrics.false_positives(
                 labels=y_trues, predictions=y_preds
             )
-            report_ops_list.append(train_auc)
-            update_ops.append(train_auc_update)
+            report_ops_list.append(fp)
+            update_ops.append(fp_update)
+
+        if "fn" in met_set:
+            fn, fn_update = tf.metrics.false_negatives(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(fn)
+            update_ops.append(fn_update)
+
+        if "tp" in met_set:
+            tp, tp_update = tf.metrics.true_positives(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(tp)
+            update_ops.append(tp_update)
+
+        if "tn" in met_set:
+            tn, tn_update = tf.metrics.true_negatives(
+                labels=y_trues, predictions=y_preds
+            )
+            report_ops_list.append(tn)
+            update_ops.append(tn_update)
+
+        if "auc" in met_set:
+            auc, auc_update = tf.metrics.auc(labels=y_trues, predictions=y_preds)
+            report_ops_list.append(auc)
+            update_ops.append(auc_update)
 
         if "accuracy" in met_set:
-            train_acc, train_acc_update = tf.metrics.accuracy(
-                labels=y_trues, predictions=y_preds
-            )
-            report_ops_list.append(train_acc)
-            update_ops.append(train_acc_update)
+            acc, acc_update = tf.metrics.accuracy(labels=y_trues, predictions=y_preds)
+            report_ops_list.append(acc)
+            update_ops.append(acc_update)
 
         if "precision" in met_set:
-            train_precision, train_precision_update = tf.metrics.precision(
+            precision, precision_update = tf.metrics.precision(
                 labels=y_trues, predictions=y_preds
             )
-            report_ops_list.append(train_precision)
-            update_ops.append(train_precision_update)
+            report_ops_list.append(precision)
+            update_ops.append(precision_update)
 
         if "recall" in met_set:
-            train_recall, train_recall_update = tf.metrics.recall(
+            recall, recall_update = tf.metrics.recall(
                 labels=y_trues, predictions=y_preds
             )
-            report_ops_list.append(train_recall)
-            update_ops.append(train_recall_update)
+            report_ops_list.append(recall)
+            update_ops.append(recall_update)
 
         if "rmse" in met_set:
-            train_rmse, train_rmse_update = tf.metrics.root_mean_squared_error(
+            rmse, rmse_update = tf.metrics.root_mean_squared_error(
                 labels=y_trues, predictions=y_preds
             )
-            report_ops_list.append(train_rmse)
-            update_ops.append(train_rmse_update)
+            report_ops_list.append(rmse)
+            update_ops.append(rmse_update)
 
         if "mae" in met_set:
-            train_mae, train_mae_update = tf.metrics.mean_absolute_error(
+            mae, mae_update = tf.metrics.mean_absolute_error(
                 labels=y_trues, predictions=y_preds
             )
-            report_ops_list.append(train_mae)
-            update_ops.append(train_mae_update)
+            report_ops_list.append(mae)
+            update_ops.append(mae_update)
 
         if "iou" in met_set:
             mean_iou, mean_iou_update = tf.metrics.mean_iou(
@@ -101,6 +126,8 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
         mets_vars = tf.contrib.framework.get_variables(
             scope, collection=tf.GraphKeys.LOCAL_VARIABLES
         )
-        mets_reset = tf.variables_initializer(mets_vars, name="train_mets_reset")
+        mets_reset = tf.variables_initializer(
+            mets_vars, name="performance_metrics_reset"
+        )
 
     return (report_ops_list, mets_report_group, mets_update_group, mets_reset)
