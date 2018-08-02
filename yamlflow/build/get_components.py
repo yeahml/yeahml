@@ -150,6 +150,28 @@ def get_activation_fn(act_str: str):
     return act_fn
 
 
+def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) -> tuple:
+    # create the output layer (logits and preds) based on the type of loss function used.
+    if loss_str == "sigmoid":
+        logits = tf.layers.dense(hidden_out, num_classes, name="logits")
+        preds = tf.sigmoid(logits, name="y_proba")
+    elif loss_str == "softmax":
+        logits = tf.layers.dense(hidden_out, num_classes, name="logits")
+        preds = tf.nn.softmax(logits, name="y_proba")
+    elif loss_str == "softmax_segmentation_temp":
+        logits = hidden_out
+        preds = tf.nn.softmax(logits, name="y_proba")
+    elif loss_str == "mse" or loss_str == "rmse":
+        logits = tf.layers.dense(hidden_out, num_classes, name="logits")
+        preds = logits
+    else:
+        logger.fatal("preds cannot be created as: {}".format(loss_str))
+        sys.exit("final_type: {} -- is not supported or defined.".format(loss_str))
+    logger.debug("pred created as {}: {}".format(loss_str, preds))
+
+    return (logits, preds)
+
+
 def get_initializer_fn(init_str: str):
     # NOTE: will use uniform (not normal) by default
 

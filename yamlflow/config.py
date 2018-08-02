@@ -4,11 +4,14 @@ import shutil
 import os
 import sys
 import logging
+import numpy as np
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
 # do the metrics make sense for the problem? layer order? est. param size?
 # > maybe this belongs in "build graph?"
+
+# TODO: A config logger should be generated / used
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -89,6 +92,20 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
 
     MCd = {}
 
+    ## 'overall'
+    MCd["name"] = MC["overall"]["name"]
+    MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
+
+    try:
+        MCd["seed"] = MC["overall"]["rand_seed"]
+    except KeyError:
+        pass
+
+    try:
+        MCd["trace_level"] = MC["overall"]["trace"].lower()
+    except KeyError:
+        pass
+
     # TODO: this is a temp+new object in the dict
     try:
         MCd["num_classes"] = MC["overall"]["num_classes"]
@@ -96,7 +113,10 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         # no params will be loaded from previously trained params
         pass
 
-    MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
+    try:
+        MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
+    except KeyError:
+        MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
 
     ## inputs
     # copy is used to prevent overwriting underlying data
@@ -215,18 +235,6 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         # rather than being hardcoded as a list in config.py
         sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
     MCd["met_set"] = met_set
-
-    try:
-        MCd["seed"] = MC["overall"]["rand_seed"]
-    except KeyError:
-        pass
-
-    try:
-        MCd["trace_level"] = MC["overall"]["trace"].lower()
-    except KeyError:
-        pass
-
-    MCd["name"] = MC["overall"]["name"]
 
     try:
         MCd["augmentation"] = MC["train"]["augmentation"]

@@ -6,6 +6,7 @@ from yamlflow.log.yf_logging import config_logger
 from yamlflow.build.build_hidden import build_hidden_block
 from yamlflow.build.get_components import get_tf_dtype
 from yamlflow.build.get_components import get_optimizer
+from yamlflow.build.get_components import get_logits_and_preds
 from yamlflow.build.helper import (
     build_mets_write_op,
     build_loss_ops,
@@ -48,9 +49,8 @@ def build_graph(MCd: dict, HCd: dict):
 
     g = tf.Graph()
     with g.as_default():
-
         g_logger.info("============={}=============".format("GRAPH"))
-        #### model architecture
+
         with tf.name_scope("inputs"):
             logger.info("create inputs")
             # TODO: input dimension logic (currently hardcoded)
@@ -83,26 +83,13 @@ def build_graph(MCd: dict, HCd: dict):
 
         hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
 
-        # TODO: there are now three locations where the type of problem alters code choices
-        if MCd["loss_fn"] == "sigmoid":
-            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
-            preds = tf.sigmoid(logits, name="y_proba")
-        elif MCd["loss_fn"] == "softmax":
-            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
-            preds = tf.nn.softmax(logits, name="y_proba")
-        elif MCd["loss_fn"] == "softmax_segmentation_temp":
-            logits = hidden
-            preds = tf.nn.softmax(logits, name="y_proba")
-        elif MCd["loss_fn"] == "mse" or MCd["loss_fn"] == "rmse":
-            logits = tf.layers.dense(hidden, MCd["num_classes"], name="logits")
-            preds = logits
-        else:
-            logger.fatal("preds cannot be created as: {}".format(MCd["loss_fn"]))
-            sys.exit(
-                "final_type: {} -- is not supported or defined.".format(MCd["loss_fn"])
-            )
-        logger.debug("pred created as {}: {}".format(MCd["loss_fn"], preds))
-
+        ## Logits and preds function
+        logits, preds = get_logits_and_preds(
+            loss_str=MCd["loss_fn"],
+            hidden=hidden,
+            num_classes=MCd["num_classes"],
+            logger=logger,
+        )
         g_logger.info("{}".format(fmt_tensor_info(preds)))
 
         #### loss logic
@@ -128,9 +115,7 @@ def build_graph(MCd: dict, HCd: dict):
                 xentropy = tf.reduce_mean(
                     -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
                 )
-                class_weights = np.asarray(
-                    [1.0, 8.75]
-                )  # hardcoded values previously determined
+                class_weights = MCd["class_weights"]
                 xentropy = xentropy * class_weights
                 # loss_temp = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_truth, logits=logit))
 
@@ -154,21 +139,20 @@ def build_graph(MCd: dict, HCd: dict):
             # )
             batch_loss = tf.add_n([base_loss] + reg_losses, name="loss")
 
-        #### optimizer
+        ## optimizer
         with tf.name_scope("train"):
             logger.info("create /train")
             optimizer = get_optimizer(MCd)
             g_logger.info("{}".format(optimizer._name))
-
             training_op = optimizer.minimize(batch_loss, name="training_op")
 
-        #### init
+        ## init
         with tf.name_scope("init"):
             logger.info("create /init")
             init_global = tf.global_variables_initializer()
             init_local = tf.local_variables_initializer()
 
-        #### metrics
+        ## metrics
         with tf.name_scope("metrics"):
             logger.info("create /metrics")
             if MCd["metrics_type"] == "classification":
@@ -176,30 +160,29 @@ def build_graph(MCd: dict, HCd: dict):
                 with tf.name_scope("common"):
                     logger.debug("create /metrics/common")
                     if MCd["loss_fn"] == "sigmoid":
-                        y_true = tf.greater_equal(y, 0.5)
-                        y_pred = tf.greater_equal(preds, 0.5)
+                        y_trues = tf.greater_equal(y, 0.5)
+                        y_preds = tf.greater_equal(preds, 0.5)
                     elif MCd["loss_fn"] == "softmax":
-                        y_true = tf.argmax(y, 1)
-                        y_pred = tf.argmax(preds, 1)
+                        y_trues = tf.argmax(y, 1)
+                        y_preds = tf.argmax(preds, 1)
             elif MCd["loss_fn"] == "softmax_segmentation_temp":
-                y_true = y_true_hot
-                y_pred = preds
+                y_trues = y_true_hot
+                y_preds = preds
             else:
-                y_true = y
-                y_pred = preds
+                y_trues = y
+                y_preds = preds
 
             ### performance metrics
-            # TODO: rename y_true to y_trues and y_pred to y_preds
             train_report_ops_list, train_mets_report_group, train_mets_update_group, train_mets_reset = create_metrics_ops(
-                MCd, set_type="train", y_trues=y_true, y_preds=y_pred
+                MCd, set_type="train", y_trues=y_trues, y_preds=y_preds
             )
 
             val_report_ops_list, val_mets_report_group, val_mets_update_group, val_mets_reset = create_metrics_ops(
-                MCd, set_type="val", y_trues=y_true, y_preds=y_pred
+                MCd, set_type="val", y_trues=y_trues, y_preds=y_preds
             )
 
             test_report_ops_list, test_mets_report_group, test_mets_update_group, test_mets_reset = create_metrics_ops(
-                MCd, set_type="test", y_trues=y_true, y_preds=y_pred
+                MCd, set_type="test", y_trues=y_trues, y_preds=y_preds
             )
 
             ### loss
@@ -221,7 +204,7 @@ def build_graph(MCd: dict, HCd: dict):
 
         g.add_to_collection("preds", preds)
 
-        for node in (y_true, y_pred):
+        for node in (y_trues, y_preds):
             g.add_to_collection("gt_and_pred", node)
 
         # performance metrics operations
