@@ -102,10 +102,6 @@ def build_graph(MCd: dict, HCd: dict):
                     logits=logits, labels=y
                 )
             elif MCd["loss_fn"] == "softmax":
-                # why v2? see here: https://bit.ly/2z3NJ8n
-                # xentropy = tf.nn.softmax_cross_entropy_with_logits_v2(
-                #    logits=logits, labels=y
-                # )
                 xentropy = tf.losses.softmax_cross_entropy(
                     onehot_labels=y, logits=logits
                 )
@@ -172,7 +168,7 @@ def build_graph(MCd: dict, HCd: dict):
                 y_trues = y
                 y_preds = preds
 
-            ### performance metrics
+            ## performance metrics
             train_report_ops_list, train_mets_report_group, train_mets_update_group, train_mets_reset = create_metrics_ops(
                 MCd, set_type="train", y_trues=y_trues, y_preds=y_preds
             )
@@ -231,7 +227,7 @@ def build_graph(MCd: dict, HCd: dict):
         g.add_to_collection("logits", logits)
 
         # ===================================== tensorboard
-        #### scalar
+        ## scalar
         # TODO: this should really be TRAINABLE_VARIABLES...
         weights = [
             v

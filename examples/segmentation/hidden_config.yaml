@@ -14,6 +14,12 @@ layers:
   conv_3:
     type: 'conv2d'
     options:
+      filters: 32
+      kernel_size: 3
+      strides: 2
+  conv_4:
+    type: 'conv2d'
+    options:
       filters: 64
       kernel_size: 3
       strides: 1
@@ -26,10 +32,16 @@ layers:
   deconv_2:
     type: 'deconv2d'
     options:
-      filters: 16
+      filters: 32
       kernel_size: 3
       strides: 2
   deconv_3:
+    type: 'deconv2d'
+    options:
+      filters: 16
+      kernel_size: 3
+      strides: 2
+  deconv_4:
     type: 'deconv2d'
     options:
       filters: 2

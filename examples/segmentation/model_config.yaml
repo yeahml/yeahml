@@ -22,7 +22,7 @@ data:
     dtype: 'float32'
   label:
     dim: [224, 224]
-    dtype: 'float32'
+    dtype: 'int32'
   TFR_parse:
     feature:
       name: "/image"
@@ -31,7 +31,7 @@ data:
       in_type: "string"
     label:
       name: "/label"
-      dtype: "float32"
+      dtype: "int32"
       tftype: "fixedlenfeature"
       in_type: "string"
   TFR:
@@ -43,7 +43,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.001
   batch_size: 16
-  epochs: 20 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
+  epochs: 10 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
   default_activation: 'elu'
   shuffle_buffer: 128
   early_stopping:
