@@ -10,6 +10,7 @@ from yamlflow.log.yf_logging import config_logger  # custom logging
 from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
 from yamlflow.build.get_components import get_run_options
 from yamlflow.helper import fmt_metric_summary
+from yamlflow.plot.plotting import plot_four_segmentation_array
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -45,6 +46,11 @@ def train_graph(g, MCd: dict, HCd: dict):
     epoch_train_write_op, epoch_validation_write_op, hist_write_op = g.get_collection(
         "tensorboard"
     )
+
+    # TODO: TEMP
+    if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+        y_true_hot = g.get_collection("y_true_hot")
+        seg_prob = g.get_collection("seg_prob")
 
     best_val_loss = math.inf
     last_best_e = 0  # marker for early stopping
@@ -182,12 +188,39 @@ def train_graph(g, MCd: dict, HCd: dict):
                     logger.debug("In warm up period: e {} <= {}".format(e, WARM_UP_e))
 
             summary = sess.run(epoch_validation_write_op)
-            summary_dict = fmt_metric_summary(summary)
             val_writer.add_summary(summary, e)
             val_writer.flush()
+
+            summary_dict = fmt_metric_summary(summary)
             logger.info(
                 "[END] epoch num: {} validation metrics: {}".format(e, summary_dict)
             )
+
+            # TODO: TEMP
+            if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+                ## image
+                plot_buf = plot_four_segmentation_array(
+                    sess,
+                    MCd["output_dim"],
+                    X,
+                    preds,
+                    seg_prob,
+                    Xb,
+                    yb,
+                    4,  # TODO: This is currently hardcoded
+                )
+                # TODO: This currently adds an operation every iteration
+                # this will need to be adjusted to accept a feed dict
+                # Convert PNG buffer to TF image
+                tfimage = tf.image.decode_png(plot_buf.getvalue(), channels=4)
+                # Add the batch dimension
+                tfimage = tf.expand_dims(tfimage, 0)
+                # print(tfimage)
+                # Add image summary
+                image_summary_op = tf.summary.image("plot", tfimage)
+                img_summary = sess.run(image_summary_op)
+                val_writer.add_summary(img_summary, e)
+                val_writer.flush()
 
         train_writer.close()
         val_writer.close()

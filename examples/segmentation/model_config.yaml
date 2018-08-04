@@ -2,7 +2,7 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'segmentation'
-  loss_fn: 'softmax_segmentation_temp' # TODO: this will need to be fixed
+  loss_fn: 'softmax_binary_segmentation_temp' # TODO: this will need to be fixed
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"

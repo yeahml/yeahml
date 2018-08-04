@@ -160,7 +160,7 @@ def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) ->
     elif loss_str == "softmax":
         logits = tf.layers.dense(hidden_out, num_classes, name="logits")
         preds = tf.nn.softmax(logits, name="y_proba")
-    elif loss_str == "softmax_segmentation_temp":
+    elif loss_str == "softmax_binary_segmentation_temp":
         logits = hidden_out
         preds = tf.nn.softmax(logits, name="y_proba")
     elif loss_str == "mse" or loss_str == "rmse":
