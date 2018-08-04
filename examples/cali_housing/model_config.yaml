@@ -21,6 +21,17 @@ data:
   label:
     dim: [1]
     dtype: 'float32'
+  TFR_parse:
+    feature:
+      name: "/features"
+      dtype: "float32"
+      tftype: "FixedLenSequenceFeature"
+      in_type: "float32"
+    label:
+      name: "/label"
+      dtype: "float32" # what to decode it to
+      tftype: "fixedlenfeature"
+      in_type: "float32" # what it is encoded as
   TFR:
     dir: './examples/cali_housing/data/'
     train: 'train.tfrecords'

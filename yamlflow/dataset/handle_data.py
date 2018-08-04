@@ -2,6 +2,7 @@ import tensorflow as tf
 import pickle
 from tqdm import tqdm
 import os
+import sys
 
 from yamlflow.build.get_components import get_tf_dtype
 
@@ -77,11 +78,16 @@ def augment_image(img_tensor, aug_opts: dict):
 
 def get_parse_type(parse_dict: dict):
     tfr_obj = None
-    if parse_dict["tftype"] == "fixedlenfeature":
+    tf_parse_type = parse_dict["tftype"].lower()
+    if tf_parse_type == "fixedlenfeature":
         tfr_obj = tf.FixedLenFeature([], get_tf_dtype(parse_dict["in_type"]))
-    elif parse_dict["tftype"] == "fixedlensequencefeature":
+    elif tf_parse_type == "fixedlensequencefeature":
         tfr_obj = tf.FixedLenSequenceFeature(
             [], get_tf_dtype(parse_dict["in_type"]), allow_missing=True
+        )
+    else:
+        sys.exit(
+            "tf_parse_type: {} -- is not supported or defined.".format(tf_parse_type)
         )
     return tfr_obj
 

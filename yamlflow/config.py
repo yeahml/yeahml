@@ -111,12 +111,16 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         MCd["num_classes"] = MC["overall"]["num_classes"]
     except KeyError:
         # no params will be loaded from previously trained params
+        # TODO: I don't feel great about this.. this is a temp fix
+        if MC["overall"]["metrics"]["type"] == "regression":
+            MCd["num_classes"] = 1
         pass
 
-    try:
-        MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
-    except KeyError:
-        MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
+    if MC["overall"]["metrics"]["type"] == "classification":
+        try:
+            MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
+        except KeyError:
+            MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
 
     ## inputs
     # copy is used to prevent overwriting underlying data
