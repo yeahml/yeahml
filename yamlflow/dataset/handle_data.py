@@ -194,7 +194,7 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
             MCd["TFR_parse"],
         )
     )  # Parse the record into tensors.
-    if set_type != "test":
+    if set_type == "train":
         dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
     # prefetch is used to ensure one batch is always ready

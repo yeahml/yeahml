@@ -69,9 +69,7 @@ def eval_graph_from_saver(MCd):
     logger.debug("eval_graph_from_saver")
     preds_logger = config_logger(MCd, "preds")
 
-    # with tf.Session(graph=g) as sess:
     with tf.Session() as sess:
-        # saver = tf.train.Saver()
         graph_path = os.path.join(MCd["saver_save"] + ".meta")
         saver = tf.train.import_meta_graph(graph_path)
         g = tf.get_default_graph()
