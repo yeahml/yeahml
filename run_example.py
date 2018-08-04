@@ -10,7 +10,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Core Logic
 
 ## Config files for currently supported modes
-# example = "./examples/cats_v_dogs_01/model_config.yaml" # sigmoid example
+# example = "./examples/cats_v_dogs_01/model_config.yaml"  # sigmoid example
 # example = "./examples/mnist/model_config.yaml"  # softmax example
 # example = "./examples/cali_housing/model_config.yaml"  # regression example
 example = "./examples/segmentation/model_config.yaml"  # segmentation example

@@ -8,10 +8,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable  # colorbar helper
 
 
 def convert_to_buf(plt):
-    """convert a plt to a buffer to be displayed in tensorboard
+    """convert a plt to a buffer to be displayed in TensorBoard
     
     Arguments:
-        plt {matplotlib.pyplot} -- the completed plot to be displayed in tensorboard
+        plt {matplotlib.pyplot} -- the completed plot to be displayed in TensorBoard
     
     Returns:
         [io.BytesIO] -- a bytes buffer of a plot
@@ -49,7 +49,7 @@ def plot_four_segmentation_array(
     y_softmax, y_seg_prob = sess.run([preds, seg_prob], {x: X_batch})
     y_prediction = np.argmax(y_softmax[0], axis=3)
 
-    # convert 224x224x1 to 224x224
+    # convert widthxheightx1 to widthxheight
     y_seg_prob = y_seg_prob[0].reshape(
         len(X_batch), output_dim_list[1], output_dim_list[2]
     )

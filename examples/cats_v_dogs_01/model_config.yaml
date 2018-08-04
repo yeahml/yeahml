@@ -18,14 +18,27 @@ overall:
     graph_spec: True
     # TODO: preds
     # TODO: preds csv? w/fmt string
+  num_classes: 1
+  metrics:
+    type: 'classification'
 data:
   in: 
     dim: [150, 150, 3]
     dtype: 'float32'
-    #reshape_to: [28, 28, 1]
   label:
     dim: [1]
     dtype: 'int64'
+  TFR_parse:
+    feature:
+      name: "/image"
+      dtype: "float32"
+      tftype: "fixedlenfeature"
+      in_type: "string"
+    label:
+      name: "/label"
+      dtype: "int64" # what to decode it to
+      tftype: "fixedlenfeature"
+      in_type: "int64" # what it is encoded as
   TFR:
     dir: './examples/cats_v_dogs_01/data/record_holder/150'
     train: 'train.tfrecords'

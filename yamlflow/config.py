@@ -223,7 +223,11 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             )
         )
     # set default metrics for the specified type
+    # - available metrics
     # > "tn", "tp", "fn", "fp"
+    # > "accuracy", "precision", "recall", "auc"
+    # > "rmse", "mae"
+    # > "iou"
     if MCd["metrics_type"] == "classification":
         met_set = set(["auc", "accuracy", "precision", "recall"])
     elif MCd["metrics_type"] == "regression":

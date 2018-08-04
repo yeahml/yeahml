@@ -18,6 +18,7 @@ overall:
     graph_spec: True
   metrics: 
     type: 'classification'
+  num_classes: 10
 data:
   in: 
     dim: [784]
@@ -27,6 +28,17 @@ data:
     dim: [10]
     dtype: 'float32'
     one_hot: True
+  TFR_parse:
+    feature:
+      name: "/image"
+      dtype: "int8"
+      tftype: "fixedlenfeature"
+      in_type: "string"
+    label:
+      name: "/label"
+      dtype: "int64" # what to decode it to
+      tftype: "fixedlenfeature"
+      in_type: "int64" # what it is encoded as
   TFR:
     dir: './examples/mnist/data/'
     train: 'train.tfrecords'

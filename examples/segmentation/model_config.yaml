@@ -43,7 +43,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.001
   batch_size: 16
-  epochs: 10 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
+  epochs: 2 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
   default_activation: 'elu'
   shuffle_buffer: 128
   early_stopping:
