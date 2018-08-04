@@ -115,17 +115,29 @@ def _parse_function(
     # decode
     parsed_features = tf.parse_single_example(example_proto, features=feature_dict)
 
+    ## Feature
+
+    # decode string
     if f_dict["in_type"] == "string" and f_dict["dtype"] != "string":
         image = tf.decode_raw(
             parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
         )
-        image = tf.reshape(image, data_in_dict["dim"])
     else:
         image = parsed_features[featureName]
 
+    # if a reshape is present in the config for the feature, reshape the data
+    try:
+        if data_in_dict["reshape_to"]:
+            image = tf.reshape(image, parse_shape)
+    except KeyError:
+        image = tf.reshape(image, parse_shape)
+
+    ## Label
+
+    # decode string
     if l_dict["in_type"] == "string":
         label = tf.decode_raw(parsed_features[labelName], get_tf_dtype(l_dict["dtype"]))
-        label = tf.reshape(label, data_out_dict["dim"])
+        # if a reshape is present in the config for the label, reshape the data
     else:
         label = parsed_features[labelName]
 
@@ -133,6 +145,13 @@ def _parse_function(
     if one_hot:
         # [-1] needed to remove the added batching
         label = tf.one_hot(label, depth=output_dim)
+
+    # handle shape
+    try:
+        if data_out_dict["reshape_to"]:
+            label = tf.reshape(label, data_out_dict["reshape_to"])
+    except KeyError:
+        label = tf.reshape(label, data_out_dict["dim"])
 
     # augmentation
     if aug_opts:
@@ -166,6 +185,8 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
     except KeyError:
         standardize_img = False
 
+    # TODO: revamp this. This calculation should be performed in the parse fn
+    # the config file will also need to be adjusted
     if MCd["reshape_in_to"]:
         parse_shape = MCd["reshape_in_to"]
         if MCd["reshape_in_to"][0] != -1:
