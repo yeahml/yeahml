@@ -12,6 +12,8 @@ def get_tf_dtype(dtype: str):
         tf_dtype = tf.int64
     elif dtype == "int32":
         tf_dtype = tf.int32
+    elif dtype == "int8":
+        tf_dtype = tf.int8
     elif dtype == "string":
         tf_dtype = tf.string
     else:

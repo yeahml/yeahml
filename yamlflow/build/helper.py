@@ -33,7 +33,14 @@ def build_loss_ops(batch_loss, set_type: str) -> tuple:
     return (mean_loss, mean_loss_update, loss_reset)
 
 
-def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
+def create_metrics_ops(
+    MCd: dict, set_type: str, y_trues, y_preds, y_vals, pred_vals
+) -> tuple:
+
+    # y_vals and pred_vals are the int/float output value
+    # y_trues and y_preds are the threshold value
+    # this function could be changed to only accept the 'vals'
+    # and apply the threshold depending on the type of problem
 
     met_set = MCd["met_set"]
 
@@ -73,7 +80,9 @@ def create_metrics_ops(MCd: dict, set_type: str, y_trues, y_preds) -> tuple:
             update_ops.append(tn_update)
 
         if "auc" in met_set:
-            auc, auc_update = tf.metrics.auc(labels=y_trues, predictions=y_preds)
+            # TODO: handle case where the values are bool (before this point)
+            # > this may require pushing the bool conversion in this fn
+            auc, auc_update = tf.metrics.auc(labels=y_vals, predictions=pred_vals)
             report_ops_list.append(auc)
             update_ops.append(auc_update)
 

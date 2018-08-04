@@ -75,13 +75,15 @@ def build_graph(MCd: dict, HCd: dict):
             # will break in certain situations (e.g. segmentation)
             # > int64 probably shouldn't be mapped to float32
             # update: this may have been resolved by using updated tfr yaml structure
-            # if MCd["label_dtype"].startswith("int"):
-            #     y = tf.cast(y_raw, tf.float32, name="label")
-            # else:
-            #     # this is currently needed so that the raw values can be added to a collection
-            #     # and retrieved later for both converted and not converted values
-            #     y = y_raw
-            y = y_raw
+            if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+                y = y_raw
+            else:
+                if MCd["label_dtype"].startswith("int"):
+                    y = tf.cast(y_raw, tf.float32, name="label")
+                else:
+                    # this is currently needed so that the raw values can be added to a collection
+                    # and retrieved later for both converted and not converted values
+                    y = y_raw
 
         hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
 
@@ -177,15 +179,30 @@ def build_graph(MCd: dict, HCd: dict):
 
             ## performance metrics
             train_report_ops_list, train_mets_report_group, train_mets_update_group, train_mets_reset = create_metrics_ops(
-                MCd, set_type="train", y_trues=y_trues, y_preds=y_preds
+                MCd,
+                set_type="train",
+                y_trues=y_trues,
+                y_preds=y_preds,
+                y_vals=y,
+                pred_vals=preds,
             )
 
             val_report_ops_list, val_mets_report_group, val_mets_update_group, val_mets_reset = create_metrics_ops(
-                MCd, set_type="val", y_trues=y_trues, y_preds=y_preds
+                MCd,
+                set_type="val",
+                y_trues=y_trues,
+                y_preds=y_preds,
+                y_vals=y,
+                pred_vals=preds,
             )
 
             test_report_ops_list, test_mets_report_group, test_mets_update_group, test_mets_reset = create_metrics_ops(
-                MCd, set_type="test", y_trues=y_trues, y_preds=y_preds
+                MCd,
+                set_type="test",
+                y_trues=y_trues,
+                y_preds=y_preds,
+                y_vals=y,
+                pred_vals=preds,
             )
 
             ## loss
