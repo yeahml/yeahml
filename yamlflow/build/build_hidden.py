@@ -10,6 +10,8 @@ from yamlflow.build.get_components import (
 )
 from yamlflow.log.yf_logging import config_logger  # custom logging
 
+# NOTE: the default padding is "same", this is different from the API which is "same"
+
 
 def build_conv2d_transpose_layer(
     cur_input, opts: dict, actfn, name: str, logger, g_logger
@@ -46,7 +48,7 @@ def build_conv2d_transpose_layer(
         # TODO: create func (w/error handling) for this
         padding = opts["padding"]
     except KeyError:
-        padding = "SAME"  # TODO: maybe default should be valid to match API?
+        padding = "SAME"
     logger.debug("padding set: {}".format(padding))
 
     try:
@@ -122,7 +124,7 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         # TODO: create func (w/error handling) for this
         padding = opts["padding"]
     except KeyError:
-        padding = "SAME"  # TODO: maybe default should be valid to match API?
+        padding = "SAME"
     logger.debug("padding set: {}".format(padding))
 
     try:
@@ -268,11 +270,11 @@ def build_pool_layer(cur_input, training, opts: dict, name: str, logger, g_logge
 
     if pool_type == "max":
         out = tf.layers.max_pooling2d(
-            cur_input, pool_size=pool_size, strides=strides, padding="valid", name=name
+            cur_input, pool_size=pool_size, strides=strides, padding="same", name=name
         )
     elif pool_type == "avg":
         out = tf.layers.average_pooling2d(
-            cur_input, pool_size=pool_size, strides=strides, padding="valid", name=name
+            cur_input, pool_size=pool_size, strides=strides, padding="same", name=name
         )
     else:
         # for future pooling implementations
