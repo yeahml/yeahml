@@ -130,8 +130,12 @@ def create_metrics_ops(
             update_ops.append(mean_iou_update)
 
         # Group metrics
-        mets_report_group = tf.group(report_ops_list)
-        mets_update_group = tf.group(update_ops)
+        if len(report_ops_list) == 1 and len(update_ops) == 1:
+            mets_report_group = report_ops_list[0]
+            mets_update_group = update_ops[0]
+        else:
+            mets_report_group = tf.group(report_ops_list)
+            mets_update_group = tf.group(update_ops)
         mets_vars = tf.contrib.framework.get_variables(
             scope, collection=tf.GraphKeys.LOCAL_VARIABLES
         )
