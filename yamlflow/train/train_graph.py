@@ -3,7 +3,6 @@ import math
 from tqdm import tqdm
 import os
 import sys
-import numpy as np
 
 from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yamlflow.log.yf_logging import config_logger  # custom logging
@@ -56,6 +55,14 @@ def train_graph(g, MCd: dict, HCd: dict):
     last_best_e = 0  # marker for early stopping
 
     with tf.Session(graph=g) as sess:
+
+        # TODO: temp
+        bph = tf.placeholder(dtype=tf.string)
+        tfimage = tf.image.decode_png(bph, channels=4)
+        # Add the batch dimension
+        txi = tf.expand_dims(tfimage, 0)
+        # Add image summary
+        image_summary_op = tf.summary.image("plot", txi)
 
         train_writer = tf.summary.FileWriter(
             os.path.join(MCd["log_dir"], "tf_logs", "train"), graph=sess.graph
@@ -207,18 +214,12 @@ def train_graph(g, MCd: dict, HCd: dict):
                     seg_prob,
                     Xb,
                     yb,
-                    4,  # TODO: This is currently hardcoded
+                    5,  # TODO: This is currently hardcoded
                 )
-                # TODO: This currently adds an operation every iteration
-                # this will need to be adjusted to accept a feed dict
-                # Convert PNG buffer to TF image
-                tfimage = tf.image.decode_png(plot_buf.getvalue(), channels=4)
-                # Add the batch dimension
-                tfimage = tf.expand_dims(tfimage, 0)
-                # print(tfimage)
-                # Add image summary
-                image_summary_op = tf.summary.image("plot", tfimage)
-                img_summary = sess.run(image_summary_op)
+
+                img_summary = sess.run(
+                    image_summary_op, feed_dict={bph: plot_buf.getvalue()}
+                )
                 val_writer.add_summary(img_summary, e)
                 val_writer.flush()
 
