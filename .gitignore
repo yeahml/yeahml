@@ -47,5 +47,8 @@ examples/segmentation/make_records/numpy_final/224_224/
 examples/segmentation/data/224_224/
 examples/segmentation/trial_01/best_params/
 examples/segmentation/trial_01/tf_logs/*
-
 examples/segmentation/trial_01/yf_logs/
+
+# multi - segmentation
+examples/multi_segmentation/make_records/\.ipynb_checkpoints/
+examples/multi_segmentation/make_records/raw/*
