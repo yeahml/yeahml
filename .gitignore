@@ -52,3 +52,4 @@ examples/segmentation/trial_01/yf_logs/
 # multi - segmentation
 examples/multi_segmentation/make_records/\.ipynb_checkpoints/
 examples/multi_segmentation/make_records/raw/*
+examples/multi_segmentation/data/*
