@@ -69,5 +69,6 @@ def plot_four_segmentation_array(
 
     # convert to buffer for tensorboard
     buf = convert_to_buf(plt)
+    plt.close("all")
 
     return buf
