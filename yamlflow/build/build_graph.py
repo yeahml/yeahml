@@ -1,6 +1,5 @@
 import tensorflow as tf
 import sys
-import numpy as np
 
 from yamlflow.log.yf_logging import config_logger
 from yamlflow.build.build_hidden import build_hidden_block
@@ -75,7 +74,10 @@ def build_graph(MCd: dict, HCd: dict):
             # will break in certain situations (e.g. segmentation)
             # > int64 probably shouldn't be mapped to float32
             # update: this may have been resolved by using updated tfr yaml structure
-            if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+            if (
+                MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+                or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+            ):
                 y = y_raw
             else:
                 if MCd["label_dtype"].startswith("int"):
@@ -110,6 +112,14 @@ def build_graph(MCd: dict, HCd: dict):
                     onehot_labels=y, logits=logits
                 )
             elif MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+                y_true_hot = tf.one_hot(y, depth=MCd["num_classes"], axis=3)
+                xentropy = tf.reduce_mean(
+                    -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
+                )
+                class_weights = MCd["class_weights"]
+                xentropy = xentropy * class_weights
+                # loss_temp = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_truth, logits=logit))
+            elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
                 y_true_hot = tf.one_hot(y, depth=MCd["num_classes"], axis=3)
                 xentropy = tf.reduce_mean(
                     -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
@@ -173,6 +183,19 @@ def build_graph(MCd: dict, HCd: dict):
                 g.add_to_collection("y_true_hot", y_true_hot)
                 not_seg_prob, seg_prob = tf.split(preds, 2, axis=3)
                 g.add_to_collection("seg_prob", seg_prob)
+
+            elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
+                # TODO: TEMP
+                # NOTE: converting to int for iou.. this may not belong here
+                y_trues = tf.cast(y_true_hot, tf.int32)
+                y_preds = tf.cast(preds, tf.int32)
+
+                g.add_to_collection("y_true_hot", y_true_hot)
+
+                # NOTE: this could be used to target a specific class
+                # seg_probs = tf.split(preds, 9, axis=3)[0]
+                # g.add_to_collection("seg_prob", seg_probs)
+
             else:
                 y_trues = y
                 y_preds = preds
@@ -270,7 +293,10 @@ def build_graph(MCd: dict, HCd: dict):
         layer_names = list(HCd["layers"])
 
         # TODO: hardcoded way of removing logits from segmentation development
-        if MCd["loss_fn"] != "softmax_binary_segmentation_temp":
+        if (
+            MCd["loss_fn"] != "softmax_binary_segmentation_temp"
+            and MCd["loss_fn"] != "softmax_multi_segmentation_temp"
+        ):
             layer_names.append("logits")
         # exclude all pooling layers
         # TODO: this logic assumes that the layer name corresponds to the type of layer

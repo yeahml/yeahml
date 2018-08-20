@@ -51,6 +51,12 @@ def create_metrics_ops(
 
     with tf.name_scope(scope_str) as scope:
 
+        # TODO: Temp. this may need to change location &| logic
+        if MCd["metrics_type"] == "segmentation":
+            # this argmax may only be useful for
+            y_trues = tf.argmax(y_trues, axis=3, output_type=tf.int64)
+            y_preds = tf.argmax(y_preds, axis=3, output_type=tf.int64)
+
         if "fp" in met_set:
             fp, fp_update = tf.metrics.false_positives(
                 labels=y_trues, predictions=y_preds

@@ -9,7 +9,10 @@ from yamlflow.log.yf_logging import config_logger  # custom logging
 from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
 from yamlflow.build.get_components import get_run_options
 from yamlflow.helper import fmt_metric_summary
-from yamlflow.plot.plotting import plot_four_segmentation_array
+from yamlflow.plot.plotting import (
+    plot_four_segmentation_array,
+    plot_three_segmentation_array,
+)
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -47,7 +50,10 @@ def train_graph(g, MCd: dict, HCd: dict):
     )
 
     # TODO: TEMP
-    if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+    if (
+        MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+        or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+    ):
         y_true_hot = g.get_collection("y_true_hot")
         seg_prob = g.get_collection("seg_prob")
 
@@ -204,18 +210,32 @@ def train_graph(g, MCd: dict, HCd: dict):
             )
 
             # TODO: TEMP
-            if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+            if (
+                MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+                or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+            ):
                 ## image
-                plot_buf = plot_four_segmentation_array(
-                    sess,
-                    MCd["output_dim"],
-                    X,
-                    preds,
-                    seg_prob,
-                    Xb,
-                    yb,
-                    5,  # TODO: This is currently hardcoded
-                )
+                if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+                    plot_buf = plot_four_segmentation_array(
+                        sess,
+                        MCd["output_dim"],
+                        X,
+                        preds,
+                        seg_prob,
+                        Xb,
+                        yb,
+                        7,  # TODO: This is currently hardcoded
+                    )
+                elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
+                    plot_buf = plot_three_segmentation_array(
+                        sess,
+                        MCd["output_dim"],
+                        X,
+                        preds,
+                        Xb,
+                        yb,
+                        0,  # TODO: This is currently hardcoded
+                    )
 
                 img_summary = sess.run(
                     image_summary_op, feed_dict={bph: plot_buf.getvalue()}

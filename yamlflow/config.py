@@ -116,7 +116,10 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             MCd["num_classes"] = 1
         pass
 
-    if MC["overall"]["metrics"]["type"] == "classification":
+    if (
+        MC["overall"]["metrics"]["type"] == "classification"
+        or MC["overall"]["metrics"]["type"] == "segmentation"
+    ):
         try:
             MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
         except KeyError:

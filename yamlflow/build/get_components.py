@@ -140,7 +140,7 @@ def get_activation_fn(act_str: str):
     elif act_str == "relu":
         act_fn = tf.nn.relu
     # elif act == "leaky":
-    # act_fn = tf.nn.leay_relu
+    # act_fn = tf.nn.leaky_relu
     elif act_str == "relu6":
         act_fn = tf.nn.relu6
     elif act_str == "identity":
@@ -162,7 +162,10 @@ def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) ->
     elif loss_str == "softmax":
         logits = tf.layers.dense(hidden_out, num_classes, name="logits")
         preds = tf.nn.softmax(logits, name="y_proba")
-    elif loss_str == "softmax_binary_segmentation_temp":
+    elif (
+        loss_str == "softmax_binary_segmentation_temp"
+        or loss_str == "softmax_multi_segmentation_temp"
+    ):
         logits = hidden_out
         preds = tf.nn.softmax(logits, name="y_proba")
     elif loss_str == "mse" or loss_str == "rmse":

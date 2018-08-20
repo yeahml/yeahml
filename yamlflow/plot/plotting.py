@@ -23,12 +23,27 @@ def convert_to_buf(plt):
 
 
 def implot(mp, ax, SHOW_CB=False):
-    cmap = plt.get_cmap("viridis")
+    # cmap = plt.get_cmap("viridis")
+    cmap = plt.get_cmap("Spectral")
     bounds = np.linspace(-0.01, 1, 80)  # TODO: explain
     norm = colors.BoundaryNorm(bounds, cmap.N)
 
     # tell imshow about color map so that only set colors are used
-    im = ax.imshow(mp, interpolation="nearest", origin="lower", cmap=cmap, norm=norm)
+
+    # NOTE: this is a "hacky" fix to outputing images that look how'd we'd expect
+    # this may cause unexpected future side effects
+    if np.amax(mp) <= 1.0:
+        im = ax.imshow(
+            mp, interpolation="nearest", origin="lower", cmap=cmap, norm=norm
+        )
+    else:
+        im = ax.imshow(
+            mp.astype("int"),
+            interpolation="nearest",
+            origin="lower",
+            cmap=cmap,
+            norm=norm,
+        )
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     if SHOW_CB:
@@ -45,6 +60,8 @@ def implot(mp, ax, SHOW_CB=False):
 def plot_four_segmentation_array(
     sess, output_dim_list, x, preds, seg_prob, X_batch, y_batch, idx
 ):
+    # TODO: this would be better if it could be a generalization
+    # where the 2nd figure is a targeted class
     # TODO: TEMP
     y_softmax, y_seg_prob = sess.run([preds, seg_prob], {x: X_batch})
     y_prediction = np.argmax(y_softmax[0], axis=3)
@@ -62,6 +79,34 @@ def plot_four_segmentation_array(
     implot(y_seg_prob[idx, :, :], ax2, True)  # segmentation probability
     implot(y_prediction[idx, :, :], ax3, True)  # segmentation probability threshold
     implot(y_batch[idx, :, :], ax4, True)  # ground truth segmentation
+
+    # improve figure appearance
+    plt.grid(False)
+    plt.tight_layout()
+
+    # convert to buffer for tensorboard
+    buf = convert_to_buf(plt)
+    plt.close("all")
+
+    return buf
+
+
+def plot_three_segmentation_array(
+    sess, output_dim_list, x, preds, X_batch, y_batch, idx
+):
+    # TODO: "8" should be ['num_classes']
+
+    # TODO: TEMP
+    y_softmax = sess.run(preds, {x: X_batch})
+    y_prediction = np.argmax(y_softmax[0], axis=3)
+
+    # create figure
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 4))
+    implot(X_batch[idx, :, :], ax1)  # raw input image
+    implot(
+        y_prediction[idx, :, :].copy() / 8, ax2, True
+    )  # segmentation probability threshold
+    implot(y_batch[idx, :, :].copy() / 8, ax3, True)  # ground truth segmentation
 
     # improve figure appearance
     plt.grid(False)
