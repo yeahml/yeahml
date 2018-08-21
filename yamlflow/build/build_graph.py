@@ -111,15 +111,10 @@ def build_graph(MCd: dict, HCd: dict):
                 xentropy = tf.losses.softmax_cross_entropy(
                     onehot_labels=y, logits=logits
                 )
-            elif MCd["loss_fn"] == "softmax_binary_segmentation_temp":
-                y_true_hot = tf.one_hot(y, depth=MCd["num_classes"], axis=3)
-                xentropy = tf.reduce_mean(
-                    -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
-                )
-                class_weights = MCd["class_weights"]
-                xentropy = xentropy * class_weights
-                # loss_temp = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_truth, logits=logit))
-            elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
+            elif (
+                MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+                or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+            ):
                 y_true_hot = tf.one_hot(y, depth=MCd["num_classes"], axis=3)
                 xentropy = tf.reduce_mean(
                     -y_true_hot * tf.log(preds + 1e-6), axis=[0, 1, 2]
@@ -174,27 +169,20 @@ def build_graph(MCd: dict, HCd: dict):
                     elif MCd["loss_fn"] == "softmax":
                         y_trues = tf.argmax(y, 1)
                         y_preds = tf.argmax(preds, 1)
-            elif MCd["loss_fn"] == "softmax_binary_segmentation_temp":
+            elif (
+                MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+                or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+            ):
                 # TODO: TEMP
                 # NOTE: converting to int for iou.. this may not belong here
                 y_trues = tf.cast(y_true_hot, tf.int32)
                 y_preds = tf.cast(preds, tf.int32)
                 # TODO: TEMP
                 g.add_to_collection("y_true_hot", y_true_hot)
-                not_seg_prob, seg_prob = tf.split(preds, 2, axis=3)
-                g.add_to_collection("seg_prob", seg_prob)
+                seg_prob_tup = tf.split(preds, MCd["num_classes"], axis=3)
 
-            elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
-                # TODO: TEMP
-                # NOTE: converting to int for iou.. this may not belong here
-                y_trues = tf.cast(y_true_hot, tf.int32)
-                y_preds = tf.cast(preds, tf.int32)
-
-                g.add_to_collection("y_true_hot", y_true_hot)
-
-                # NOTE: this could be used to target a specific class
-                # seg_probs = tf.split(preds, 9, axis=3)[0]
-                # g.add_to_collection("seg_prob", seg_probs)
+                # TODO: 1 is currently hardcoded
+                g.add_to_collection("seg_prob", seg_prob_tup[1])
 
             else:
                 y_trues = y
