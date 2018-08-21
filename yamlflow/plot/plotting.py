@@ -58,7 +58,7 @@ def implot(mp, ax, SHOW_CB=False):
 
 
 def plot_four_segmentation_array(
-    sess, output_dim_list, x, preds, seg_prob, X_batch, y_batch, idx
+    sess, output_dim_list, x, preds, seg_prob, X_batch, y_batch, idx, NUMCLASSES
 ):
     # TODO: this would be better if it could be a generalization
     # where the 2nd figure is a targeted class
@@ -75,10 +75,21 @@ def plot_four_segmentation_array(
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(
         nrows=1, ncols=4, sharey=True, figsize=(12, 4)
     )
+
+    # plot each figure
+    # dividing by the number of classes is used to convert values to a 0-1 scale
+    # rather than being on a 0-num classes scale (from the argmax), which is then easier
+    # to plot and visualize
     implot(X_batch[idx, :, :], ax1)  # raw input image
-    implot(y_seg_prob[idx, :, :], ax2, True)  # segmentation probability
-    implot(y_prediction[idx, :, :], ax3, True)  # segmentation probability threshold
-    implot(y_batch[idx, :, :], ax4, True)  # ground truth segmentation
+    implot(
+        y_seg_prob[idx, :, :].copy() / NUMCLASSES, ax2, True
+    )  # segmentation probability
+    implot(
+        y_prediction[idx, :, :].copy() / NUMCLASSES, ax3, True
+    )  # segmentation probability threshold
+    implot(
+        y_batch[idx, :, :].copy() / NUMCLASSES, ax4, True
+    )  # ground truth segmentation
 
     # improve figure appearance
     plt.grid(False)
@@ -92,7 +103,7 @@ def plot_four_segmentation_array(
 
 
 def plot_three_segmentation_array(
-    sess, output_dim_list, x, preds, X_batch, y_batch, idx
+    sess, output_dim_list, x, preds, X_batch, y_batch, idx, NUMCLASSES
 ):
     # TODO: "8" should be ['num_classes']
 
@@ -102,11 +113,18 @@ def plot_three_segmentation_array(
 
     # create figure
     fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 4))
+
+    # plot each figure
+    # dividing by the number of classes is used to convert values to a 0-1 scale
+    # rather than being on a 0-num classes scale (from the argmax), which is then easier
+    # to plot and visualize
     implot(X_batch[idx, :, :], ax1)  # raw input image
     implot(
-        y_prediction[idx, :, :].copy() / 8, ax2, True
+        y_prediction[idx, :, :].copy() / NUMCLASSES, ax2, True
     )  # segmentation probability threshold
-    implot(y_batch[idx, :, :].copy() / 8, ax3, True)  # ground truth segmentation
+    implot(
+        y_batch[idx, :, :].copy() / NUMCLASSES, ax3, True
+    )  # ground truth segmentation
 
     # improve figure appearance
     plt.grid(False)

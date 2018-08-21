@@ -215,27 +215,17 @@ def train_graph(g, MCd: dict, HCd: dict):
                 or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
             ):
                 ## image
-                if MCd["loss_fn"] == "softmax_binary_segmentation_temp":
-                    plot_buf = plot_four_segmentation_array(
-                        sess,
-                        MCd["output_dim"],
-                        X,
-                        preds,
-                        seg_prob,
-                        Xb,
-                        yb,
-                        7,  # TODO: This is currently hardcoded
-                    )
-                elif MCd["loss_fn"] == "softmax_multi_segmentation_temp":
-                    plot_buf = plot_three_segmentation_array(
-                        sess,
-                        MCd["output_dim"],
-                        X,
-                        preds,
-                        Xb,
-                        yb,
-                        0,  # TODO: This is currently hardcoded
-                    )
+                plot_buf = plot_four_segmentation_array(
+                    sess,
+                    MCd["output_dim"],
+                    X,
+                    preds,
+                    seg_prob,
+                    Xb,
+                    yb,
+                    idx=0,  # TODO: This is currently hardcoded
+                    NUMCLASSES=MCd["num_classes"],
+                )
 
                 img_summary = sess.run(
                     image_summary_op, feed_dict={bph: plot_buf.getvalue()}
