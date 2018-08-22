@@ -22,6 +22,7 @@ def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
         AUG_LABEL = False
 
     if AUG_LABEL:
+        # expand label dims to a 3D tensor > TODO: there [sh|co]uld be a check here
         gt_tensor = tf.expand_dims(gt_tensor, -1)
 
     try:
@@ -154,9 +155,8 @@ def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
         pass
 
     if AUG_LABEL:
+        # squeeze back into expected form (remove the expanded dim)
         gt_tensor = tf.squeeze(gt_tensor)
-
-    print("AUG_LABEL = {}".format(AUG_LABEL))
 
     return (img_tensor, gt_tensor)
 

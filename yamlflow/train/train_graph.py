@@ -9,10 +9,7 @@ from yamlflow.log.yf_logging import config_logger  # custom logging
 from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
 from yamlflow.build.get_components import get_run_options
 from yamlflow.helper import fmt_metric_summary
-from yamlflow.plot.plotting import (
-    plot_four_segmentation_array,
-    plot_three_segmentation_array,
-)
+from yamlflow.plot.plotting import plot_four_seg, plot_three_seg
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -139,7 +136,7 @@ def train_graph(g, MCd: dict, HCd: dict):
                             [training_op, train_mets_update, train_mean_loss_update],
                             feed_dict={X: data, y_raw: target, training: True},
                         )
-                    if local_step % 20 == 0:
+                    if local_step % 3 == 0:
                         # not sure about this...
                         hist_str = sess.run(hist_write_op)
                         train_writer.add_summary(hist_str, local_step)
@@ -163,15 +160,43 @@ def train_graph(g, MCd: dict, HCd: dict):
             logger.debug("reinitialize validation iterator: {}".format(tfr_f_path))
 
             logger.debug("-> START iterating validation dataset")
+            val_temp_count = 0
             while True:
                 try:
                     # Xb, yb, _ = sess.run(next_val_element)
+                    val_temp_count += 1
                     Xb, yb = sess.run(next_val_element)
 
                     sess.run(
                         [val_mets_update, val_mean_loss_update],
                         feed_dict={X: Xb, y_raw: yb},
                     )
+
+                    # TODO: TEMP
+                    if (
+                        MCd["loss_fn"] == "softmax_binary_segmentation_temp"
+                        or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
+                    ):
+                        if val_temp_count == 1:
+                            ## image
+                            plot_buf = plot_four_seg(
+                                sess,
+                                MCd["output_dim"],
+                                X,
+                                preds,
+                                seg_prob,
+                                Xb,
+                                yb,
+                                idx=1,  # TODO: This is currently hardcoded
+                                NUMCLASSES=MCd["num_classes"] - 1,
+                            )
+
+                            img_summary = sess.run(
+                                image_summary_op, feed_dict={bph: plot_buf.getvalue()}
+                            )
+                            val_writer.add_summary(img_summary, e)
+                            val_writer.flush()
+
                 except tf.errors.OutOfRangeError:
                     logger.debug("[END] iterating validation dataset")
                     break
@@ -208,30 +233,6 @@ def train_graph(g, MCd: dict, HCd: dict):
             logger.info(
                 "[END] epoch num: {} validation metrics: {}".format(e, summary_dict)
             )
-
-            # TODO: TEMP
-            if (
-                MCd["loss_fn"] == "softmax_binary_segmentation_temp"
-                or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
-            ):
-                ## image
-                plot_buf = plot_four_segmentation_array(
-                    sess,
-                    MCd["output_dim"],
-                    X,
-                    preds,
-                    seg_prob,
-                    Xb,
-                    yb,
-                    idx=0,  # TODO: This is currently hardcoded
-                    NUMCLASSES=MCd["num_classes"],
-                )
-
-                img_summary = sess.run(
-                    image_summary_op, feed_dict={bph: plot_buf.getvalue()}
-                )
-                val_writer.add_summary(img_summary, e)
-                val_writer.flush()
 
         train_writer.close()
         val_writer.close()

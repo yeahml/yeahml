@@ -24,11 +24,9 @@ def convert_to_buf(plt):
 
 def implot(mp, ax, SHOW_CB=False):
     # cmap = plt.get_cmap("viridis")
-    cmap = plt.get_cmap("Spectral")
+    cmap = plt.get_cmap("Spectral_r")  # reverse spectral [0:blue, 1/max:red]
     bounds = np.linspace(-0.01, 1, 80)  # TODO: explain
     norm = colors.BoundaryNorm(bounds, cmap.N)
-
-    # tell imshow about color map so that only set colors are used
 
     # NOTE: this is a "hacky" fix to outputing images that look how'd we'd expect
     # this may cause unexpected future side effects
@@ -57,7 +55,7 @@ def implot(mp, ax, SHOW_CB=False):
     ax.set_axis_off()
 
 
-def plot_four_segmentation_array(
+def plot_four_seg(
     sess, output_dim_list, x, preds, seg_prob, X_batch, y_batch, idx, NUMCLASSES
 ):
     # TODO: this would be better if it could be a generalization
@@ -102,9 +100,7 @@ def plot_four_segmentation_array(
     return buf
 
 
-def plot_three_segmentation_array(
-    sess, output_dim_list, x, preds, X_batch, y_batch, idx, NUMCLASSES
-):
+def plot_three_seg(sess, output_dim_list, x, preds, X_batch, y_batch, idx, NUMCLASSES):
     # TODO: "8" should be ['num_classes']
 
     # TODO: TEMP
