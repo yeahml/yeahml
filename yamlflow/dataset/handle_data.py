@@ -10,14 +10,11 @@ from yamlflow.build.get_components import get_tf_dtype
 
 def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
 
-    # TODO: There is an issue here in which augmentation is working "as expected" but yet does
-    # not work correctly in that the seed value does not change and thus the images always undergo
-    # the same transformation -- that is, the image and mask are both augmented correctly, but in each
-    # iteration the image and mask are augmented the same way, meaning, they are only augmented "once"
-    # throughout all iterations
-
     # TODO: temp > AUG_LABEL is used to determine if the label should also
     # be augmented to match the image augmentation
+
+    # NOTE: each 'block' uses a tf.where() clause controlled by a tf.random_uniform
+    # value to ensure the same augmentation is applied to the image and label
 
     try:
         AUG_LABEL = aug_opts["label"]
@@ -29,20 +26,39 @@ def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
 
     try:
         if aug_opts["h_flip"]:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_flip_left_right(img_tensor, seed=seed)
+            # seed = random.randint(1, 100)
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.where(
+                tf.less(tf.constant(3), cond_num),
+                tf.image.flip_left_right(img_tensor),
+                img_tensor,
+            )
+
             if AUG_LABEL:
-                # print("HERE+{}".format(seed))
-                gt_tensor = tf.image.random_flip_left_right(gt_tensor, seed=seed)
+                gt_tensor = tf.where(
+                    tf.less(tf.constant(3), cond_num),
+                    tf.image.flip_left_right(gt_tensor),
+                    gt_tensor,
+                )
+
     except KeyError:
         pass
 
     try:
         if aug_opts["v_flip"]:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_flip_up_down(img_tensor, seed=seed)
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.where(
+                tf.less(tf.constant(3), cond_num),
+                tf.image.flip_up_down(img_tensor),
+                img_tensor,
+            )
+
             if AUG_LABEL:
-                gt_tensor = tf.image.random_flip_up_down(gt_tensor, seed=seed)
+                gt_tensor = tf.where(
+                    tf.less(tf.constant(3), cond_num),
+                    tf.image.flip_up_down(gt_tensor),
+                    gt_tensor,
+                )
     except KeyError:
         pass
 
@@ -58,33 +74,54 @@ def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
     # TODO: handle min/max value
     # TODO: current default is set to 0.5 > half, if specified, will be altered
     try:
-        brt_max = aug_opts["max_brightness"]
+        bright_max = aug_opts["max_brightness"]
         # if np.random.rand() < 0.5:
-        if brt_max > 0:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_brightness(
-                img_tensor, max_delta=brt_max, seed=seed
+        if bright_max > 0:
+            # TODO: include initial check to ensure value is below 1
+            bright_val = tf.random_uniform(
+                [], minval=0, maxval=bright_max, dtype=tf.float32
             )
+
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.where(
+                tf.less(tf.constant(3), cond_num),
+                tf.image.adjust_brightness(img_tensor, delta=bright_val),
+                img_tensor,
+            )
+
             if AUG_LABEL:
-                gt_tensor = tf.image.random_brightness(
-                    gt_tensor, max_delta=brt_max, seed=seed
+                gt_tensor = tf.where(
+                    tf.less(tf.constant(3), cond_num),
+                    tf.image.adjust_brightness(gt_tensor, delta=bright_val),
+                    gt_tensor,
                 )
+
     except KeyError:
         pass
 
     # TODO: confirm these intervals
     try:
-        contrast_val = aug_opts["contrast"]
+        contrast_max = aug_opts["contrast"]
         # if np.random.rand() < 0.5:
-        if contrast_val > 0:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_contrast(
-                img_tensor, lower=0.0, upper=contrast_val, seed=seed
+        if contrast_max > 0:
+            contrast_val = tf.random_uniform(
+                [], minval=0, maxval=contrast_max, dtype=tf.float32
             )
+            # TODO: sanity check the contrast value (maybe in the config file)
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.where(
+                tf.less(tf.constant(3), cond_num),
+                tf.image.adjust_contrast(img_tensor, contrast_factor=contrast_val),
+                img_tensor,
+            )
+
             if AUG_LABEL:
-                gt_tensor = tf.image.random_contrast(
-                    gt_tensor, lower=0.0, upper=contrast_val, seed=seed
+                gt_tensor = tf.where(
+                    tf.less(tf.constant(3), cond_num),
+                    tf.image.adjust_contrast(gt_tensor, contrast_factor=contrast_val),
+                    gt_tensor,
                 )
+
     except KeyError:
         pass
 
@@ -92,24 +129,26 @@ def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
         hue_max = aug_opts["hue"]
         # if np.random.rand() < 0.5:
         if hue_max > 0:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_hue(img_tensor, max_delta=hue_max, seed=seed)
+            hue_val = tf.random_uniform([], minval=0, maxval=hue_max, dtype=tf.float32)
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.image.adjust_hue(img_tensor, delta=hue_val)
             if AUG_LABEL:
-                gt_tensor = tf.image.random_hue(gt_tensor, max_delta=hue_max, seed=seed)
+                gt_tensor = tf.image.adjust_hue(gt_tensor, delta=hue_val)
     except KeyError:
         pass
 
     try:
-        sat_val = aug_opts["saturation"]
+        sat_max = aug_opts["saturation"]
         # if np.random.rand() < 0.5:
-        if sat_val > 0:
-            seed = random.randint(1, 100)
-            img_tensor = tf.image.random_saturation(
-                img_tensor, lower=0.0, upper=sat_val, seed=seed
+        if sat_max > 0:
+            sat_val = tf.random_uniform([], minval=0, maxval=sat_max, dtype=tf.float32)
+            cond_num = tf.random_uniform([], minval=0, maxval=5, dtype=tf.int32)
+            img_tensor = tf.image.adjust_saturation(
+                img_tensor, saturation_factor=sat_val
             )
             if AUG_LABEL:
-                gt_tensor = tf.image.random_saturation(
-                    gt_tensor, lower=0.0, upper=sat_val, seed=seed
+                gt_tensor = tf.image.adjust_saturation(
+                    gt_tensor, saturation_factor=sat_val
                 )
     except KeyError:
         pass
