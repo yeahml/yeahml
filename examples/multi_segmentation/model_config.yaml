@@ -54,4 +54,10 @@ hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
   yaml: './examples/multi_segmentation/hidden_config.yaml'
+train:
+  augmentation:
+    label: True # TODO: temp
+    aug_val: True
+    v_flip: True
+    h_flip: True
  

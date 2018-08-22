@@ -3,25 +3,46 @@ import pickle
 from tqdm import tqdm
 import os
 import sys
+import random
 
 from yamlflow.build.get_components import get_tf_dtype
 
 
-def augment_image(img_tensor, aug_opts: dict):
+def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
+
+    # TODO: There is an issue here in which augmentation is working "as expected" but yet does
+    # not work correctly in that the seed value does not change and thus the images always undergo
+    # the same transformation -- that is, the image and mask are both augmented correctly, but in each
+    # iteration the image and mask are augmented the same way, meaning, they are only augmented "once"
+    # throughout all iterations
+
+    # TODO: temp > AUG_LABEL is used to determine if the label should also
+    # be augmented to match the image augmentation
 
     try:
-        # h_flip = aug_opts["h_flip"]
-        # if np.random.rand() < h_flip:
+        AUG_LABEL = aug_opts["label"]
+    except KeyError:
+        AUG_LABEL = False
+
+    if AUG_LABEL:
+        gt_tensor = tf.expand_dims(gt_tensor, -1)
+
+    try:
         if aug_opts["h_flip"]:
-            img_tensor = tf.image.random_flip_left_right(img_tensor)
+            seed = random.randint(1, 100)
+            img_tensor = tf.image.random_flip_left_right(img_tensor, seed=seed)
+            if AUG_LABEL:
+                # print("HERE+{}".format(seed))
+                gt_tensor = tf.image.random_flip_left_right(gt_tensor, seed=seed)
     except KeyError:
         pass
 
     try:
-        # v_flip = aug_opts["v_flip"]
-        # if np.random.rand() < v_flip:
         if aug_opts["v_flip"]:
-            img_tensor = tf.image.random_flip_up_down(img_tensor)
+            seed = random.randint(1, 100)
+            img_tensor = tf.image.random_flip_up_down(img_tensor, seed=seed)
+            if AUG_LABEL:
+                gt_tensor = tf.image.random_flip_up_down(gt_tensor, seed=seed)
     except KeyError:
         pass
 
@@ -40,7 +61,14 @@ def augment_image(img_tensor, aug_opts: dict):
         brt_max = aug_opts["max_brightness"]
         # if np.random.rand() < 0.5:
         if brt_max > 0:
-            img_tensor = tf.image.random_brightness(img_tensor, max_delta=brt_max)
+            seed = random.randint(1, 100)
+            img_tensor = tf.image.random_brightness(
+                img_tensor, max_delta=brt_max, seed=seed
+            )
+            if AUG_LABEL:
+                gt_tensor = tf.image.random_brightness(
+                    gt_tensor, max_delta=brt_max, seed=seed
+                )
     except KeyError:
         pass
 
@@ -49,9 +77,14 @@ def augment_image(img_tensor, aug_opts: dict):
         contrast_val = aug_opts["contrast"]
         # if np.random.rand() < 0.5:
         if contrast_val > 0:
+            seed = random.randint(1, 100)
             img_tensor = tf.image.random_contrast(
-                img_tensor, lower=0.0, upper=contrast_val
+                img_tensor, lower=0.0, upper=contrast_val, seed=seed
             )
+            if AUG_LABEL:
+                gt_tensor = tf.image.random_contrast(
+                    gt_tensor, lower=0.0, upper=contrast_val, seed=seed
+                )
     except KeyError:
         pass
 
@@ -59,7 +92,10 @@ def augment_image(img_tensor, aug_opts: dict):
         hue_max = aug_opts["hue"]
         # if np.random.rand() < 0.5:
         if hue_max > 0:
-            img_tensor = tf.image.random_hue(img_tensor, max_delta=hue_max)
+            seed = random.randint(1, 100)
+            img_tensor = tf.image.random_hue(img_tensor, max_delta=hue_max, seed=seed)
+            if AUG_LABEL:
+                gt_tensor = tf.image.random_hue(gt_tensor, max_delta=hue_max, seed=seed)
     except KeyError:
         pass
 
@@ -67,13 +103,23 @@ def augment_image(img_tensor, aug_opts: dict):
         sat_val = aug_opts["saturation"]
         # if np.random.rand() < 0.5:
         if sat_val > 0:
+            seed = random.randint(1, 100)
             img_tensor = tf.image.random_saturation(
-                img_tensor, lower=0.0, upper=sat_val
+                img_tensor, lower=0.0, upper=sat_val, seed=seed
             )
+            if AUG_LABEL:
+                gt_tensor = tf.image.random_saturation(
+                    gt_tensor, lower=0.0, upper=sat_val, seed=seed
+                )
     except KeyError:
         pass
 
-    return img_tensor
+    if AUG_LABEL:
+        gt_tensor = tf.squeeze(gt_tensor)
+
+    print("AUG_LABEL = {}".format(AUG_LABEL))
+
+    return (img_tensor, gt_tensor)
 
 
 def get_parse_type(parse_dict: dict):
@@ -162,11 +208,11 @@ def _parse_function(
     # augmentation
     if aug_opts:
         if set_type == "train":
-            image = augment_image(image, aug_opts)
+            image, label = augment_image(image, label, aug_opts)
         elif set_type == "val":
             try:
                 if aug_opts["aug_val"]:
-                    image = augment_image(image, aug_opts)
+                    image, label = augment_image(image, label, aug_opts)
             except KeyError:
                 pass
         else:  # test
