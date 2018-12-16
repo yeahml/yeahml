@@ -8,7 +8,7 @@
 <img src="./misc/yf_logo_draft_02.png" width="300">
 </p>
 
-YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).
+YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
 
 The goal of the core implementation is as follows:
 
