@@ -1,5 +1,5 @@
 [//]: # (Image References)
-[example_run]: ./misc/exmaple_run.png
+[example_run]: ./misc/example_run.png
 
 # MNIST
 
