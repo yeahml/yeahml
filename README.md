@@ -1,4 +1,4 @@
-# YamlFlow
+# YeahML
 
 [//]: # (Image References)
 [tensorboard_graph]: ./misc/tensorboard_graph.png
@@ -8,28 +8,28 @@
 <img src="./misc/yf_logo_draft_02.png" width="300">
 </p>
 
-YamlFlow is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
+YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
 
 The goal of the core implementation is as follows:
 
 ## Main use
 
 ```python
-import yamlflow as yf
+import yeahml as yml
 
 ## parse config files
-model_config, hidden_config = yf.create_model_and_hidden_config(
+model_config, hidden_config = yml.create_model_and_hidden_config(
     "./examples/cats_v_dogs_01/model_config.yaml"
 )
 
 ## build graph
-g = yf.build_graph(model_config, hidden_config)
+g = yml.build_graph(model_config, hidden_config)
 
 ## train graph
-_ = yf.train_graph(g, model_config)
+_ = yml.train_graph(g, model_config)
 
 ## evaluate graph
-_ = yf.eval_graph(g, model_config)
+_ = yml.eval_graph(g, model_config)
 ```
 
 Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
