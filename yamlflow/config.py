@@ -76,12 +76,12 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     # `best_params/` will hold a serialized version of the best params
     # I like to keep this as a backup in case I run into issues with
     # the saver files
-    maybe_create_dir(root_dir + "/best_params")
+    maybe_create_dir(os.path.join(root_dir, "best_params"))
     # `tf_logs/` will hold the logs that will be visible in tensorboard
-    maybe_create_dir(root_dir + "/tf_logs")
+    maybe_create_dir(os.path.join(root_dir, "tf_logs"))
 
     # `yf_logs/` will hold the custom logs
-    maybe_create_dir(root_dir + "/yf_logs")
+    maybe_create_dir(os.path.join(root_dir, "yf_logs"))
 
 
 def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
