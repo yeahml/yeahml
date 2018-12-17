@@ -5,7 +5,7 @@ import os
 import sys
 import random
 
-from yamlflow.build.get_components import get_tf_dtype
+from yeahml.build.get_components import get_tf_dtype
 
 
 def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:

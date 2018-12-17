@@ -27,14 +27,10 @@ examples/iris/make_records/raw/
 
 # cali housing
 examples/cali_housing/make_records/\.ipynb_checkpoints/
-examples/cali_housing/make_records/prep_csv/
-examples/cali_housing/make_records/raw_split/
-examples/cali_housing/make_records/raw/
-examples/cali_housing/make_records/tf_records/
+examples/cali_housing/make_records/raw_data/*
 examples/cali_housing/data/*.tfrecords
-examples/cali_housing/trial_01/yf_logs/
-examples/cali_housing/trial_01/best_params/
-examples/cali_housing/trial_01/tf_logs/*
+examples/cali_housing/trial_01/*
+examples/cali_housing/data/*
 
 # segmentation
 examples/segmentation/make_records/\.ipynb_checkpoints/

@@ -1,17 +1,17 @@
 import tensorflow as tf
 import sys
 
-from yamlflow.log.yf_logging import config_logger
-from yamlflow.build.build_hidden import build_hidden_block
-from yamlflow.build.get_components import get_tf_dtype
-from yamlflow.build.get_components import get_optimizer
-from yamlflow.build.get_components import get_logits_and_preds
-from yamlflow.build.helper import (
+from yeahml.log.yf_logging import config_logger
+from yeahml.build.build_hidden import build_hidden_block
+from yeahml.build.get_components import get_tf_dtype
+from yeahml.build.get_components import get_optimizer
+from yeahml.build.get_components import get_logits_and_preds
+from yeahml.build.helper import (
     build_mets_write_op,
     build_loss_ops,
     create_metrics_ops,
 )
-from yamlflow.helper import fmt_tensor_info
+from yeahml.helper import fmt_tensor_info
 
 
 # Helper to make the output "consistent"

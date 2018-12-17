@@ -2,13 +2,13 @@ import tensorflow as tf
 import numpy as np
 import sys
 
-from yamlflow.helper import fmt_tensor_info
-from yamlflow.build.get_components import (
+from yeahml.helper import fmt_tensor_info
+from yeahml.build.get_components import (
     get_regularizer_fn,
     get_initializer_fn,
     get_activation_fn,
 )
-from yamlflow.log.yf_logging import config_logger  # custom logging
+from yeahml.log.yf_logging import config_logger  # custom logging
 
 # NOTE: the default padding is "same", this is different from the API which is "same"
 

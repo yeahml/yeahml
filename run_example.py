@@ -1,7 +1,7 @@
 import os
 import logging
 
-import yamlflow as yf
+import yeahml as yml
 
 # TODO: this needs to be handled differently
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -11,27 +11,27 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 ## Config files for currently supported modes
 # example = "./examples/cats_v_dogs_01/model_config.yaml"  # sigmoid example
-example = "./examples/mnist/model_config.yaml"  # softmax example
-# example = "./examples/cali_housing/model_config.yaml"  # regression example
+# example = "./examples/mnist/model_config.yaml"  # softmax example
+example = "./examples/cali_housing/model_config.yaml"  # regression example
 # example = "./examples/segmentation/model_config.yaml"  # binary segmentation example
 # example = (
 #     "./examples/multi_segmentation/model_config.yaml"
 # )  # multi segmentation example
-model_config, hidden_config = yf.create_model_and_hidden_config(example)
+model_config, hidden_config = yml.create_model_and_hidden_config(example)
 
 
 ## build graph
-g = yf.build_graph(model_config, hidden_config)
+g = yml.build_graph(model_config, hidden_config)
 
 ## train graph
-_ = yf.train_graph(g, model_config, hidden_config)
+_ = yml.train_graph(g, model_config, hidden_config)
 
 ## evaluate graph
 # _ = eval_graph(g, model_config)
 
 ## same as above, but does not require manual graph creation
 # > will load a graph from the saver path (if present)
-yf.eval_graph_from_saver(model_config)
+yml.eval_graph_from_saver(model_config)
 
 
 ## Serving

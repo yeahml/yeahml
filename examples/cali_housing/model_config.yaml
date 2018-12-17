@@ -34,14 +34,14 @@ data:
       in_type: "float32" # what it is encoded as
   TFR:
     dir: './examples/cali_housing/data/'
-    train: 'train.tfrecords'
-    validation: 'validation.tfrecords'
-    test: 'test.tfrecords'
+    train: 'final_train.tfrecords'
+    validation: 'final_validation.tfrecords'
+    test: 'final_test.tfrecords'
 hyper_parameters:
   optimizer: 'adam'
-  lr: 0.003
+  lr: 0.005
   batch_size: 32
-  epochs: 5 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
+  epochs: 20 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
   default_activation: 'elu'
   shuffle_buffer: 128
   early_stopping:

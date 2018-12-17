@@ -2,9 +2,9 @@ import tensorflow as tf
 import os
 import numpy as np
 
-from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
-from yamlflow.log.yf_logging import config_logger  # custom logging
-from yamlflow.helper import fmt_metric_summary
+from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.helper import fmt_metric_summary
 
 
 # TODO: this will need to be updated to match ..from_saver.

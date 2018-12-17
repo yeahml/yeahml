@@ -4,12 +4,12 @@ from tqdm import tqdm
 import os
 import sys
 
-from yamlflow.dataset.handle_data import return_batched_iter  # datasets from tfrecords
-from yamlflow.log.yf_logging import config_logger  # custom logging
-from yamlflow.build.load_params_onto_layer import init_params_from_file  # load params
-from yamlflow.build.get_components import get_run_options
-from yamlflow.helper import fmt_metric_summary
-from yamlflow.plot.plotting import plot_four_seg, plot_three_seg
+from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
+from yeahml.build.get_components import get_run_options
+from yeahml.helper import fmt_metric_summary
+from yeahml.plot.plotting import plot_four_seg, plot_three_seg
 
 
 def train_graph(g, MCd: dict, HCd: dict):
@@ -51,7 +51,7 @@ def train_graph(g, MCd: dict, HCd: dict):
         MCd["loss_fn"] == "softmax_binary_segmentation_temp"
         or MCd["loss_fn"] == "softmax_multi_segmentation_temp"
     ):
-        y_true_hot = g.get_collection("y_true_hot")
+        # y_true_hot = g.get_collection("y_true_hot")
         seg_prob = g.get_collection("seg_prob")
 
     best_val_loss = math.inf
