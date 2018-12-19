@@ -6,11 +6,7 @@ from yeahml.build.build_hidden import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
 from yeahml.build.get_components import get_optimizer
 from yeahml.build.get_components import get_logits_and_preds
-from yeahml.build.helper import (
-    build_mets_write_op,
-    build_loss_ops,
-    create_metrics_ops,
-)
+from yeahml.build.helper import build_mets_write_op, build_loss_ops, create_metrics_ops
 from yeahml.helper import fmt_tensor_info
 
 
@@ -275,10 +271,19 @@ def build_graph(MCd: dict, HCd: dict):
             for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
             if v.name.rstrip("0123456789").endswith("bias:")
         ]
+        # print(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
         logger.debug("create scalar bias: {}".format(weights))
         assert len(weights) == len(bias), "number of weights & bias are not equal"
         logger.debug("len(weights) == len(bias) = {}".format(len(weights)))
         layer_names = list(HCd["layers"])
+
+        weights.append(
+            [
+                v
+                for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+                or v.name.rstrip("0123456789").endswith("word_embeddings:")
+            ][0]
+        )
 
         # TODO: hardcoded way of removing logits from segmentation development
         if (
@@ -290,11 +295,18 @@ def build_graph(MCd: dict, HCd: dict):
         # TODO: this logic assumes that the layer name corresponds to the type of layer
         # > ideally, this list should be built by inspecting the layer 'type', but for beta
         # > purposes, this works for now.
-        layer_names = [l for l in layer_names if not l.startswith("pool")]
-        assert len(weights) == len(layer_names), "num of w&b not equal to num layers"
+        layer_names = [
+            l
+            for l in layer_names
+            if not l.startswith("pool") and not l.startswith("embedding")
+        ]
+        assert len(bias) == len(layer_names), "num of bias not equal to num layers"
 
         hist_list = []
         for i, l_weight in enumerate(weights):
+            if l_weight.name.startswith("word_embeddings"):
+                i -= 1  # ensure i (bias index) remains consistent with weights
+                pass
             l_name = layer_names[i] + "_params"
             w_name, b_name = "weights", "bias"
             with tf.variable_scope(l_name):

@@ -39,6 +39,7 @@ def init_params_from_file(sess, MCd: dict, HCd: dict):
                         for l in layer_tensor
                         if l.name.rstrip("0123456789").endswith("kernel:")
                         or l.name.rstrip("0123456789").endswith("bias:")
+                        or v.name.rstrip("0123456789").endswith("word_embeddings:")
                     ]
 
                     for t_param in layer_tensor:
