@@ -2,7 +2,7 @@ import tensorflow as tf
 import sys
 
 from yeahml.log.yf_logging import config_logger
-from yeahml.build.build_hidden import build_hidden_block
+from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
 from yeahml.build.get_components import get_optimizer
 from yeahml.build.get_components import get_logits_and_preds

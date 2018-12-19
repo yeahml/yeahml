@@ -10,7 +10,7 @@ def init_params_from_file(sess, MCd: dict, HCd: dict):
 
     FULL_ERROR = True
     load_names, layer_tensor_params = [], []
-    for i, l_name in enumerate(HCd["layers"]):
+    for l_name in HCd["layers"]:
         try:
             if HCd["layers"][l_name]["saver"]["load_params"]:
                 # set name to load var from the indicated path, will default to
