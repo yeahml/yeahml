@@ -32,6 +32,11 @@ examples/cali_housing/data/*.tfrecords
 examples/cali_housing/trial_01/*
 examples/cali_housing/data/*
 
+# sentiment_imdb
+examples/sentiment_imdb/make_records/\.ipynb_checkpoints/
+examples/sentiment_imdb/data/*.tfrecords
+examples/cali_housing/trial_01/*
+
 # segmentation
 examples/segmentation/make_records/\.ipynb_checkpoints/
 examples/segmentation/make_records/raw/ISIC-2017_Test_V2_Data/
