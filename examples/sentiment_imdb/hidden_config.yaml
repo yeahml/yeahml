@@ -1,0 +1,31 @@
+# documentation will be key - "sane" defaults
+# key: value
+# key will be the "name" of the layer, value will hold the type+
+# TODO: set *NECESSARTY/REQUIRED* params
+
+# TODO: initialization
+# TODO: option to write scalar
+# TODO: default conv = conv2d?
+# TODO: default strides = 1, padding='SAME'
+# TODO: regularization
+
+layers:
+  embedding:
+    type: 'embedding'
+    options:
+      vocabulary_size: 10000
+      embedding_size: 16
+  pool_global_1:
+    type: 'global_pooling'
+  dense_1:
+    type: 'dense'
+    options:
+      units: 16
+      dropout: 0.2
+      trainable: True
+  dense_2:
+    type: 'dense'
+    options:
+      units: 8
+      dropout: 0.2
+      trainable: True
