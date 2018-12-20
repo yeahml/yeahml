@@ -17,12 +17,24 @@ layers:
       embedding_size: 16
   pool_global_1:
     type: 'global_pooling'
-  dense_1:
-    type: 'dense'
+  bi_rnn:
+    type: 'recurrent'
     options:
-      units: 16
-      dropout: 0.2
-      trainable: True
+      num_layers: 2
+      bidirectional: False
+      use_peepholes: True
+      num_neurons: 3
+      keep_prob: 0.9
+      condense_out:
+        units: 1
+        dropout: 0.2
+        trainable: True
+  # dense_1:
+  #   type: 'dense'
+  #   options:
+  #     units: 16
+  #     dropout: 0.2
+  #     trainable: True
   dense_2:
     type: 'dense'
     options:

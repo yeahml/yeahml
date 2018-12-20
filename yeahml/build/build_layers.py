@@ -16,7 +16,7 @@ from yeahml.build.layers.convolution import (
     build_conv2d_transpose_layer,
     build_conv2d_layer,
 )
-
+from yeahml.build.layers.recurrent import build_recurrent_layer
 from yeahml.build.layers.dense import build_dense_layer
 from yeahml.build.layers.other import build_embedding_layer
 
@@ -109,6 +109,11 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
             logger.debug("-> START building: {}".format(ltype))
             cur_input = build_embedding_layer(
                 cur_input, training, opts, l_name, logger, g_logger
+            )
+        elif ltype == "recurrent":
+            logger.debug("-> START building: {}".format(ltype))
+            cur_input = build_recurrent_layer(
+                cur_input, training, opts, actfn, l_name, logger, g_logger
             )
         else:
             logger.fatal("unable to build layer type: {}".format(ltype))
