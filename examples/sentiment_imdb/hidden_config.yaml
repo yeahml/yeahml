@@ -20,9 +20,10 @@ layers:
   bi_rnn:
     type: 'recurrent'
     options:
+      cell_type: 'gru'
       num_layers: 2
-      bidirectional: False
-      use_peepholes: True
+      bidirectional: True
+      #use_peepholes: True
       num_neurons: 3
       keep_prob: 0.9
       condense_out:

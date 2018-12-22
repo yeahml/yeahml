@@ -4,6 +4,58 @@ from yeahml.helper import fmt_tensor_info
 from yeahml.build.layers.dense import build_dense_layer
 
 
+def get_recurrent_cell(opts: dict, logger, g_logger):
+    # TODO: add dtype, add activation
+    try:
+        CELL_TYPE: str = opts["cell_type"].lower()
+    except KeyError:
+        CELL_TYPE = "lstm"
+    logger.debug("cell_type set: {}".format(CELL_TYPE))
+
+    try:
+        NUM_RNN_NEURONS: int = opts["num_neurons"]
+    except KeyError:
+        NUM_RNN_NEURONS = 3
+    logger.debug("num_neurons set: {}".format(NUM_RNN_NEURONS))
+
+    RETURN_CELL = None
+    if CELL_TYPE == "lstm":
+        # TODO: There are many othe options that could be implemented
+        # > https://www.tensorflow.org/api_docs/python/tf/nn/rnn_cell/LSTMCell
+        try:
+            USE_PEEPHOLES: bool = opts["use_peepholes"]
+        except KeyError:
+            USE_PEEPHOLES = False
+        logger.debug("use_peepholes set: {}".format(USE_PEEPHOLES))
+
+        RETURN_CELL = tf.nn.rnn_cell.LSTMCell(
+            num_units=NUM_RNN_NEURONS, use_peepholes=USE_PEEPHOLES
+        )
+    elif CELL_TYPE == "gru":
+        RETURN_CELL = tf.nn.rnn_cell.GRUCell(num_units=NUM_RNN_NEURONS)
+    elif CELL_TYPE == "basic":
+        RETURN_CELL = tf.nn.rnn_cell.BasicRNNCell(num_units=NUM_RNN_NEURONS)
+    else:
+        sys.exit("cell type ({}) not allowed".format(CELL_TYPE))
+
+    try:
+        KEEP_PROB: float = opts["keep_prob"]
+    except KeyError:
+        KEEP_PROB = 1.0
+    logger.debug("keep_prob set: {}".format(KEEP_PROB))
+
+    if KEEP_PROB < 1.0:
+        # TODO: allow for different types of dropout here
+        RETURN_CELL = tf.nn.rnn_cell.DropoutWrapper(
+            RETURN_CELL, input_keep_prob=KEEP_PROB
+        )
+        g_logger.info(
+            ">> dropout: {} (1 - keep_prob({}))".format(1 - KEEP_PROB, KEEP_PROB)
+        )
+
+    return RETURN_CELL
+
+
 def build_recurrent_layer(
     cur_input, training, opts: dict, actfn, name: str, logger, g_logger
 ):
@@ -46,40 +98,22 @@ def build_recurrent_layer(
 
     # forward or bidirectional
     try:
-        NUM_LAYERS = opts["num_layers"]
+        NUM_LAYERS: int = opts["num_layers"]
     except KeyError:
         NUM_LAYERS = 1
     logger.debug("num_layers set: {}".format(NUM_LAYERS))
 
     try:
-        BIDIRECTIONAL = opts["bidirectional"]
+        BIDIRECTIONAL: bool = opts["bidirectional"]
     except KeyError:
         BIDIRECTIONAL = False
     logger.debug("bidirectional set: {}".format(BIDIRECTIONAL))
 
     try:
-        USE_PEEPHOLES = opts["use_peepholes"]
+        DENSE_OPTS_DICT: dict = opts["condense_out"]
     except KeyError:
-        USE_PEEPHOLES = False
-    logger.debug("use_peepholes set: {}".format(USE_PEEPHOLES))
-
-    try:
-        NUM_RNN_NEURONS = opts["num_neurons"]
-    except KeyError:
-        NUM_RNN_NEURONS = 3
-    logger.debug("num_neurons set: {}".format(NUM_RNN_NEURONS))
-
-    try:
-        dense_ops = opts["condense_out"]
-    except KeyError:
-        dense_ops = None
-    logger.debug("condense out: {}".format(NUM_RNN_NEURONS))
-
-    try:
-        KEEP_PROB = opts["keep_prob"]
-    except KeyError:
-        KEEP_PROB = 0.2
-    logger.debug("keep_prob set: {}".format(KEEP_PROB))
+        DENSE_OPTS_DICT = None
+    logger.debug("condense out: {}".format(DENSE_OPTS_DICT))
 
     if BIDIRECTIONAL:
         with tf.variable_scope("{}_{}_layer".format(name, NUM_LAYERS)):
@@ -89,26 +123,11 @@ def build_recurrent_layer(
                     "rnn_layer_{}".format(layer_n), reuse=tf.AUTO_REUSE
                 ):
                     ## forward cell
-                    # TODO: simple, lstm, gru
                     # TODO: allow for dynamic number of rnn neurons in future?
-                    cell_fw = tf.nn.rnn_cell.LSTMCell(
-                        num_units=NUM_RNN_NEURONS, use_peepholes=USE_PEEPHOLES
-                    )
-                    # TODO: allow for different types of dropout here
-                    cell_fw = tf.nn.rnn_cell.DropoutWrapper(
-                        cell_fw, input_keep_prob=KEEP_PROB
-                    )
-                    # g_logger.info("fw >> dropout: {}".format(dropout_rate))
+                    cell_fw = get_recurrent_cell(opts, logger, g_logger)
 
                     ## backward cell
-                    cell_bw = tf.nn.rnn_cell.LSTMCell(
-                        num_units=NUM_RNN_NEURONS, use_peepholes=USE_PEEPHOLES
-                    )
-                    # TODO: allow for different types of dropout here
-                    cell_bw = tf.nn.rnn_cell.DropoutWrapper(
-                        cell_bw, input_keep_prob=KEEP_PROB
-                    )
-                    # g_logger.info("bw >> dropout: {}".format(dropout_rate))
+                    cell_bw = get_recurrent_cell(opts, logger, g_logger)
 
                     outputs, states = tf.nn.bidirectional_dynamic_rnn(
                         cell_fw=cell_fw,
@@ -127,15 +146,8 @@ def build_recurrent_layer(
                 with tf.variable_scope(
                     "rnn_layer_{}".format(layer_n), reuse=tf.AUTO_REUSE
                 ):
-                    # TODO: simple, lstm, gru
                     # TODO: allow for dynamic number of rnn neurons in future?
-                    cell_fw = tf.nn.rnn_cell.LSTMCell(
-                        num_units=NUM_RNN_NEURONS, use_peepholes=USE_PEEPHOLES
-                    )
-                    # TODO: allow for different types of dropout here
-                    cell_fw = tf.nn.rnn_cell.DropoutWrapper(
-                        cell_fw, input_keep_prob=KEEP_PROB
-                    )
+                    cell_fw = get_recurrent_cell(opts, logger, g_logger)
                     layers.append(cell_fw)
 
             multi_layer_cell = tf.nn.rnn_cell.MultiRNNCell(cells=layers)
@@ -147,9 +159,9 @@ def build_recurrent_layer(
     logger.debug("tensor obj: {}".format(out))
     logger.debug("[End] building: {}".format(name))
 
-    if dense_ops:
+    if DENSE_OPTS_DICT:
         out = build_dense_layer(
-            out, training, dense_ops, None, "rnn_condense", logger, g_logger
+            out, training, DENSE_OPTS_DICT, None, "rnn_condense", logger, g_logger
         )
 
     logger.debug(
