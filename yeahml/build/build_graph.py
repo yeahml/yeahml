@@ -83,7 +83,9 @@ def build_graph(MCd: dict, HCd: dict):
                     # and retrieved later for both converted and not converted values
                     y = y_raw
 
-        hidden = build_hidden_block(X, training, MCd, HCd, logger, g_logger)
+        hidden, control_deps = build_hidden_block(
+            X, training, MCd, HCd, logger, g_logger
+        )
 
         ## Logits and preds function
         logits, preds = get_logits_and_preds(
@@ -144,7 +146,19 @@ def build_graph(MCd: dict, HCd: dict):
             logger.info("create /train")
             optimizer = get_optimizer(MCd)
             g_logger.info("{}".format(optimizer._name))
-            training_op = optimizer.minimize(batch_loss, name="training_op")
+
+            # update with batch normalization
+            if control_deps:
+                # NOTE: this is not currently doing anything since batch normalization
+                # is using the contrib version and is setting updates_collections=None
+                # see: https://github.com/tensorflow/tensorflow/issues/14357
+                g_logger.info("control dependencies: ({})".format(control_deps))
+                update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                with tf.control_dependencies(update_ops):
+                    training_op = optimizer.minimize(batch_loss, name="training_op")
+            else:
+                g_logger.info("no control dependencies")
+                training_op = optimizer.minimize(batch_loss, name="training_op")
 
         ## init
         with tf.name_scope("init"):

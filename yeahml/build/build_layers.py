@@ -18,7 +18,10 @@ from yeahml.build.layers.convolution import (
 )
 from yeahml.build.layers.recurrent import build_recurrent_layer
 from yeahml.build.layers.dense import build_dense_layer
-from yeahml.build.layers.other import build_embedding_layer
+from yeahml.build.layers.other import (
+    build_embedding_layer,
+    build_batch_normalization_layer,
+)
 
 
 def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
@@ -30,6 +33,7 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
     # cur_input will be updated each iteration such that on
     # the next iteration it will be the input to the following layer
     cur_input = X
+    control_deps = []
 
     # build each layer based on the (ordered) yaml specification
     logger.debug("loop+start building layers: {}".format(HCd["layers"].keys()))
@@ -110,6 +114,12 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
             cur_input = build_embedding_layer(
                 cur_input, training, opts, l_name, logger, g_logger
             )
+        elif ltype == "batch_normalization":
+            logger.debug("-> START building: {}".format(ltype))
+            cur_input = build_batch_normalization_layer(
+                cur_input, training, opts, l_name, logger, g_logger
+            )
+            control_deps.append("batch_norm ({})".format(HCd["layers"][str(l_name)]))
         elif ltype == "recurrent":
             logger.debug("-> START building: {}".format(ltype))
             cur_input = build_recurrent_layer(
@@ -121,4 +131,4 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
 
     logger.info("[END] building hidden block")
 
-    return cur_input
+    return cur_input, control_deps

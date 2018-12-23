@@ -21,8 +21,8 @@ layers:
     type: 'recurrent'
     options:
       cell_type: 'gru'
-      num_layers: 2
-      bidirectional: True
+      num_layers: 1
+      bidirectional: False
       #use_peepholes: True
       num_neurons: 3
       keep_prob: 0.9
@@ -30,15 +30,11 @@ layers:
         units: 1
         dropout: 0.2
         trainable: True
-  # dense_1:
-  #   type: 'dense'
-  #   options:
-  #     units: 16
-  #     dropout: 0.2
-  #     trainable: True
   dense_2:
     type: 'dense'
     options:
       units: 8
       dropout: 0.2
       trainable: True
+  batch_norm:
+    type: 'batch_normalization'
