@@ -154,6 +154,12 @@ Main documentation is ongoing+work in progress. Please reach out if you have que
 
 **If anyone would like to attempt to use or modify this project, feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)**
 
+## Known issues
+The latest version of TQDM will cause a "random" RuntimeError and stop training. Downgrading to a earlier version seems to resolve the issue. The issue may be related to this [GitHub issue](https://github.com/tqdm/tqdm/issues/613). I've been using version 4.19 as a fix:
+```
+conda install tqdm=4.19
+```
+
 ## Motivation
 
 The primary motivation is to define and create (simple) models easily (for machines and humans). The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a separate project (TODO: include link once made) that will attempt to generate/analyze architectures.
