@@ -7,7 +7,6 @@
 # TODO: option to write scalar
 # TODO: default conv = conv2d?
 # TODO: default strides = 1, padding='SAME'
-# TODO: regularization
 
 layers:
   conv_1:

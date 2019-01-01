@@ -290,13 +290,15 @@ def build_graph(MCd: dict, HCd: dict):
         assert len(weights) == len(bias), "number of weights & bias are not equal"
         logger.debug("len(weights) == len(bias) = {}".format(len(weights)))
 
-        weights.append(
-            [
-                v
-                for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
-                or v.name.rstrip("0123456789").endswith("word_embeddings:")
-            ][0]
-        )
+        # TODO: This logic needs to be reworked
+        # print(weights)
+        # weights.append(
+        #     [
+        #         v
+        #         for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+        #         or v.name.rstrip("0123456789").endswith("word_embeddings:")
+        #     ][0]
+        # )
 
         # TODO: this is ugly.... and needs to be improved
         # a placeholder function has been placed in helper (create_layer_names)

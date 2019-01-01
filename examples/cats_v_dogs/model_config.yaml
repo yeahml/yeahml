@@ -1,12 +1,11 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
 overall:
-  name: 'cats_v_dogs_01'
+  name: 'cats_v_dogs'
   loss_fn: 'sigmoid'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
-    load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   # trace: Null
   logging:
     console:
@@ -40,9 +39,9 @@ data:
       tftype: "fixedlenfeature"
       in_type: "int64" # what it is encoded as
   TFR:
-    dir: './examples/cats_v_dogs_01/data/record_holder/150'
+    dir: './examples/cats_v_dogs/data/record_holder/150'
     train: 'train.tfrecords'
-    validation: 'validation.tfrecords'
+    validation: 'val.tfrecords'
     test: 'test.tfrecords'
 hyper_parameters:
   optimizer: 'adam'
@@ -57,7 +56,7 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './examples/cats_v_dogs_01/hidden_config.yaml'
+  yaml: './examples/cats_v_dogs/hidden_config.yaml'
 train:
   image_standardize: True
 

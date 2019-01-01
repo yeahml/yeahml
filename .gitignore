@@ -13,13 +13,15 @@ examples/mnist/trial_01/*
 examples/mnist/saved_params/best_params/
 
 # cats v dogs
-examples/cats_v_dogs_01/make_records/\.ipynb_checkpoints/
-examples/cats_v_dogs_01/data/train/
-examples/cats_v_dogs_01/\.ipynb_checkpoints/
-examples/cats_v_dogs_01/data/numpy/150/
-examples/cats_v_dogs_01/data/train\.zip
-examples/cats_v_dogs_01/data/record_holder/150/
-examples/cats_v_dogs_01/trial_01/*
+examples/cats_v_dogs/make_records/\.ipynb_checkpoints/
+examples/cats_v_dogs/data/train/
+examples/cats_v_dogs/\.ipynb_checkpoints/
+examples/cats_v_dogs/data/numpy/150/
+examples/cats_v_dogs/data/train\.zip
+examples/cats_v_dogs/data/record_holder/150/
+examples/cats_v_dogs/trial_01/*
+examples/cats_v_dogs/make_records/kagglecatsanddogs_3367a\.zip
+examples/cats_v_dogs/make_records/raw_cats_vs_dogs/*
 
 # iris
 examples/iris/make_records/\.ipynb_checkpoints/
@@ -57,3 +59,4 @@ examples/multi_segmentation/data/*
 examples/multi_segmentation/trial_01/best_params/
 examples/multi_segmentation/trial_01/tf_logs/*
 examples/multi_segmentation/trial_01/yf_logs/
+
