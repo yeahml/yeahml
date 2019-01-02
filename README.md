@@ -218,6 +218,7 @@ At the moment the project is being developed around a binary image classificatio
   - Support for multi-input
   - Support for multi-output
 - Hyperparameter optimization (hyperopt support?)
+- Make code/atom extension for autocomplete yaml
 
 #### Notes
 

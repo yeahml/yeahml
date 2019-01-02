@@ -41,10 +41,10 @@ examples/sentiment_imdb/trial_01/*
 
 # segmentation
 examples/segmentation/make_records/\.ipynb_checkpoints/
-examples/segmentation/make_records/raw/ISIC-2017_Test_V2_Data/
-examples/segmentation/make_records/raw/ISIC-2017_Test_V2_Part1_GroundTruth/
-examples/segmentation/make_records/raw/ISIC-2017_Training_Data/
-examples/segmentation/make_records/raw/ISIC-2017_Training_Part1_GroundTruth/
+examples/segmentation/make_records/raw_isic_segmentation/ISIC-2017_Test_v2_Data/
+examples/segmentation/make_records/raw_isic_segmentation/ISIC-2017_Test_v2_Part1_GroundTruth/
+examples/segmentation/make_records/raw_isic_segmentation/ISIC2018_Task1-2_Training_Input/
+examples/segmentation/make_records/raw_isic_segmentation/ISIC2018_Task1_Training_GroundTruth/
 examples/segmentation/make_records/numpy_prep/224_224/
 examples/segmentation/make_records/numpy_final/224_224/
 examples/segmentation/data/224_224/

@@ -14,7 +14,7 @@ example = "./examples/cats_v_dogs/model_config.yaml"  # sigmoid example
 # example = "./examples/mnist/model_config.yaml"  # softmax example
 # example = "./examples/cali_housing/model_config.yaml"  # regression example
 # example = "./examples/segmentation/model_config.yaml"  # binary segmentation example
-# example = (
+###TODO: example = (
 #     "./examples/multi_segmentation/model_config.yaml"
 # )  # multi segmentation example
 # example = "./examples/sentiment_imdb/model_config.yaml"  # sentiment analysis example
