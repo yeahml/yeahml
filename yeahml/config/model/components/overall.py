@@ -1,98 +1,43 @@
 import numpy as np
 import os
 import sys
-
 from yeahml.config.helper import create_standard_dirs
 
-# components
-from yeahml.config.components.overall import parse_overall
 
-
-def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
-    # this is necessary since the YAML structure is likely to change
-    # eventually, this may be deleted
-
-    # TODO: do type checking here... and convert all strings to lower
-
+def parse_overall(MC: dict) -> dict:
     MCd = {}
-
-    # https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
-    overal_dict = parse_overall(MC)
-    MCd = {**MCd, **overal_dict}
-    ## 'overall'
-
-    ## inputs
-    # copy is used to prevent overwriting underlying data
-    MCd["in_dim"] = MC["data"]["in"]["dim"].copy()
-    if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
-        MCd["in_dim"].insert(0, None)  # add batching
-    MCd["in_dtype"] = MC["data"]["in"]["dtype"]
+    MCd["name"] = MC["overall"]["name"]
+    MCd["experiment_dir"] = MC["overall"]["experiment_dir"]
     try:
-        MCd["reshape_in_to"] = MC["data"]["in"]["reshape_to"]
-        if MCd["reshape_in_to"][0] != -1:  # as oppposed to [None, x, y, z]
-            MCd["reshape_in_to"].insert(0, -1)  # -1
+        MCd["seed"] = MC["overall"]["rand_seed"]
     except KeyError:
-        # None in this case is representative of not reshaping
-        MCd["reshape_in_to"] = None
-
-    # copy is used to prevent overwriting underlying data
-    MCd["output_dim"] = MC["data"]["label"]["dim"].copy()
-    if MCd["output_dim"][0]:  # as oppposed to [None, x, y, z]
-        MCd["output_dim"].insert(0, None)  # add batching
-    MCd["label_dtype"] = MC["data"]["label"]["dtype"]
+        pass
 
     try:
-        temp_one_hot = MC["data"]["label"]["one_hot"]
-        if temp_one_hot != False and temp_one_hot != True:
-            sys.exit(
-                "Error > Exiting: data:label:one_hot {} unsupported. Please use True or False".format(
-                    temp_one_hot
-                )
-            )
-        MCd["label_one_hot"] = temp_one_hot
+        MCd["trace_level"] = MC["overall"]["trace"].lower()
     except KeyError:
-        # None in this case is representative of not using one hot encoding
-        MCd["label_one_hot"] = False
+        pass
 
-    # currently required
-    MCd["TFR_dir"] = MC["data"]["TFR"]["dir"]
-    MCd["TFR_train"] = MC["data"]["TFR"]["train"]
-    MCd["TFR_test"] = MC["data"]["TFR"]["test"]
-    MCd["TFR_val"] = MC["data"]["TFR"]["validation"]
-
-    # TODO: this is a first draft for this type of organization and will
-    # will likely be changed
-    MCd["data_in_dict"] = MC["data"]["in"]
-    MCd["data_out_dict"] = MC["data"]["label"]
-    MCd["TFR_parse"] = MC["data"]["TFR_parse"]
-
-    ########### hyperparameters
-    MCd["lr"] = MC["hyper_parameters"]["lr"]
-    MCd["epochs"] = MC["hyper_parameters"]["epochs"]
-    MCd["batch_size"] = MC["hyper_parameters"]["batch_size"]
-    MCd["optimizer"] = MC["hyper_parameters"]["optimizer"]
-    MCd["def_act"] = MC["hyper_parameters"]["default_activation"]
-    MCd["shuffle_buffer"] = MC["hyper_parameters"]["shuffle_buffer"]
-
-    ## validation
+    # TODO: this is a temp+new object in the dict
     try:
-        MCd["early_stopping_e"] = MC["hyper_parameters"]["early_stopping"]["epochs"]
+        MCd["num_classes"] = MC["overall"]["num_classes"]
     except KeyError:
-        # default behavior is to not have early stopping
-        # TODO: Log information - default early_stopping_e set to 0
-        MCd["early_stopping_e"] = 0
+        # no params will be loaded from previously trained params
+        # TODO: I don't feel great about this.. this is a temp fix
+        if MC["overall"]["metrics"]["type"] == "regression":
+            MCd["num_classes"] = 1
+        pass
 
-    # NOTE: warm_up_epochs is only useful when early_stopping_e > 0
-    try:
-        MCd["warm_up_epochs"] = MC["hyper_parameters"]["early_stopping"][
-            "warm_up_epochs"
-        ]
-    except KeyError:
-        # default behavior is to have a warm up period of 5 epochs
-        # TODO: Log information - default warm_up_epochs set to 5
-        MCd["warm_up_epochs"] = 5
+    if (
+        MC["overall"]["metrics"]["type"] == "classification"
+        or MC["overall"]["metrics"]["type"] == "segmentation"
+    ):
+        try:
+            MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
+        except KeyError:
+            MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
 
-    ### architecture
+        ### architecture
     # TODO: implement after graph can be created...
     MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
 
@@ -143,36 +88,6 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
         # rather than being hardcoded as a list in config.py
         sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
     MCd["met_set"] = met_set
-
-    try:
-        MCd["augmentation"] = MC["train"]["augmentation"]
-    except KeyError:
-        pass
-
-    try:
-        MCd["image_standardize"] = MC["train"]["image_standardize"]
-    except KeyError:
-        pass
-
-    # DEV_DIR is a hardcoded value for the directory in which the examples
-    # are located. for packing+, this will need to be removed.
-    DEV_DIR = "examples"
-    # BEST_PARAMS_DIR is a hardcoded value that must match the created dir in
-    # create_standard_dirs
-    BEST_PARAMS_DIR = "best_params"
-    MCd["log_dir"] = os.path.join(
-        ".", DEV_DIR, MC["overall"]["name"], MCd["experiment_dir"]
-    )
-    MCd["saver_save"] = os.path.join(
-        ".",
-        DEV_DIR,
-        MC["overall"]["name"],
-        MCd["experiment_dir"],
-        BEST_PARAMS_DIR,
-        MCd["save_params"] + ".ckpt",
-    )
-    # wipe is set to true for now
-    create_standard_dirs(MCd["log_dir"], True)
 
     ####### Logging
     ERR_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -292,7 +207,24 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
     # hard set the graph info
     MCd["log_p_str"] = "[%(levelname)-8s] %(message)s"
 
-    return (MCd, HC)
+    # DEV_DIR is a hardcoded value for the directory in which the examples
+    # are located. for packing+, this will need to be removed.
+    DEV_DIR = "examples"
+    # BEST_PARAMS_DIR is a hardcoded value that must match the created dir in
+    # create_standard_dirs
+    BEST_PARAMS_DIR = "best_params"
+    MCd["log_dir"] = os.path.join(
+        ".", DEV_DIR, MC["overall"]["name"], MCd["experiment_dir"]
+    )
+    MCd["saver_save"] = os.path.join(
+        ".",
+        DEV_DIR,
+        MC["overall"]["name"],
+        MCd["experiment_dir"],
+        BEST_PARAMS_DIR,
+        MCd["save_params"] + ".ckpt",
+    )
+    # wipe is set to true for now
+    create_standard_dirs(MCd["log_dir"], True)
 
-
-# TODO: will need to implement preprocessing logic
+    return MCd

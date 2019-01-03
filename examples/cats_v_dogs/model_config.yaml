@@ -43,6 +43,14 @@ data:
     train: 'train.tfrecords'
     validation: 'val.tfrecords'
     test: 'test.tfrecords'
+  image:
+    standardize: True
+    augmentation:
+      aug_val: True
+      v_flip: True
+      h_flip: True
+      #rotate: 0
+      max_brightness: 0.2
 hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
@@ -57,15 +65,8 @@ hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
   yaml: './examples/cats_v_dogs/hidden_config.yaml'
-train:
-  image_standardize: True
 
-  # augmentation:
-  #   aug_val: True
-  #   v_flip: True
-  #   h_flip: True
-  #   #rotate: 0
-  #   max_brightness: 0.2
+
 
 # todo implement
 # advanced:

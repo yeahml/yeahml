@@ -3,7 +3,10 @@ import logging
 import sys
 
 from yeahml.config.helper import maybe_create_dir, parse_yaml_from_path
-from yeahml.config.manage_parameters import extract_dict_and_set_defaults
+from yeahml.config.model.create_model_config import extract_model_dict_and_set_defaults
+from yeahml.config.hidden.create_hidden_config import (
+    extract_hidden_dict_and_set_defaults,
+)
 
 
 ## Basic Error Checking
@@ -16,21 +19,15 @@ from yeahml.config.manage_parameters import extract_dict_and_set_defaults
 
 def create_model_and_hidden_config(path: str) -> tuple:
     # return the model and architecture configuration dicts
-    m_config = parse_yaml_from_path(path)
-    if not m_config:
+    raw_config = parse_yaml_from_path(path)
+    if not raw_config:
         sys.exit(
             "Error > Exiting: the model config file was found {}, but appears to be empty".format(
                 path
             )
         )
-    # create architecture config
-    if m_config["hidden"]["yaml"]:
-        h_config = parse_yaml_from_path(m_config["hidden"]["yaml"])
-    else:
-        # hidden is defined in the current yaml
-        # TODO: this needs error checking/handling, empty case
-        h_config = m_config["hidden"]
 
-    m_config, h_config = extract_dict_and_set_defaults(m_config, h_config)
+    m_config = extract_model_dict_and_set_defaults(raw_config)
+    h_config = extract_hidden_dict_and_set_defaults(raw_config)
 
     return (m_config, h_config)
