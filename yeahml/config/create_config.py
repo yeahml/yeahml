@@ -337,18 +337,14 @@ def extract_dict_and_set_defaults(MC: dict, HC: dict) -> tuple:
             # handle null case
             MCd[
                 "log_f_str"
-            ] = (
-                "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
-            )
+            ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
         else:
             # TODO: error checking
             pass
     except KeyError:
         MCd[
             "log_f_str"
-        ] = (
-            "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
-        )
+        ] = "[%(asctime)s - %(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
 
     ## graph level
     try:
