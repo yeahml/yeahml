@@ -12,6 +12,23 @@ YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) u
 
 The goal of the core implementation is as follows:
 
+1. Create `.tfrecords` for a training, validation, and test set
+2. Write configuration files (json or yaml, see below)
+  - for the main implementation (meta data, hyperparameters, etc)
+  - for the hidden layers
+3. Use python (as shown below) to train and evaluate the model
+  - There are three main functions
+    - build_graph
+    - train_graph
+    - evaluate_graph (will load the "best params" from training before evaluating)
+4. Iterate on models and ideas
+  - logs are created and can be used for debugging or evaluating models
+  - tensorboard is ready to look at
+    - metric scalars
+    - graph architecture
+    - profiling
+    - parameter histograms and distributions
+
 ## Main use
 
 ```python
@@ -79,7 +96,7 @@ hyper_parameters:
     epochs: 3
     warm_up_epochs: 5
 hidden:
-  yaml: './examples/mnist/hidden_config.yaml'
+  path: './examples/mnist/hidden_config.yaml'
 #train:
   #image_standardize: True
   #augmentation:
@@ -88,7 +105,7 @@ hidden:
     #h_flip: True
 ```
 
-The hidden layer architecture config (where the path to this file is specified above by (`hidden:yaml`) may look similar to the following:
+The hidden layer architecture config (where the path to this file is specified above by (`hidden:path`) may look similar to the following:
 
 ```yaml
 layers:
@@ -169,9 +186,8 @@ The primary motivation is to define and create (simple) models easily (for machi
 At the moment the project is being developed around a binary image classification task. In the future, I'd like to support:
 
 1. Regression
-2. Segmentation
-3. Autoencoders
-4. GANs
+2. Autoencoders
+3. GANs
 
 ### TODO and in Progress
 
@@ -199,7 +215,6 @@ At the moment the project is being developed around a binary image classificatio
 - Support different types of loss functions (right now these are hardcoded by (type)
 - [sphinx](http://www.sphinx-doc.org/en/master/) documentation
 - Add docstrings to each function
-- Batch normalization layer
 - Support for concatenation (would allow for the creation of custom modules -- similar to inception)
 - Depthwise separable convolutions
 - support k fold cross validation
