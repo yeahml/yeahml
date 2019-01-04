@@ -52,5 +52,5 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './examples/segmentation/hidden_config.yaml'
+  path: './examples/segmentation/hidden_config.yaml'
  

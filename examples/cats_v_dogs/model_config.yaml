@@ -64,7 +64,7 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './examples/cats_v_dogs/hidden_config.yaml'
+  path: './examples/cats_v_dogs/hidden_config.yaml'
 
 
 

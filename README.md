@@ -8,7 +8,7 @@
 <img src="./misc/yf_logo_draft_02.png" width="300">
 </p>
 
-YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
+YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml or json).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
 
 The goal of the core implementation is as follows:
 
@@ -218,10 +218,4 @@ At the moment the project is being developed around a binary image classificatio
   - Support for multi-input
   - Support for multi-output
 - Hyperparameter optimization (hyperopt support?)
-- Make code/atom extension for autocomplete yaml
-
-#### Notes
-
-Why YAML?
-
-> Simply, because I wanted support for comments. Though x,y,or z may be ``better'' configuration types, yaml was selected for its general popularity and support for comments. I'm open to changing this in the future -- doing so would only require parsing the new config standard into the expect python dict -- but at the moment it isn't a top priority for me personally.  Additionally, since the interface/functionality will likely change dramatically, I think it would be best to stick with the one config file option (yaml) for now.
+- Make code/atom extension for autocomplete yaml (and json)

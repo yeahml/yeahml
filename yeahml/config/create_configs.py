@@ -2,7 +2,11 @@
 import logging
 import sys
 
-from yeahml.config.helper import maybe_create_dir, parse_yaml_from_path
+from yeahml.config.helper import (
+    maybe_create_dir,
+    parse_yaml_from_path,
+    parse_json_from_path,
+)
 from yeahml.config.model.create_model_config import extract_model_dict_and_set_defaults
 from yeahml.config.hidden.create_hidden_config import (
     extract_hidden_dict_and_set_defaults,
@@ -19,7 +23,10 @@ from yeahml.config.hidden.create_hidden_config import (
 
 def create_model_and_hidden_config(path: str) -> tuple:
     # return the model and architecture configuration dicts
-    raw_config = parse_yaml_from_path(path)
+    if path.endswith("yaml") or path.endswith("yml"):
+        raw_config = parse_yaml_from_path(path)
+    elif path.endswith("json"):
+        raw_config = parse_json_from_path(path)
     if not raw_config:
         sys.exit(
             "Error > Exiting: the model config file was found {}, but appears to be empty".format(
@@ -28,6 +35,24 @@ def create_model_and_hidden_config(path: str) -> tuple:
         )
 
     m_config = extract_model_dict_and_set_defaults(raw_config)
-    h_config = extract_hidden_dict_and_set_defaults(raw_config)
+
+    # get hidden path
+    try:
+        hidden_path = raw_config["hidden"]["path"]
+    except KeyError:
+        sys.exit("no path specified for the hidden layers")
+
+    if hidden_path.endswith("yaml") or hidden_path.endswith("yml"):
+        h_raw_config = parse_yaml_from_path(hidden_path)
+    elif hidden_path.endswith("json"):
+        h_raw_config = parse_json_from_path(hidden_path)
+    if not h_raw_config:
+        sys.exit(
+            "Error > Exiting: the model config file was found {}, but appears to be empty".format(
+                path
+            )
+        )
+
+    h_config = extract_hidden_dict_and_set_defaults(h_raw_config)
 
     return (m_config, h_config)

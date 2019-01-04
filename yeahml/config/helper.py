@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import sys
@@ -24,9 +25,22 @@ def parse_yaml_from_path(path: str) -> dict:
                 return dict()
     except FileNotFoundError:
         sys.exit(
-            "Error > Exiting: the model configuration file {} was not found".format(
-                path
-            )
+            "Error > Exiting: the configuration file {} was not found".format(path)
+        )
+
+
+def parse_json_from_path(path: str) -> dict:
+    try:
+        with open(path, encoding="utf-8") as data_file:
+            try:
+                data = json.loads(data_file.read())
+                return data
+            except:
+                print("Error loading json to dict for file {}".format(path))
+                return dict()
+    except FileNotFoundError:
+        sys.exit(
+            "Error > Exiting: the configuration file {} was not found".format(path)
         )
 
 

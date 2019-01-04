@@ -50,4 +50,4 @@ hyper_parameters:
   #   epochs: 3
   #   warm_up_epochs: 5
 hidden:
-  yaml: './examples/sentiment_imdb/hidden_config.yaml'
+  path: './examples/sentiment_imdb/hidden_config.yaml'

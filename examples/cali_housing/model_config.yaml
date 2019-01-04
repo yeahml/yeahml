@@ -50,5 +50,5 @@ hyper_parameters:
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)
-  yaml: './examples/cali_housing/hidden_config.yaml'
+  path: './examples/cali_housing/hidden_config.yaml'
  

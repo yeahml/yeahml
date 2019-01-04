@@ -1,0 +1,73 @@
+{
+    "layers": {
+        "batch_norm_0": {
+            "type": "batch_normalization"
+        },
+        "conv_1": {
+            "type": "conv2d",
+            "options": {
+                "filters": 16,
+                "kernel_size": 3,
+                "strides": 2
+            }
+        },
+        "batch_norm_1": {
+            "type": "batch_normalization"
+        },
+        "pool_1": {
+            "type": "pooling2d",
+            "options": {
+                "pool_type": "avg"
+            }
+        },
+        "conv_2": {
+            "type": "conv2d",
+            "options": {
+                "filters": 32,
+                "kernel_size": 3,
+                "strides": 1
+            }
+        },
+        "batch_norm_2": {
+            "type": "batch_normalization"
+        },
+        "pool_2": {
+            "type": "pooling2d"
+        },
+        "conv_3": {
+            "type": "conv2d",
+            "options": {
+                "filters": 64,
+                "kernel_size": 3,
+                "strides": 1
+            }
+        },
+        "batch_norm_3": {
+            "type": "batch_normalization"
+        },
+        "pool_3": {
+            "type": "pooling2d",
+            "options": {
+                "pool_type": "max",
+                "dropout": 0.5
+            }
+        },
+        "dense_1": {
+            "type": "dense",
+            "options": {
+                "units": 64,
+                "dropout": 0.5
+            }
+        },
+        "batch_norm_4": {
+            "type": "batch_normalization"
+        },
+        "dense_2": {
+            "type": "dense",
+            "options": {
+                "units": 16,
+                "dropout": 0.5
+            }
+        }
+    }
+}

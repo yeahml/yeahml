@@ -29,8 +29,8 @@ def extract_model_dict_and_set_defaults(MC: dict) -> dict:
     MCd = {**MCd, **data_dict}
 
     # hyperparameters
-    data_dict = parse_hyper_parameters(MC)
-    MCd = {**MCd, **data_dict}
+    hyper_param_dict = parse_hyper_parameters(MC)
+    MCd = {**MCd, **hyper_param_dict}
 
     return MCd
 
