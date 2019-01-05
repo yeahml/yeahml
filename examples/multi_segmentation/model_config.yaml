@@ -16,7 +16,7 @@ overall:
     type: 'segmentation'
   num_classes: 9
   class_names: ['background','general_face','eyes','lips','nose','ears','eyebrows','teeth','hair'] # TODO: include
-  class_weights: [1.0, 1.711, 207.040, 105.417, 41.087, 78.813, 137.270, 624.800, 9.572]
+  class_weights: [1.0, 1.71, 208.99, 101.53, 41.71, 72.78, 143.15, 641.36, 8.94]
 data:
   in:
     dim: [280, 300, 3]

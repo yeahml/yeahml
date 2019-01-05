@@ -15,7 +15,7 @@ I cannot promise these will work for everyone, but they may help some people. Pl
 
 ### Create environment from selected file
 
-See [conda documentation](https://conda.io/docs/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
+See [conda documentation](https://conda.io/docs/user-guide/tasks/manage-environments.html#managing-environments)
 ```
 conda create --name <env> --file <this file>
 ```

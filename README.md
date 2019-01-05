@@ -10,7 +10,7 @@
 
 YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml or json).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
 
-The goal of the core implementation is as follows:
+The core implementation is as follows:
 
 1. Create `.tfrecords` for a training, validation, and test set
 2. Write configuration files (json or yaml, see below)
@@ -23,7 +23,7 @@ The goal of the core implementation is as follows:
     - evaluate_graph (will load the "best params" from training before evaluating)
 4. Iterate on models and ideas
   - logs are created and can be used for debugging or evaluating models
-  - tensorboard is ready to look at
+  - tensorboard is ready to use
     - metric scalars
     - graph architecture
     - profiling
