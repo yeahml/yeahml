@@ -1,7 +1,7 @@
 # Cali Housing
 
-[TODO - in progress]
+## Example data
 
-## NOTE
-
-This directory is used as the development data for regression
+<p align="left">
+<img src="./misc/housing_ex.png" alt="Example of an image from the cali_housing dataset and the corresponding output target" width="300">
+</p>

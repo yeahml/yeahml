@@ -51,6 +51,47 @@ _ = yml.eval_graph(g, model_config)
 
 Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
 
+## Examples
+
+To help people get started, on a variety of different tasks, there are included examples in the [./examples](./examples) directory.  Each notebook contains a [`model_config`](./docs/configuration_files/model_config.md) file, a [`hidden_config`](./docs/configuration_files/hidden_config.md) file, and a directory called `make_records` that will create `.tfrecords`.
+
+The current examples are:
+
+- [**Multisegmentation (human faces)**](./examples/multi_segmentation/README.md)
+<!-- <p align="left">
+<img src="./examples/multi_segmentation/misc/image_and_mask_ex.png" alt="Example of a face image from the dataset and the corresponding output target" width="300">
+</p>
+<p align="left">
+<img src="./examples/multi_segmentation/misc/tb_output_img.png" alt="Example of an image created in tensorboard of a sample face image, the segmentation prediction for the image throughout training, and the corresponding ground truth image" width="300">
+</p> -->
+- [**Segmentation (skin lesions)**](./examples/segmentation/README.md)
+<!-- <p align="left">
+<img src="./examples/segmentation/misc/isic_segmentation.png" alt="Example of an ISIC lesion image from the dataset and the corresponding output target" width="300">
+</p>
+<p align="left">
+<img src="./examples/segmentation/misc/isic_segmentation_output_ex.png" alt="Example of an image created in tensorboard of a sample ISIC skin lesion, the segmentation prediction for the image throughout training, and the corresponding ground truth image" width="300">
+</p> -->
+- [**Multiclass Image Classification (MNIST)**](./examples/mnist/README.md)
+<!-- <p align="left">
+<img src="./examples/mnist/misc/mnist_ex.png" alt="Example of an image from the MNIST dataset and the corresponding output target" width="300">
+</p> -->
+- [**Binary Image Classification (Cats vs Dogs)**](./examples/cats_v_dogs/README.md)
+<!-- <p align="left">
+<img src="./examples/cats_v_dogs/misc/cat_v_dog_ex.png" alt="Example of an image from the Cats vs Dogs dataset and the corresponding output target" width="300">
+</p> -->
+- [**Sentiment analysis (imdb movie reviews)**](./examples/sentiment_imdb/README.md)
+<!-- <p align="left">
+<img src="./examples/sentiment_imdb/misc/sentiment_imdb_ex.png" alt="Example of an image from the imdb movie review dataset and the corresponding output target" width="300">
+</p> -->
+- [**Regression (california housing data)**](./examples/cali_housing/README.md)
+<!-- <p align="left">
+<img src="./examples/cali_housing/misc/housing_ex.png" alt="Example of an image from the cali_housing dataset and the corresponding output target" width="300">
+</p> -->
+
+*Note: if you have another example you would like to see feel free to reach out to me or make a pull request.*
+
+
+
 ### Configuration Files
 
 The model config may look similar to the following:
@@ -172,10 +213,11 @@ Main documentation is ongoing+work in progress. Please reach out if you have que
 **If anyone would like to attempt to use or modify this project, feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)**
 
 ## Known issues
-The latest version of TQDM will cause a "random" RuntimeError and stop training. Downgrading to a earlier version seems to resolve the issue. The issue may be related to this [GitHub issue](https://github.com/tqdm/tqdm/issues/613). I've been using version 4.19 as a fix:
+- The latest version of TQDM will cause a "random" RuntimeError and stop training. Downgrading to a earlier version seems to resolve the issue. The issue may be related to this [GitHub issue](https://github.com/tqdm/tqdm/issues/613). I've been using version 4.19 as a fix:
 ```
 conda install tqdm=4.19
 ```
+- The output image for segmentation examples is hardcoded.
 
 ## Motivation
 
@@ -191,6 +233,8 @@ At the moment the project is being developed around a binary image classificatio
 
 ### TODO and in Progress
 
+- move all examples to a new repository?
+- package for conda/pip installation
 - handle instance id when not present in the dataset (mnist) - include warning
 - include 'WIPE' option to delete current logs as needed
 - support additional metrics
