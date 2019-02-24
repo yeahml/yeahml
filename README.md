@@ -8,7 +8,7 @@
 <img src="./misc/yf_logo_draft_02.png" width="300">
 </p>
 
-YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml or json).  Examples are currently being worked through and can be found in the [examples directory](./examples/README.md)
+YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml or json).  Examples are currently being worked through and can be found in the [examples directory](./examples)
 
 The core implementation is as follows:
 
@@ -57,33 +57,33 @@ To help people get started, on a variety of different tasks, there are included 
 
 The current examples are:
 
-- [**Multisegmentation (human faces)**](./examples/multi_segmentation/README.md)
+- [**Multisegmentation (human faces)**](./examples/multi_segmentation)
 <!-- <p align="left">
 <img src="./examples/multi_segmentation/misc/image_and_mask_ex.png" alt="Example of a face image from the dataset and the corresponding output target" width="300">
 </p>
 <p align="left">
 <img src="./examples/multi_segmentation/misc/tb_output_img.png" alt="Example of an image created in tensorboard of a sample face image, the segmentation prediction for the image throughout training, and the corresponding ground truth image" width="300">
 </p> -->
-- [**Segmentation (skin lesions)**](./examples/segmentation/README.md)
+- [**Segmentation (skin lesions)**](./examples/segmentation)
 <!-- <p align="left">
 <img src="./examples/segmentation/misc/isic_segmentation.png" alt="Example of an ISIC lesion image from the dataset and the corresponding output target" width="300">
 </p>
 <p align="left">
 <img src="./examples/segmentation/misc/isic_segmentation_output_ex.png" alt="Example of an image created in tensorboard of a sample ISIC skin lesion, the segmentation prediction for the image throughout training, and the corresponding ground truth image" width="300">
 </p> -->
-- [**Multiclass Image Classification (MNIST)**](./examples/mnist/README.md)
+- [**Multiclass Image Classification (MNIST)**](./examples/mnist)
 <!-- <p align="left">
 <img src="./examples/mnist/misc/mnist_ex.png" alt="Example of an image from the MNIST dataset and the corresponding output target" width="300">
 </p> -->
-- [**Binary Image Classification (Cats vs Dogs)**](./examples/cats_v_dogs/README.md)
+- [**Binary Image Classification (Cats vs Dogs)**](./examples/cats_v_dogs)
 <!-- <p align="left">
 <img src="./examples/cats_v_dogs/misc/cat_v_dog_ex.png" alt="Example of an image from the Cats vs Dogs dataset and the corresponding output target" width="300">
 </p> -->
-- [**Sentiment analysis (imdb movie reviews)**](./examples/sentiment_imdb/README.md)
+- [**Sentiment analysis (imdb movie reviews)**](./examples/sentiment_imdb)
 <!-- <p align="left">
 <img src="./examples/sentiment_imdb/misc/sentiment_imdb_ex.png" alt="Example of an image from the imdb movie review dataset and the corresponding output target" width="300">
 </p> -->
-- [**Regression (california housing data)**](./examples/cali_housing/README.md)
+- [**Regression (california housing data)**](./examples/cali_housing)
 <!-- <p align="left">
 <img src="./examples/cali_housing/misc/housing_ex.png" alt="Example of an image from the cali_housing dataset and the corresponding output target" width="300">
 </p> -->

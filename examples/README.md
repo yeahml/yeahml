@@ -5,7 +5,7 @@ Examples are a work in progress.
 ## Current Examples
  
 ## Multiclass Image Classification (MNIST)
-[MNIST](./mnist/README.md)
+[MNIST](./mnist)
 > called the "Drosophila" of machine/learning learning. Classifying images of handwritten digits (10 classes)
 
 <p align="left">
@@ -13,7 +13,7 @@ Examples are a work in progress.
 </p>
  
 ## Regression (california housing data)
-[cali_housing](./cali_housing/README.md)
+[cali_housing](./cali_housing)
 > Regression problem for housing data in California
 
 <p align="left">
@@ -21,7 +21,7 @@ Examples are a work in progress.
 </p>
 
 ## Binary Image Classification (Cats vs Dogs)
-[cats_v_dogs](./cats_v_dogs/README.md)
+[cats_v_dogs](./cats_v_dogs)
 > A kaggle challenge for classifying images of cats and dogs (2 classes)
 
 <p align="left">
@@ -29,7 +29,7 @@ Examples are a work in progress.
 </p>
 
 ## Segmentation (skin lesions)
-[segmentation](./segmentation/README.md)
+[segmentation](./segmentation)
 > Segmentation of skin lesions from the ISIC challenge
 
 <p align="left">
@@ -41,7 +41,7 @@ Examples are a work in progress.
 </p>
 
 ## Multisegmentation (human faces)
-[multi_segmentation](./multi_segmentation/README.md)
+[multi_segmentation](./multi_segmentation)
 > Segmentation of skin lesions from the ISIC challenge
 
 <p align="left">
@@ -53,7 +53,7 @@ Examples are a work in progress.
 </p>
 
 ## Sentiment analysis (imdb movie reviews)
-[sentiment_imdb](./sentiment_imdb/README.md)
+[sentiment_imdb](./sentiment_imdb)
 > Sentiment analysis of movie reviews from imdb
 
 <p align="left">
@@ -63,4 +63,4 @@ Examples are a work in progress.
 
 
 ## Environment
-Since there is no requirements.txt for this project (yet), I have included a environment.yaml for creating a conda environment compatible with this project. See [here](./environment/README.md) for more information.
+Since there is no requirements.txt for this project (yet), I have included a environment.yaml for creating a conda environment compatible with this project. See [here](./environment) for more information.
