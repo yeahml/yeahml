@@ -3,6 +3,7 @@ import math
 from tqdm import tqdm
 import os
 import sys
+from typing import Any
 
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
@@ -12,7 +13,9 @@ from yeahml.helper import fmt_metric_summary
 from yeahml.plot.plotting import plot_four_seg, plot_three_seg
 
 
-def train_graph(g, MCd: dict, HCd: dict):
+def train_graph(g, MCd: dict, HCd: dict) -> dict:
+    return_dict = {}
+
     logger = config_logger(MCd, "train")
     logger.info("-> START training graph")
 
@@ -55,7 +58,9 @@ def train_graph(g, MCd: dict, HCd: dict):
         seg_prob = g.get_collection("seg_prob")
 
     best_val_loss = math.inf
+    best_train_loss = math.inf
     last_best_e = 0  # marker for early stopping
+    last_best_e_train = 0
 
     with tf.Session(graph=g) as sess:
 
@@ -144,6 +149,12 @@ def train_graph(g, MCd: dict, HCd: dict):
                 except tf.errors.OutOfRangeError:
                     logger.debug("[END] iterating training dataset")
                     break
+
+            # store best train loss
+            cur_train_loss = sess.run(train_mean_loss)
+            if cur_train_loss < best_train_loss:
+                last_best_e_train = e
+                best_train_loss = cur_train_loss
 
             # write average for epoch
             summary = sess.run(epoch_train_write_op)
@@ -237,4 +248,13 @@ def train_graph(g, MCd: dict, HCd: dict):
         train_writer.close()
         val_writer.close()
         logger.info("[END] training graph")
-    return sess
+
+        logger.info("-> START creating train_dict")
+        return_dict["sess"] = sess
+        return_dict["train_loss"] = best_train_loss
+        return_dict["val_loss"] = best_val_loss
+        return_dict["val_e"] = last_best_e
+        return_dict["train_e"] = last_best_e_train
+        logger.info("[END] creating train_dict")
+
+    return return_dict

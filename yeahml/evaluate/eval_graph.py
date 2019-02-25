@@ -64,15 +64,19 @@ def eval_graph(g, MCd):
 #         )
 
 
-def eval_graph_from_saver(MCd):
+def eval_graph_from_saver(MCd) -> dict:
     logger = config_logger(MCd, "eval")
     logger.debug("eval_graph_from_saver")
     preds_logger = config_logger(MCd, "preds")
 
     with tf.Session() as sess:
         graph_path = os.path.join(MCd["saver_save"] + ".meta")
+
+        ###############################################################
+        # TODO: this section is incorrect
         saver = tf.train.import_meta_graph(graph_path)
         g = tf.get_default_graph()
+        ###############################################################
         X, y_raw, training, training_op = g.get_collection("main_ops")
         preds = g.get_collection("preds")
         y_true, y_pred = g.get_collection("gt_and_pred")
@@ -121,4 +125,5 @@ def eval_graph_from_saver(MCd):
         summary = sess.run(epoch_test_write_op)
         summary_dict = fmt_metric_summary(summary)
         logger.info("Test metrics: {}".format(summary_dict))
-        print(summary_dict)  # can also increase stdout log level
+
+        return summary_dict

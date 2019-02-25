@@ -83,6 +83,7 @@ def build_graph(MCd: dict, HCd: dict):
                     # and retrieved later for both converted and not converted values
                     y = y_raw
 
+        ## create the architecture
         hidden, control_deps = build_hidden_block(
             X, training, MCd, HCd, logger, g_logger
         )

@@ -11,6 +11,7 @@ examples/mnist/data/*.tfrecords
 examples/mnist/make_records/data
 examples/mnist/trial_01/*
 examples/mnist/saved_params/best_params/
+examples/mnist/data/
 
 # cats v dogs
 examples/cats_v_dogs/make_records/\.ipynb_checkpoints/
