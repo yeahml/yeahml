@@ -53,6 +53,12 @@ def create_model_and_hidden_config(path: str) -> tuple:
             )
         )
 
-    h_config = extract_hidden_dict_and_set_defaults(h_raw_config)
+    # TODO: does this belong here?
+    try:
+        def_act = m_config["def_act"]
+    except KeyError:
+        def_act = None
+
+    h_config = extract_hidden_dict_and_set_defaults(h_raw_config, def_act)
 
     return (m_config, h_config)

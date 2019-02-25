@@ -43,23 +43,9 @@ def build_hidden_block(X, training, MCd: dict, HCd: dict, logger, g_logger):
             "-> START building layer: {} with opts: {}".format(l_name, layer_info)
         )
 
-        try:
-            opts = layer_info["options"]
-        except:
-            opts = None
-            pass
-
-        try:
-            actfn_str = layer_info["activation"]
-            actfn = get_activation_fn(actfn_str)
-        except KeyError:
-            try:
-                actfn = get_activation_fn(MCd["def_act"])
-            except KeyError:
-                # the reasoning here is that the relu is subjectively the most
-                # common/default activation function in DNNs, but I don't LOVE this
-                actfn = get_activation_fn("relu")
-        logger.debug("activation set: {}".format(actfn))
+        # TODO: remove this assignment (already checked in config)
+        opts = layer_info["options"]
+        actfn = get_activation_fn(layer_info["activation"])
 
         ltype = layer_info["type"].lower()
         if ltype == "conv2d":

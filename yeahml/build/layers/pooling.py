@@ -113,6 +113,7 @@ def build_pool_1d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
 
 def build_pool_2d_layer(cur_input, training, opts: dict, name: str, logger, g_logger):
 
+    # TODO: this config should be moved to the config
     try:
         if opts:
             pool_size = opts["pool_size"]
@@ -122,6 +123,7 @@ def build_pool_2d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
         pool_size = [2, 2]
     logger.debug("pool_size set: {}".format(pool_size))
 
+    # TODO: this config should be moved to the config
     try:
         if opts:
             strides = opts["strides"]
