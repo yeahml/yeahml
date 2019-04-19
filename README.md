@@ -53,7 +53,7 @@ eval_dict = yml.eval_graph_from_saver(model_config)
 
 Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
 
-## Examples
+## [Examples](./examples)
 
 To help people get started, on a variety of different tasks, there are included examples in the [./examples](./examples) directory.  Each notebook contains a [`model_config`](./docs/configuration_files/model_config.md) file, a [`hidden_config`](./docs/configuration_files/hidden_config.md) file, and a directory called `make_records` that will create `.tfrecords`.
 
@@ -206,9 +206,7 @@ Logging, if enabled, will produce the following log files:
 - `train.log`
   - Contains information about training the graph [Information + Example](./docs/logs/train.md)
 
-## Getting Started
-
-There is currently two example projects [cats vs dogs (binary classification)](./examples/cats_v_dogs_01/) and [mnist (multi-class classification)](./examples/mnist/) that the `example.py` file implements.
+## Development
 
 Main documentation is ongoing+work in progress. Please reach out if you have questions/concerns.
 

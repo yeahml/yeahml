@@ -47,6 +47,7 @@ def build_graph(MCd: dict, HCd: dict):
         g_logger.info("============={}=============".format("GRAPH"))
 
         with tf.name_scope("inputs"):
+            # TODO: update to tf.keras layers
             logger.info("create inputs")
             # TODO: input dimension logic (currently hardcoded)
             training = tf.placeholder_with_default(False, shape=(), name="training")

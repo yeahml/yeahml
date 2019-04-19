@@ -1,5 +1,8 @@
-from yeahml.config.helper import parse_yaml_from_path
 import sys
+
+from yeahml.config.helper import parse_yaml_from_path
+from yeahml.config.hidden.components.pooling import configure_pooling_layer
+from yeahml.config.hidden.components.convolution import configure_conv_layer
 
 
 def _get_hidden_layers(h_raw_config: dict):
@@ -12,22 +15,53 @@ def _get_hidden_layers(h_raw_config: dict):
 
 
 def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
-    # TODO: placeholder for parsing layer options
-    # this function should parse layer specific information
-    # and ensure the options are "reasonable" for each layer
+    # parse layer specific information and ensure the options are
+    # "reasonable" for each layer
+    # set "type", "options", and "activation"
+    HLD = {}
 
-    HLD = hl
+    try:
+        hl_type = hl["type"].lower()
+        HLD["type"] = hl_type
+    except KeyError:
+        sys.exit("layer does not have a 'type': {}".format(hl))
 
+    ## option logic for each layer type
     # see if options exist
     try:
-        opts = hl["options"]
+        opts_raw = hl["options"]
     except:
-        # TODO: implement (specific to layer type)
-        # TODO: these defaults (if specified as None are currently implemented in "build_layers")
-        opts = None
-        # sys.exit("No options specified for {}".format(hl))
-    HLD["options"] = opts
+        # will default to default options
+        opts_raw = None
 
+    # opts_formatted = {}
+    # if hl_type == "conv2d":
+    #     opts_formatted = configure_conv_layer(opts_raw)
+    # elif hl_type == "deconv2d":
+    #     opts_formatted = configure_conv_layer(opts_raw)
+    # elif hl_type == "deconv2d":
+    #     pass
+    # elif hl_type == "dense":
+    #     pass
+    # elif hl_type == "deconv2d":
+    #     pass
+    # elif hl_type == "pooling2d":
+    #     opts_formatted = configure_pooling_layer(opts_raw)
+    # elif hl_type == "pooling1d":
+    #     opts_formatted = configure_pooling_layer(opts_raw)
+    # elif hl_type == "global_pooling":
+    #     pass
+    # elif hl_type == "embedding":
+    #     pass
+    # elif hl_type == "batch_normalization":
+    #     pass
+    # elif hl_type == "recurrent":
+    #     pass
+    # else:
+    #     sys.exit("layer type {} not currently supported".format(hl_type))
+    HLD["options"] = opts_raw  # opts_formatted
+
+    # TODO: this needs to be pushed down a level since some layers doesn't require act
     try:
         actfn_str = hl["activation"]
     except KeyError:
@@ -47,31 +81,7 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
 def create_layer_config(hl: dict, default_activation: str) -> dict:
     HLD = {}
 
-    # Read from config file?
-    allowed_layer_types = set(
-        [
-            "conv2d",
-            "deconv2d",
-            "dense",
-            "pooling2d",
-            "pooling1d",
-            "global_pooling",
-            "embedding",
-            "batch_normalization",
-            "recurrent",
-        ]
-    )
-
-    # make sure a type is specified
-    try:
-        hl_type = hl["type"].lower()
-    except KeyError:
-        sys.exit("layer does not have a 'type': {}".format(hl))
-
-    if hl_type not in allowed_layer_types:
-        sys.exit("layer type {} not currently supported".format(hl["type"]))
-
-    # TODO: parse layer type information
+    ## TODO: parse layer type information
     HLD = parse_layer_type_information(hl, default_activation)
 
     return HLD

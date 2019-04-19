@@ -1,4 +1,5 @@
-def configure_pooling_layer(hld: dict) -> dict:
+def configure_pooling_layer(opts: dict) -> dict:
+    layer_dict = {}
 
     try:
         if opts:
@@ -7,4 +8,5 @@ def configure_pooling_layer(hld: dict) -> dict:
             pool_size = 3
     except KeyError:
         pool_size = 3
-    logger.debug("pool_size set: {}".format(pool_size))
+
+    return layer_dict

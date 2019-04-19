@@ -110,11 +110,16 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
     logger.debug("b_reg set: {}".format(b_reg))
 
     filters = opts["filters"]
-    try:
-        kernel_size = opts["kernel_size"]
-    except KeyError:
-        kernel_size = 3
+    logger.debug("filters set: {}".format(filters))
+
+    kernel_size = opts["kernel_size"]
     logger.debug("kernel_size set: {}".format(kernel_size))
+
+    # data_format = opts["data_format"]
+    # logger.debug("data_format set: {}".format(data_format))
+
+    # dilation_rate = opts["dilation_rate"]
+    # logger.debug("dilation_rate set: {}".format(dilation_rate))
 
     try:
         # TODO: create func (w/error handling) for this
@@ -123,10 +128,7 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         padding = "SAME"
     logger.debug("padding set: {}".format(padding))
 
-    try:
-        strides = opts["strides"]
-    except KeyError:
-        strides = 1
+    strides = opts["strides"]
     logger.debug("strides set: {}".format(strides))
 
     if not name:
@@ -146,7 +148,9 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         kernel_size=kernel_size,
         strides=strides,
         padding=padding,
+        # dilation_rate=dilation_rate,
         activation=actfn,
+        # data_format=data_format,
         kernel_initializer=k_init_fn,
         bias_initializer=tf.zeros_initializer(),
         kernel_regularizer=k_reg,
