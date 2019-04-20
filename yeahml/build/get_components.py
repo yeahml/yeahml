@@ -6,14 +6,24 @@ def get_tf_dtype(dtype: str):
     # TODO: add type supports + error handling
     tf_dtype = None
 
-    if dtype == "float32":
+    # floats
+    if dtype == "float16":
+        tf_dtype = tf.float16
+    elif dtype == "float32":
         tf_dtype = tf.float32
-    elif dtype == "int64":
-        tf_dtype = tf.int64
-    elif dtype == "int32":
-        tf_dtype = tf.int32
+    elif dtype == "float64":
+        tf_dtype = tf.float64
+    # ints
     elif dtype == "int8":
         tf_dtype = tf.int8
+    elif dtype == "int16":
+        tf_dtype = tf.int16
+    elif dtype == "int32":
+        tf_dtype = tf.int32
+    elif dtype == "int64":
+        tf_dtype = tf.int64
+
+    # other
     elif dtype == "string":
         tf_dtype = tf.string
     else:
@@ -139,8 +149,8 @@ def get_activation_fn(act_str: str):
         act_fn = tf.nn.softsign
     elif act_str == "relu":
         act_fn = tf.nn.relu
-    # elif act == "leaky":
-    # act_fn = tf.nn.leaky_relu
+    elif act_str == "leaky":
+        act_fn = tf.nn.leaky_relu
     elif act_str == "relu6":
         act_fn = tf.nn.relu6
     elif act_str == "identity":

@@ -1,8 +1,6 @@
 import tensorflow as tf
 import sys
 
-from yeahml.helper import fmt_tensor_info
-
 
 def build_global_pooling_layer(
     cur_input, training, opts: dict, name: str, logger, g_logger
@@ -28,7 +26,7 @@ def build_global_pooling_layer(
     else:
         sys.exit("pool type {} is not allowed".format(pool_type))
     logger.debug("tensor obj: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
     logger.debug("[End] building: {}".format(name))
 
     return out
@@ -82,7 +80,7 @@ def build_pool_1d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
         sys.exit("pool type {} is not yet implemented".format(pool_type))
 
     logger.debug("tensor obj pre dropout: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
 
     ## add dropout, if indicated
     try:
@@ -161,7 +159,7 @@ def build_pool_2d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
         sys.exit("pool type {} is not yet implemented".format(pool_type))
 
     logger.debug("tensor obj pre dropout: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
 
     ## add dropout, if indicated
     try:

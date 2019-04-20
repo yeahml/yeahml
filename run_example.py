@@ -12,9 +12,9 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Config files for currently supported modes
 # example = "./examples/cats_v_dogs/model_config.yaml"  # sigmoid example
 # example = "./examples/cats_v_dogs/model_config.json"
-# example = "./examples/mnist/model_config.yaml"  # softmax example
+example = "./examples/mnist/model_config.yaml"  # softmax example
 # example = "./examples/cali_housing/model_config.yaml"  # regression example
-example = "./examples/segmentation/model_config.yaml"  # binary segmentation example
+# example = "./examples/segmentation/model_config.yaml"  # binary segmentation example
 # example = (
 #     "./examples/multi_segmentation/model_config.yaml"
 # )  # multi segmentation example
@@ -23,10 +23,10 @@ model_config, hidden_config = yml.create_model_and_hidden_config(example)
 
 
 ## build graph
-g = yml.build_graph(model_config, hidden_config)
+g = yml.build_model(model_config, hidden_config)
 
 ## train graph
-train_dict = yml.train_graph(g, model_config, hidden_config)
+train_dict = yml.train_model(g, model_config, hidden_config)
 print(train_dict)
 
 ## evaluate graph
