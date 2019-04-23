@@ -4,8 +4,9 @@ from yeahml.build.get_components import (
     get_initializer_fn,
     get_activation_fn,
 )
+from typing import Any
 
-# from yeahml.helper import fmt_tensor_info
+from yeahml.helper import fmt_tensor_info
 
 # NOTE: the default padding is "same", this is different from the API which is "same"
 
@@ -88,7 +89,7 @@ def build_conv2d_transpose_layer(
     return out
 
 
-def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger):
+def build_conv2d_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 
@@ -143,22 +144,25 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         trainable = True
     logger.debug("trainable set: {}".format(trainable))
 
-    out = tf.layers.conv2d(
-        cur_input,
-        filters=filters,
-        kernel_size=kernel_size,
+    out = tf.keras.layers.Conv2D(
+        filters,
+        kernel_size,
         strides=strides,
         padding=padding,
-        # dilation_rate=dilation_rate,
+        data_format=None,
+        dilation_rate=(1, 1),
         activation=actfn,
-        # data_format=data_format,
-        kernel_initializer=k_init_fn,
-        bias_initializer=tf.zeros_initializer(),
+        use_bias=True,
+        kernel_initializer="glorot_uniform",  # TODO: correct, k_init_fn
+        bias_initializer="zeros",
         kernel_regularizer=k_reg,
-        bias_regularizer=b_reg,
-        trainable=trainable,
+        bias_regularizer=b_reg,  # tf.zeros_initializer()
+        activity_regularizer=None,
+        kernel_constraint=None,
+        bias_constraint=None,
         name=name,
     )
+
     logger.debug("Final tensor obj: {}".format(out))
 
     g_logger.info("{}".format(fmt_tensor_info(out)))

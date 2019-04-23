@@ -40,11 +40,32 @@ def build_model(MCd: dict, HCd: dict):
 
     g_logger = config_logger(MCd, "graph")
 
-    ## make input layer(s?)
-    MODEL = None  # sequential model?
+    MODEL = None  # Functional model.. for now...
+
+    # TODO: currently hardcoded
+    input_layer = tf.keras.Input(shape=(28, 28, 1))
 
     ## add layers
     ## create the architecture
-    MODEL = build_hidden_block(MODEL, MCd, HCd, logger, g_logger)
+    hidden_layers = build_hidden_block(MCd, HCd, logger, g_logger)
 
-    return MODEL
+    # TODO: build model
+    cur_input, cur_output = input_layer, None
+    for layer in hidden_layers:
+        cur_output = layer(cur_input)
+        cur_input = cur_output
+
+    # TODO: output layer
+    output_layer = tf.keras.layers.Dense(10, activation="softmax")(cur_output)
+
+    # TODO: need to ensure this is the API we want
+    model = tf.keras.Model(inputs=input_layer, outputs=output_layer)
+
+    optimizer = get_optimizer(MCd)
+
+    # TODO: hardcoded
+    model.compile(
+        optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+    )
+
+    return model

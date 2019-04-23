@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import sys
-from typing import Any
+from typing import Any, List
 from yeahml.build.get_components import get_activation_fn
 from yeahml.log.yf_logging import config_logger  # custom logging
 
@@ -25,9 +25,10 @@ from yeahml.build.layers.other import (
 )
 
 
-def build_hidden_block(MODEL, MCd: dict, HCd: dict, logger, g_logger) -> Any:
+def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
     # logger = config_logger(MCd, "build")
     logger.info("-> START building hidden layers")
+    HIDDEN_LAYERS = []
 
     # build each layer based on the (ordered) yaml specification
     logger.debug("loop+start building layers: {}".format(HCd["layers"].keys()))
@@ -44,10 +45,7 @@ def build_hidden_block(MODEL, MCd: dict, HCd: dict, logger, g_logger) -> Any:
         ltype = layer_info["type"].lower()
         if ltype == "conv2d":
             logger.debug("-> START building: {}".format(ltype))
-            # cur_input = build_conv2d_layer(
-            #     cur_input, opts, actfn, l_name, logger, g_logger
-            # )
-            raise NotImplementedError
+            cur_layer = build_conv2d_layer(opts, actfn, l_name, logger, g_logger)
         elif ltype == "deconv2d":
             logger.debug("-> START building: {}".format(ltype))
             # cur_input = build_conv2d_transpose_layer(
@@ -57,16 +55,10 @@ def build_hidden_block(MODEL, MCd: dict, HCd: dict, logger, g_logger) -> Any:
         elif ltype == "dense":
             logger.debug("-> START building: {}".format(ltype))
             # TODO: need to flatten?
-            # cur_input = build_dense_layer(
-            #     cur_input, training, opts, actfn, l_name, logger, g_logger
-            # )
-            raise NotImplementedError
+            cur_layer = build_dense_layer(opts, actfn, l_name, logger, g_logger)
         elif ltype == "pooling2d":
             logger.debug("-> START building: {}".format(ltype))
-            # cur_input = build_pool_2d_layer(
-            #     cur_input, training, opts, l_name, logger, g_logger
-            # )
-            raise NotImplementedError
+            cur_layer = build_pool_2d_layer(opts, l_name, logger, g_logger)
         elif ltype == "pooling1d":
             logger.debug("-> START building: {}".format(ltype))
             # cur_input = build_pool_1d_layer(
@@ -101,6 +93,8 @@ def build_hidden_block(MODEL, MCd: dict, HCd: dict, logger, g_logger) -> Any:
             logger.fatal("unable to build layer type: {}".format(ltype))
             sys.exit("unable to build layer type: {}".format(ltype))
 
+        HIDDEN_LAYERS.append(cur_layer)
+
     logger.info("[END] building hidden block")
 
-    return MODEL
+    return HIDDEN_LAYERS
