@@ -16,9 +16,9 @@ def get_parse_type(parse_dict: dict):
     tfr_obj = None
     tf_parse_type = parse_dict["tftype"].lower()
     if tf_parse_type == "fixedlenfeature":
-        tfr_obj = tf.FixedLenFeature([], get_tf_dtype(parse_dict["in_type"]))
+        tfr_obj = tf.io.FixedLenFeature([], get_tf_dtype(parse_dict["in_type"]))
     elif tf_parse_type == "fixedlensequencefeature":
-        tfr_obj = tf.FixedLenSequenceFeature(
+        tfr_obj = tf.io.FixedLenSequenceFeature(
             [], get_tf_dtype(parse_dict["in_type"]), allow_missing=True
         )
     else:
@@ -55,13 +55,13 @@ def _parse_function(
     }
 
     # decode
-    parsed_features = tf.parse_single_example(example_proto, features=feature_dict)
+    parsed_features = tf.io.parse_single_example(example_proto, features=feature_dict)
 
     ## Feature
 
     # decode string
     if f_dict["in_type"] == "string" and f_dict["dtype"] != "string":
-        image = tf.decode_raw(
+        image = tf.io.decode_raw(
             parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
         )
     else:
@@ -114,7 +114,7 @@ def _parse_function(
     return image, label
 
 
-def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
+def return_batched_iter(set_type: str, MCd: dict, tfr_f_path):
 
     try:
         aug_opts = MCd["augmentation"]
@@ -141,7 +141,9 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
             parse_shape = MCd["in_dim"][1:]
     # parse_shape = list(parse_shape)
 
-    dataset = tf.data.TFRecordDataset(filenames_ph)
+    # TODO: implement directory or files logic
+    # tf.data.Dataset.list_files
+    dataset = tf.data.TFRecordDataset(tfr_f_path)
     dataset = dataset.map(
         lambda x: _parse_function(
             x,
@@ -165,7 +167,8 @@ def return_batched_iter(set_type: str, MCd: dict, filenames_ph):
     dataset = dataset.batch(MCd["batch_size"]).prefetch(1)
     dataset = dataset.repeat(1)
 
-    iterator = dataset.make_initializable_iterator()
+    # iterator = dataset
+    # iterator = dataset.make_initializable_iterator()
 
-    return iterator
+    return dataset
 
