@@ -4,7 +4,6 @@ import sys
 from yeahml.log.yf_logging import config_logger
 from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
-from yeahml.build.get_components import get_optimizer
 from yeahml.build.get_components import get_logits_and_preds
 from yeahml.build.helper import create_metrics_ops
 from yeahml.helper import fmt_tensor_info
@@ -40,8 +39,6 @@ def build_model(MCd: dict, HCd: dict):
 
     g_logger = config_logger(MCd, "graph")
 
-    MODEL = None  # Functional model.. for now...
-
     # TODO: currently hardcoded
     input_layer = tf.keras.Input(shape=(28, 28, 1))
 
@@ -61,11 +58,9 @@ def build_model(MCd: dict, HCd: dict):
     # TODO: need to ensure this is the API we want
     model = tf.keras.Model(inputs=input_layer, outputs=output_layer)
 
-    optimizer = get_optimizer(MCd)
-
     # TODO: hardcoded
-    model.compile(
-        optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
-    )
+    # model.compile(
+    #     optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+    # )
 
     return model

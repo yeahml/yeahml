@@ -32,6 +32,8 @@ layers:
       #load_params: True
   pool_1:
     type: 'pooling2d'
+  flatten_1:
+    type: 'flatten'
   dense_1:
     type: 'dense'
     options:

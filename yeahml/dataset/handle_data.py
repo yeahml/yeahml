@@ -64,6 +64,7 @@ def _parse_function(
         image = tf.io.decode_raw(
             parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
         )
+        image = tf.dtypes.cast(image, dtype=tf.float32)
     else:
         image = parsed_features[featureName]
 
@@ -73,6 +74,12 @@ def _parse_function(
             image = tf.reshape(image, parse_shape)
     except KeyError:
         image = tf.reshape(image, parse_shape)
+
+    # try:
+    #     if data_in_dict["cast_to"]:
+
+    # except KeyError:
+    #     image = tf.reshape(image, parse_shape)
 
     ## Label
 
@@ -167,7 +174,6 @@ def return_batched_iter(set_type: str, MCd: dict, tfr_f_path):
     dataset = dataset.batch(MCd["batch_size"]).prefetch(1)
     dataset = dataset.repeat(1)
 
-    # iterator = dataset
     # iterator = dataset.make_initializable_iterator()
 
     return dataset

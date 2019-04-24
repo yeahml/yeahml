@@ -52,6 +52,9 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
             #     cur_input, opts, actfn, l_name, logger, g_logger
             # )
             raise NotImplementedError
+        elif ltype == "flatten":
+            logger.debug("-> START building: {}".format(ltype))
+            cur_layer = tf.keras.layers.Flatten()
         elif ltype == "dense":
             logger.debug("-> START building: {}".format(ltype))
             # TODO: need to flatten?
