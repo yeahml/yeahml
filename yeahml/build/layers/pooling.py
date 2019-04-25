@@ -1,8 +1,6 @@
 import tensorflow as tf
 import sys
 
-from yeahml.helper import fmt_tensor_info
-
 
 def build_global_pooling_layer(
     cur_input, training, opts: dict, name: str, logger, g_logger
@@ -28,7 +26,7 @@ def build_global_pooling_layer(
     else:
         sys.exit("pool type {} is not allowed".format(pool_type))
     logger.debug("tensor obj: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
     logger.debug("[End] building: {}".format(name))
 
     return out
@@ -82,7 +80,7 @@ def build_pool_1d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
         sys.exit("pool type {} is not yet implemented".format(pool_type))
 
     logger.debug("tensor obj pre dropout: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
 
     ## add dropout, if indicated
     try:
@@ -111,7 +109,7 @@ def build_pool_1d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
     return out
 
 
-def build_pool_2d_layer(cur_input, training, opts: dict, name: str, logger, g_logger):
+def build_pool_2d_layer(opts: dict, name: str, logger, g_logger):
 
     # TODO: this config should be moved to the config
     try:
@@ -149,41 +147,41 @@ def build_pool_2d_layer(cur_input, training, opts: dict, name: str, logger, g_lo
     logger.debug("pool_type set: {}".format(pool_type))
 
     if pool_type == "max":
-        out = tf.layers.max_pooling2d(
-            cur_input, pool_size=pool_size, strides=strides, padding="same", name=name
+        out = tf.keras.layers.MaxPool2D(
+            pool_size=pool_size, strides=strides, padding="same", name=name
         )
     elif pool_type == "avg":
-        out = tf.layers.average_pooling2d(
-            cur_input, pool_size=pool_size, strides=strides, padding="same", name=name
+        out = tf.keras.layers.AveragePooling2D(
+            pool_size=pool_size, strides=strides, padding="same", name=name
         )
     else:
         # for future pooling implementations
         sys.exit("pool type {} is not yet implemented".format(pool_type))
 
     logger.debug("tensor obj pre dropout: {}".format(out))
-    g_logger.info("{}".format(fmt_tensor_info(out)))
+    # g_logger.info("{}".format(fmt_tensor_info(out)))
 
     ## add dropout, if indicated
-    try:
-        if opts:
-            dropout_rate = opts["dropout"]
-        else:
-            dropout_rate = None
-    except KeyError:
-        dropout_rate = None
-    logger.debug("dropout_rate set: {}".format(dropout_rate))
+    # try:
+    #     if opts:
+    #         dropout_rate = opts["dropout"]
+    #     else:
+    #         dropout_rate = None
+    # except KeyError:
+    #     dropout_rate = None
+    # logger.debug("dropout_rate set: {}".format(dropout_rate))
 
-    if dropout_rate:
-        out = tf.layers.dropout(
-            inputs=out,
-            rate=dropout_rate,
-            noise_shape=None,
-            seed=None,
-            training=training,
-            name=None,
-        )
-        logger.debug("tensor obj post dropout: {}".format(out))
-        g_logger.info(">> dropout: {}".format(dropout_rate))
+    # if dropout_rate:
+    #     out = tf.layers.dropout(
+    #         inputs=out,
+    #         rate=dropout_rate,
+    #         noise_shape=None,
+    #         seed=None,
+    #         training=training,
+    #         name=None,
+    #     )
+    #     logger.debug("tensor obj post dropout: {}".format(out))
+    #     g_logger.info(">> dropout: {}".format(dropout_rate))
 
     logger.debug("[End] building: {}".format(name))
 

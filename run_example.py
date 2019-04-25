@@ -23,10 +23,10 @@ model_config, hidden_config = yml.create_model_and_hidden_config(example)
 
 
 ## build graph
-g = yml.build_graph(model_config, hidden_config)
+g = yml.build_model(model_config, hidden_config)
 
 ## train graph
-train_dict = yml.train_graph(g, model_config, hidden_config)
+train_dict = yml.train_model(g, model_config, hidden_config)
 print(train_dict)
 
 ## evaluate graph

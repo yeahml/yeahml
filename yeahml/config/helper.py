@@ -18,7 +18,7 @@ def parse_yaml_from_path(path: str) -> dict:
     try:
         with open(path, "r") as stream:
             try:
-                y = yaml.load(stream)
+                y = yaml.load(stream, Loader=yaml.FullLoader)
                 return y
             except yaml.YAMLError as exc:
                 print(exc)

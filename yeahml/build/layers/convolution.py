@@ -4,6 +4,8 @@ from yeahml.build.get_components import (
     get_initializer_fn,
     get_activation_fn,
 )
+from typing import Any
+
 from yeahml.helper import fmt_tensor_info
 
 # NOTE: the default padding is "same", this is different from the API which is "same"
@@ -87,7 +89,7 @@ def build_conv2d_transpose_layer(
     return out
 
 
-def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger):
+def build_conv2d_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 
@@ -110,11 +112,16 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
     logger.debug("b_reg set: {}".format(b_reg))
 
     filters = opts["filters"]
-    try:
-        kernel_size = opts["kernel_size"]
-    except KeyError:
-        kernel_size = 3
+    logger.debug("filters set: {}".format(filters))
+
+    kernel_size = opts["kernel_size"]
     logger.debug("kernel_size set: {}".format(kernel_size))
+
+    # data_format = opts["data_format"]
+    # logger.debug("data_format set: {}".format(data_format))
+
+    # dilation_rate = opts["dilation_rate"]
+    # logger.debug("dilation_rate set: {}".format(dilation_rate))
 
     try:
         # TODO: create func (w/error handling) for this
@@ -123,10 +130,7 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         padding = "SAME"
     logger.debug("padding set: {}".format(padding))
 
-    try:
-        strides = opts["strides"]
-    except KeyError:
-        strides = 1
+    strides = opts["strides"]
     logger.debug("strides set: {}".format(strides))
 
     if not name:
@@ -140,20 +144,25 @@ def build_conv2d_layer(cur_input, opts: dict, actfn, name: str, logger, g_logger
         trainable = True
     logger.debug("trainable set: {}".format(trainable))
 
-    out = tf.layers.conv2d(
-        cur_input,
-        filters=filters,
-        kernel_size=kernel_size,
+    out = tf.keras.layers.Conv2D(
+        filters,
+        kernel_size,
         strides=strides,
         padding=padding,
+        data_format=None,
+        dilation_rate=(1, 1),
         activation=actfn,
-        kernel_initializer=k_init_fn,
-        bias_initializer=tf.zeros_initializer(),
+        use_bias=True,
+        kernel_initializer="glorot_uniform",  # TODO: correct, k_init_fn
+        bias_initializer="zeros",
         kernel_regularizer=k_reg,
-        bias_regularizer=b_reg,
-        trainable=trainable,
+        bias_regularizer=b_reg,  # tf.zeros_initializer()
+        activity_regularizer=None,
+        kernel_constraint=None,
+        bias_constraint=None,
         name=name,
     )
+
     logger.debug("Final tensor obj: {}".format(out))
 
     g_logger.info("{}".format(fmt_tensor_info(out)))
