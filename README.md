@@ -1,5 +1,7 @@
 # YeahML
 
+*This library is currently broken/outdated and in the process of migrating to tf2. The tf1 branch still supports the examples*
+
 [//]: # (Image References)
 [tensorboard_graph]: ./misc/tensorboard_graph.png
 [tensorboard_scalar]: ./misc/tensorboard_scalar.png
