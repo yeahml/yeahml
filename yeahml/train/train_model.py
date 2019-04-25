@@ -11,6 +11,34 @@ from yeahml.build.load_params_onto_layer import init_params_from_file  # load pa
 from yeahml.build.get_components import get_optimizer
 
 
+@tf.function
+def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
+
+    with tf.GradientTape() as tape:
+        prediction = model(x_batch)
+
+        # TODO: apply mask?
+
+        loss = loss_fn(y_batch, prediction)
+
+    grads = tape.gradient(loss, model.trainable_variables)
+    optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+    # TODO: convert to iterating list
+    loss_avg(loss)
+
+    # TODO: convert to iterating list
+    metrics(prediction, y_batch)
+
+
+@tf.function
+def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
+    prediction = model(x_batch)
+    loss = loss_fn(y_batch, prediction)
+    loss_avg(loss)
+    metrics(prediction, y_batch)
+
+
 def train_model(model, MCd: dict, HCd: dict) -> dict:
     return_dict = {}
 
@@ -20,30 +48,66 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     # get model
     # get optimizer
     optimizer = get_optimizer(MCd)
+
     # get loss function
-    loss_fn = tf.keras.losses.CategoricalCrossentropy()
+    loss_object = tf.keras.losses.CategoricalCrossentropy()
+
+    # mean loss
+    avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
+    avg_val_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
+
+    # get metrics
+    # TODO: create list, will need to iterate through later
+    train_metrics = tf.keras.metrics.MeanAbsoluteError(
+        name="train_accuracy", dtype=tf.float32
+    )
+    val_metrics = tf.keras.metrics.MeanAbsoluteError(
+        name="validation_accuracy", dtype=tf.float32
+    )
 
     # get dataset
-    tfr_f_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
-    train_ds = return_batched_iter("train", MCd, tfr_f_path)
+    tfr_train_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
+    train_ds = return_batched_iter("train", MCd, tfr_train_path)
+
+    tfr_val_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
+    val_ds = return_batched_iter("train", MCd, tfr_val_path)
 
     # TODO: train loop
 
+    # TODO: loop metrics
+    template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
     for e in range(MCd["epochs"]):
+        # TODO: abstract to fn to clear *all* metrics and loss objects
+        avg_train_loss.reset_states()
+        avg_val_loss.reset_states()
+        train_metrics.reset_states()
+        val_metrics.reset_states()
+
         logger.debug("-> START iterating training dataset")
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
+            train_step(
+                model,
+                x_batch_train,
+                y_batch_train,
+                loss_object,
+                optimizer,
+                avg_train_loss,
+                train_metrics,
+            )
+        logger.debug("-> END iterating training dataset")
 
-            with tf.GradientTape() as tape:
-                logits = model(x_batch_train)
-                loss_value = loss_fn(y_batch_train, logits)
+        # iterate validation after iterating entire training.. this will/should change
+        logger.debug("-> START iterating validation dataset")
+        for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
+            val_step(
+                model, x_batch_val, y_batch_val, loss_object, avg_val_loss, val_metrics
+            )
 
-            grads = tape.gradient(loss_value, model.trainable_variables)
-            optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        logger.debug("-> END iterating validation dataset")
 
-            if step % 100 == 0:
-                print(
-                    "Training loss (for single batch) at step %s: %s"
-                    % (step, float(loss_value))
-                )
+        # TODO: loop metrics
+        print(
+            template_str.format(e + 1, avg_train_loss.result(), avg_val_loss.result())
+        )
 
     logger.info("[END] creating train_dict")

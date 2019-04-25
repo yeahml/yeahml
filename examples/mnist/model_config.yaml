@@ -48,7 +48,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 2
+  epochs: 30
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

@@ -5,6 +5,7 @@ import sys
 # this may be a "dumb" way of accomplishing this, but I want to wait until
 # the modules are implemented correctly
 def config_logger(MCd: dict, log_type: str):
+    # TODO: should this check if the logger already exists?
     def get_level(level_str: str):
         level = None
         if level_str == "DEBUG":
