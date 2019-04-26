@@ -1,6 +1,6 @@
 import tensorflow as tf
 import math
-from tqdm import tqdm
+import numpy as np
 import os
 import sys
 from typing import Any
@@ -72,8 +72,8 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     tfr_val_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
     val_ds = return_batched_iter("train", MCd, tfr_val_path)
 
+    best_val_loss = np.inf
     # TODO: train loop
-
     # TODO: loop metrics
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
     for e in range(MCd["epochs"]):
@@ -102,6 +102,13 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
             val_step(
                 model, x_batch_val, y_batch_val, loss_object, avg_val_loss, val_metrics
             )
+
+        # check save best metrics
+        cur_val_loss = avg_val_loss.result()
+        if cur_val_loss < best_val_loss:
+            best_val_loss = cur_val_loss
+            model.save_weights(os.path.join(MCd["save_weights_path"]))
+            logger.debug("best params saved: val loss: {:.4f}".format(cur_val_loss))
 
         logger.debug("-> END iterating validation dataset")
 

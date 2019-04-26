@@ -216,13 +216,13 @@ def parse_overall(MC: dict) -> dict:
     MCd["log_dir"] = os.path.join(
         ".", DEV_DIR, MC["overall"]["name"], MCd["experiment_dir"]
     )
-    MCd["saver_save"] = os.path.join(
+    MCd["save_weights_path"] = os.path.join(
         ".",
         DEV_DIR,
         MC["overall"]["name"],
         MCd["experiment_dir"],
         BEST_PARAMS_DIR,
-        MCd["save_params"] + ".ckpt",
+        MCd["save_params"] + ".h5",  # TODO: modify
     )
     # wipe is set to true for now
     create_standard_dirs(MCd["log_dir"], True)
