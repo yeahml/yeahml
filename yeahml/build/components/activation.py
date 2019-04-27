@@ -33,6 +33,6 @@ def get_activation_fn(act_str: str) -> Any:
         # TODO: Error logging
         # the reasoning here is that the relu is subjectively the most
         # common/default activation function in DNNs, but I don't LOVE this
-        sys.exit("No activation function has been set")
+        raise NotImplementedError
 
     return act_fn

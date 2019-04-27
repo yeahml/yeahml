@@ -10,6 +10,7 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 from yeahml.build.components.loss import get_loss_fn
 from yeahml.build.components.optimizer import get_optimizer
+from yeahml.build.components.metrics import get_metrics_fn
 
 
 @tf.function
@@ -25,19 +26,25 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
     grads = tape.gradient(loss, model.trainable_variables)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    # TODO: convert to iterating list
+    # NOTE: only allow one loss
     loss_avg(loss)
 
-    # TODO: convert to iterating list
-    metrics(prediction, y_batch)
+    # TODO: ensure pred, gt order
+    for train_metric in metrics:
+        train_metric(prediction, y_batch)
 
 
 @tf.function
 def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
     prediction = model(x_batch)
     loss = loss_fn(y_batch, prediction)
+
+    # NOTE: only allow one loss
     loss_avg(loss)
-    metrics(prediction, y_batch)
+
+    # TODO: ensure pred, gt order
+    for val_metric in metrics:
+        val_metric(prediction, y_batch)
 
 
 def train_model(model, MCd: dict, HCd: dict) -> dict:
@@ -58,13 +65,13 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     avg_val_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
 
     # get metrics
-    # TODO: create list, will need to iterate through later
-    train_metrics = tf.keras.metrics.MeanAbsoluteError(
-        name="train_accuracy", dtype=tf.float32
-    )
-    val_metrics = tf.keras.metrics.MeanAbsoluteError(
-        name="validation_accuracy", dtype=tf.float32
-    )
+    train_metric_fns = []
+    val_metric_fns = []
+    for metric in MCd["met_set"]:
+        train_metric = get_metrics_fn(metric)
+        train_metric_fns.append(train_metric)
+        val_metric = get_metrics_fn(metric)
+        val_metric_fns.append(val_metric)
 
     # get dataset
     tfr_train_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
@@ -73,16 +80,17 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     tfr_val_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
     val_ds = return_batched_iter("train", MCd, tfr_val_path)
 
+    # train loop
     best_val_loss = np.inf
-    # TODO: train loop
-    # TODO: loop metrics
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
     for e in range(MCd["epochs"]):
         # TODO: abstract to fn to clear *all* metrics and loss objects
         avg_train_loss.reset_states()
         avg_val_loss.reset_states()
-        train_metrics.reset_states()
-        val_metrics.reset_states()
+        for train_metric in train_metric_fns:
+            train_metric.reset_states()
+        for val_metric in val_metric_fns:
+            val_metric.reset_states()
 
         # logger.debug("-> START iterating training dataset")
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
@@ -93,7 +101,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
                 loss_object,
                 optimizer,
                 avg_train_loss,
-                train_metrics,
+                train_metric_fns,
             )
         # logger.debug("-> END iterating training dataset")
 
@@ -101,7 +109,12 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         # logger.debug("-> START iterating validation dataset")
         for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
             val_step(
-                model, x_batch_val, y_batch_val, loss_object, avg_val_loss, val_metrics
+                model,
+                x_batch_val,
+                y_batch_val,
+                loss_object,
+                avg_val_loss,
+                val_metric_fns,
             )
 
         # check save best metrics

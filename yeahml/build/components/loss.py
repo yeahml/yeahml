@@ -101,5 +101,7 @@ def get_loss_fn(loss_str: str) -> Any:
         loss_obj = tf.losses.SquaredHinge(
             reduction=losses_utils.ReductionV2.SUM_OVER_BATCH_SIZE, name="squared_hinge"
         )
+    else:
+        raise NotImplementedError
 
     return loss_obj

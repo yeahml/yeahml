@@ -71,8 +71,7 @@ def get_optimizer(MCd: dict) -> Any:
             learning_rate=MCd["lr"], momentum=0.0, nesterov=False, name="SGD"
         )
     else:
-        # TODO: error handle?
         # realistically this should be caught by the initial check
-        pass
+        raise NotImplementedError
 
     return optimizer
