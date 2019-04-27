@@ -67,13 +67,15 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     # get metrics
     train_metric_fns = []
     val_metric_fns = []
+    metric_order = []
     for metric in MCd["met_set"]:
         train_metric = get_metrics_fn(metric)
         train_metric_fns.append(train_metric)
         val_metric = get_metrics_fn(metric)
         val_metric_fns.append(val_metric)
+        metric_order.append(metric)
 
-    # get dataset
+    # get datasets
     tfr_train_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
     train_ds = return_batched_iter("train", MCd, tfr_train_path)
 
@@ -82,6 +84,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
 
     # train loop
     best_val_loss = np.inf
+    steps, train_losses, val_losses = [], [], []
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
     for e in range(MCd["epochs"]):
         # TODO: abstract to fn to clear *all* metrics and loss objects
@@ -118,22 +121,33 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
             )
 
         # check save best metrics
-        cur_val_loss = avg_val_loss.result()
-        if cur_val_loss < best_val_loss:
-            best_val_loss = cur_val_loss
+        cur_val_loss_ = avg_val_loss.result().numpy()
+        if cur_val_loss_ < best_val_loss:
+            best_val_loss = cur_val_loss_
             model.save_weights(os.path.join(MCd["save_weights_path"]))
-            logger.debug("best params saved: val loss: {:.4f}".format(cur_val_loss))
+            # logger.debug("best params saved: val loss: {:.4f}".format(cur_val_loss))
 
         # logger.debug("-> END iterating validation dataset")
 
         # TODO: loop metrics
-        logger.debug(
-            template_str.format(e + 1, avg_train_loss.result(), avg_val_loss.result())
-        )
+        cur_train_loss_ = avg_train_loss.result().numpy()
+        train_losses.append(cur_train_loss_)
+        val_losses.append(cur_val_loss_)
+        steps.append(e)
+        logger.debug(template_str.format(e + 1, cur_train_loss_, cur_val_loss_))
 
-    # return_dict = {}
+    logger.info("start creating train_dict")
+    return_dict = {}
     # loss history
-    # return_dict["train_loss"] = best_train_loss
-    # return_dict["val_loss"] = best_val_loss
-
+    return_dict["train_losses"] = train_losses
+    return_dict["val_losses"] = val_losses
+    return_dict["epochs"] = steps
+    # metrics
+    for i, name in enumerate(metric_order):
+        cur_train_metric_fn = train_metric_fns[i]
+        cur_val_metric_fn = val_metric_fns[i]
+        return_dict[name] = cur_train_metric_fn.result().numpy()
+        return_dict["val_" + name] = cur_val_metric_fn.result().numpy()
     logger.info("[END] creating train_dict")
+
+    return return_dict
