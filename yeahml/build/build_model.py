@@ -5,7 +5,6 @@ from yeahml.log.yf_logging import config_logger
 from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
 from yeahml.build.get_components import get_logits_and_preds
-from yeahml.build.helper import create_metrics_ops
 from yeahml.helper import fmt_tensor_info
 
 
