@@ -2,6 +2,7 @@ import os
 import logging
 
 import yeahml as yml
+from yeahml.log.yf_logging import config_logger  # custom logging
 
 # TODO: this needs to be handled differently
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -33,8 +34,8 @@ print(train_dict)
 # yml.eval_graph(g, model_config) # not currently implemented (use eval_graph_from_saver)
 # same as eval_graph(), but will not require manual graph creation
 # > will load a graph from the saver path (if present)
-eval_dict = yml.eval_graph_from_saver(model_config)
-print(eval_dict)
+# eval_dict = yml.eval_graph_from_saver(model_config)
+# print(eval_dict)
 
 
 ## Serving

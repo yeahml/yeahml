@@ -58,9 +58,4 @@ def build_model(MCd: dict, HCd: dict):
     # TODO: need to ensure this is the API we want
     model = tf.keras.Model(inputs=input_layer, outputs=output_layer)
 
-    # TODO: hardcoded
-    # model.compile(
-    #     optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
-    # )
-
     return model

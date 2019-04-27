@@ -1,6 +1,8 @@
 import tensorflow as tf
 import sys
 
+from typing import Any
+
 
 def get_tf_dtype(dtype: str):
     # TODO: add type supports + error handling
@@ -55,115 +57,9 @@ def get_regularizer_fn(reg_str: str):
     return reg_fn
 
 
-def get_optimizer_schedule():
+def get_lr_schedule():
     # TODO: https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/optimizers/schedules/ExponentialDecay
     raise NotImplementedError
-
-
-def get_optimizer(MCd: dict):
-    opt = MCd["optimizer"].lower()
-    optimizer = None
-    # learning_rate=
-    if opt == "adadelta":
-        optimizer = tf.optimizers.Adadelta(
-            learning_rate=MCd["lr"], rho=0.95, epsilon=1e-07, name="Adadelta"
-        )
-    elif opt == "adagrad":
-        optimizer = tf.optimizers.Adagrad(
-            learning_rate=MCd["lr"],
-            initial_accumulator_value=0.1,
-            epsilon=1e-07,
-            name="Adagrad",
-        )
-    elif opt == "adam":
-        optimizer = tf.optimizers.Adam(
-            learning_rate=MCd["lr"],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-07,
-            amsgrad=False,
-            name="Adam",
-        )
-    elif opt == "adamax":
-        optimizer = tf.optimizers.Adamax(
-            learning_rate=MCd["lr"],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-07,
-            name="Adamax",
-        )
-    elif opt == "ftrl":
-        optimizer = tf.optimizers.Ftrl(
-            learning_rate=MCd["lr"],
-            learning_rate_power=-0.5,
-            initial_accumulator_value=0.1,
-            l1_regularization_strength=0.0,
-            l2_regularization_strength=0.0,
-            name="Ftrl",
-            l2_shrinkage_regularization_strength=0.0,
-        )
-    elif opt == "nadam":
-        optimizer = tf.optimizers.Nadam(
-            learning_rate=MCd["lr"],
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-07,
-            name="Nadam",
-        )
-    elif opt == "rmsprop":
-        optimizer = tf.optimizers.RMSprop(
-            learning_rate=MCd["lr"],
-            rho=0.9,
-            momentum=0.0,
-            epsilon=1e-07,
-            centered=False,
-            name="RMSprop",
-        )
-    elif opt == "sgd":
-        optimizer = tf.optimizers.SGD(
-            learning_rate=MCd["lr"], momentum=0.0, nesterov=False, name="SGD"
-        )
-    else:
-        # TODO: error handle?
-        # realistically this should be caught by the initial check
-        pass
-
-    return optimizer
-
-
-def get_activation_fn(act_str: str):
-
-    if act_str:
-        act_str = act_str.lower()
-
-    act_fn = None  # TODO: this should maybe be an identity function
-    if act_str == "sigmoid":
-        act_fn = tf.sigmoid
-    elif act_str == "tanh":
-        act_fn = tf.tanh
-    elif act_str == "elu":
-        act_fn = tf.nn.elu
-    elif act_str == "selu":
-        act_fn = tf.nn.selu
-    elif act_str == "softplus":
-        act_fn = tf.nn.softplus
-    elif act_str == "softsign":
-        act_fn = tf.nn.softsign
-    elif act_str == "relu":
-        act_fn = tf.nn.relu
-    elif act_str == "leaky":
-        act_fn = tf.nn.leaky_relu
-    elif act_str == "relu6":
-        act_fn = tf.nn.relu6
-    elif act_str == "identity":
-        act_fn = tf.identity
-    else:
-        # TODO: Error logging
-        # the reasoning here is that the relu is subjectively the most
-        # common/default activation function in DNNs, but I don't LOVE this
-        sys.exit("No activation function has been set")
-
-    return act_fn
 
 
 def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) -> tuple:

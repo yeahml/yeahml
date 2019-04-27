@@ -49,6 +49,7 @@ def parse_overall(MC: dict) -> dict:
 
     # convert to lowercase for consistency
     MCd["loss_fn"] = MC["overall"]["loss_fn"].lower()
+    # TODO: make sure loss_fn is allowed
 
     ## "type" of problem (will set the default performance metrics)
     try:

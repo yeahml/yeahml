@@ -8,7 +8,8 @@ from typing import Any
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
-from yeahml.build.get_components import get_optimizer
+from yeahml.build.components.loss import get_loss_fn
+from yeahml.build.components.optimizer import get_optimizer
 
 
 @tf.function
@@ -50,7 +51,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     optimizer = get_optimizer(MCd)
 
     # get loss function
-    loss_object = tf.keras.losses.CategoricalCrossentropy()
+    loss_object = get_loss_fn(MCd["loss_fn"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
@@ -83,7 +84,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         train_metrics.reset_states()
         val_metrics.reset_states()
 
-        logger.debug("-> START iterating training dataset")
+        # logger.debug("-> START iterating training dataset")
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
             train_step(
                 model,
@@ -94,10 +95,10 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
                 avg_train_loss,
                 train_metrics,
             )
-        logger.debug("-> END iterating training dataset")
+        # logger.debug("-> END iterating training dataset")
 
         # iterate validation after iterating entire training.. this will/should change
-        logger.debug("-> START iterating validation dataset")
+        # logger.debug("-> START iterating validation dataset")
         for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
             val_step(
                 model, x_batch_val, y_batch_val, loss_object, avg_val_loss, val_metrics
@@ -110,11 +111,16 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
             model.save_weights(os.path.join(MCd["save_weights_path"]))
             logger.debug("best params saved: val loss: {:.4f}".format(cur_val_loss))
 
-        logger.debug("-> END iterating validation dataset")
+        # logger.debug("-> END iterating validation dataset")
 
         # TODO: loop metrics
-        print(
+        logger.debug(
             template_str.format(e + 1, avg_train_loss.result(), avg_val_loss.result())
         )
+
+    # return_dict = {}
+    # loss history
+    # return_dict["train_loss"] = best_train_loss
+    # return_dict["val_loss"] = best_val_loss
 
     logger.info("[END] creating train_dict")
