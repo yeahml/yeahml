@@ -24,18 +24,20 @@ model_config, hidden_config = yml.create_model_and_hidden_config(example)
 
 
 ## build graph
-g = yml.build_model(model_config, hidden_config)
+model = yml.build_model(model_config, hidden_config)
 
 ## train graph
-train_dict = yml.train_model(g, model_config, hidden_config)
-print(train_dict)
+# train_dict = yml.train_model(model, model_config, hidden_config)
+# print(train_dict)
 
 ## evaluate graph
 # yml.eval_graph(g, model_config) # not currently implemented (use eval_graph_from_saver)
 # same as eval_graph(), but will not require manual graph creation
 # > will load a graph from the saver path (if present)
-# eval_dict = yml.eval_graph_from_saver(model_config)
-# print(eval_dict)
+eval_dict = yml.eval_model(
+    model, model_config, "./examples/mnist/saved_params/best_params_saver.h5"
+)
+print(eval_dict)
 
 
 ## Serving
