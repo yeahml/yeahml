@@ -16,8 +16,7 @@ overall:
       level: 'debug'
       format_str: null
     graph_spec: True
-  metrics: 
-    type: 'classification'
+  metrics: ["MeanAbsoluteError"]
   num_classes: 10
 data:
   in: 

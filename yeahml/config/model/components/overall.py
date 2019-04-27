@@ -28,16 +28,16 @@ def parse_overall(MC: dict) -> dict:
             MCd["num_classes"] = 1
         pass
 
-    if (
-        MC["overall"]["metrics"]["type"] == "classification"
-        or MC["overall"]["metrics"]["type"] == "segmentation"
-    ):
-        try:
-            MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
-        except KeyError:
-            MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
+    # if (
+    #     MC["overall"]["metrics"]["type"] == "classification"
+    #     or MC["overall"]["metrics"]["type"] == "segmentation"
+    # ):
+    #     try:
+    #         MCd["class_weights"] = np.asarray(MC["overall"]["class_weights"])
+    #     except KeyError:
+    #         MCd["class_weights"] = np.asarray([1.0] * MCd["num_classes"])
 
-        ### architecture
+    ### architecture
     # TODO: implement after graph can be created...
     MCd["save_params"] = MC["overall"]["saver"]["save_params_name"]
 
@@ -51,44 +51,55 @@ def parse_overall(MC: dict) -> dict:
     MCd["loss_fn"] = MC["overall"]["loss_fn"].lower()
     # TODO: make sure loss_fn is allowed
 
-    ## "type" of problem (will set the default performance metrics)
     try:
-        # TODO: these types+options should come from a config
-        METRIC_TYPES = ["classification", "regression", "segmentation"]
-        temp_met_type = MC["overall"]["metrics"]["type"]
-        temp_met_type = temp_met_type.lower()
-        if temp_met_type not in METRIC_TYPES:
-            sys.exit(
-                "metric type {} not allowed. please select one of {}".format(
-                    temp_met_type, METRIC_TYPES
-                )
-            )
-        else:
-            MCd["metrics_type"] = temp_met_type
-    except:
-        sys.exit(
-            "overall:metrics:type: was not specified. please select one of {}".format(
-                METRIC_TYPES
-            )
-        )
-    # set default metrics for the specified type
-    # - available metrics
-    # > "tn", "tp", "fn", "fp"
-    # > "accuracy", "precision", "recall", "auc"
-    # > "rmse", "mae"
-    # > "iou"
-    if MCd["metrics_type"] == "classification":
-        met_set = set(["auc", "accuracy", "precision", "recall"])
-    elif MCd["metrics_type"] == "regression":
-        met_set = set(["rmse", "mae"])
-    elif MCd["metrics_type"] == "segmentation":
-        met_set = set(["iou"])
-    else:
-        # although the error should be caught in the config. the exit error
-        # is kept until the supported types are pulled from in a config file
-        # rather than being hardcoded as a list in config.py
-        sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
+        met_list = MC["overall"]["metrics"]
+
+        # TODO: check that metrics are ok/allowed
+        # convert to set to remove duplication
+        met_set = set(met_list)
+    except KeyError:
+        met_set = None
+        # raise ValueError("No metrics specified")
     MCd["met_set"] = met_set
+
+    # ## "type" of problem (will set the default performance metrics)
+    # try:
+    #     # TODO: these types+options should come from a config
+    #     METRIC_TYPES = ["classification", "regression", "segmentation"]
+    #     temp_met_type = MC["overall"]["metrics"]["type"]
+    #     temp_met_type = temp_met_type.lower()
+    #     if temp_met_type not in METRIC_TYPES:
+    #         sys.exit(
+    #             "metric type {} not allowed. please select one of {}".format(
+    #                 temp_met_type, METRIC_TYPES
+    #             )
+    #         )
+    #     else:
+    #         MCd["metrics_type"] = temp_met_type
+    # except:
+    #     sys.exit(
+    #         "overall:metrics:type: was not specified. please select one of {}".format(
+    #             METRIC_TYPES
+    #         )
+    #     )
+    # # set default metrics for the specified type
+    # # - available metrics
+    # # > "tn", "tp", "fn", "fp"
+    # # > "accuracy", "precision", "recall", "auc"
+    # # > "rmse", "mae"
+    # # > "iou"
+    # if MCd["metrics_type"] == "classification":
+    #     met_set = set(["auc", "accuracy", "precision", "recall"])
+    # elif MCd["metrics_type"] == "regression":
+    #     met_set = set(["rmse", "mae"])
+    # elif MCd["metrics_type"] == "segmentation":
+    #     met_set = set(["iou"])
+    # else:
+    #     # although the error should be caught in the config. the exit error
+    #     # is kept until the supported types are pulled from in a config file
+    #     # rather than being hardcoded as a list in config.py
+    #     sys.exit("metrics type {} is unsupported".format(MCd["metrics_type"]))
+    # MCd["met_set"] = met_set
 
     ####### Logging
     ERR_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
