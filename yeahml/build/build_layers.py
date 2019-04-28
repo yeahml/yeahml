@@ -24,6 +24,9 @@ from yeahml.build.layers.other import (
     build_batch_normalization_layer,
 )
 
+# dropout
+from yeahml.build.layers.dropout import build_dropout_layer
+
 
 def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
     # logger = config_logger(MCd, "build")
@@ -92,6 +95,9 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
             #     cur_input, training, opts, actfn, l_name, logger, g_logger
             # )
             raise NotImplementedError
+        elif ltype == "dropout":
+            logger.debug("-> START building: {}".format(ltype))
+            cur_layer = build_dropout_layer(opts, l_name, logger, g_logger)
         else:
             logger.fatal("unable to build layer type: {}".format(ltype))
             sys.exit("unable to build layer type: {}".format(ltype))

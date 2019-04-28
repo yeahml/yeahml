@@ -267,6 +267,10 @@ At the moment the project is being developed around a binary image classificatio
 - make config mapping dictionary read only [related SO](https://stackoverflow.com/questions/19022868/how-to-make-dictionary-read-only-in-python)
 - update graph printing/logging methodology -- more table like
 - add confusion matrix for classification problems
+- make sure all layer names are unique - could check against set
+- convert to f-string
+- Ensure dropout is only active during training
+- replace sys.exit() with raising errors
 
 ### TODO: stretch
 

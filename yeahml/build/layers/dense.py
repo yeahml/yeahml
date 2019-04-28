@@ -47,7 +47,6 @@ def build_dense_layer(opts: dict, actfn, name: str, logger, g_logger):
         name=name,
     )
 
-    logger.debug("tensor obj pre dropout: {}".format(out))
     g_logger.info("{}".format(fmt_tensor_info(out)))
 
     ## add dropout, if indicated

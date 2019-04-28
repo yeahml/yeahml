@@ -30,6 +30,10 @@ layers:
       trainable: True
     #saver:
       #load_params: True
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
   pool_1:
     type: 'pooling2d'
   flatten_1:
