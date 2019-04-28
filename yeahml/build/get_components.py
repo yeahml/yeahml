@@ -34,29 +34,6 @@ def get_tf_dtype(dtype: str):
     return tf_dtype
 
 
-def get_regularizer_fn(reg_str: str):
-
-    # TODO: need to allow modification for scale
-    scale = 0.1
-
-    if reg_str:
-        reg_str = reg_str.lower()
-
-    if reg_str == "":
-        reg_fn = None  # default is glorot
-    elif reg_str == "l1":
-        raise NotImplementedError
-    elif reg_str == "l2":
-        raise NotImplementedError
-    elif reg_str == "l1l2":
-        raise NotImplementedError
-    else:
-        # TODO: Error
-        reg_fn = None
-
-    return reg_fn
-
-
 def get_lr_schedule():
     # TODO: https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/optimizers/schedules/ExponentialDecay
     raise NotImplementedError

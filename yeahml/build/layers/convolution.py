@@ -1,5 +1,6 @@
 import tensorflow as tf
-from yeahml.build.get_components import get_regularizer_fn, get_initializer_fn
+from yeahml.build.get_components import get_initializer_fn
+from yeahml.build.components.regularizer import get_regularizer_fn
 from yeahml.build.components.activation import get_activation_fn
 from typing import Any
 

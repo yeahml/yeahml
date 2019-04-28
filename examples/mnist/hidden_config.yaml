@@ -36,11 +36,12 @@ layers:
     type: 'dropout'
     options:
       rate: 0.5
+      type: 'alpha'
   pool_1:
     type: 'pooling'
     options:
       dimension: 2
-      avg_max: 'max'
+      avg_max: 'avg'
       global: False
       pool_size: 2
       strides: 2
@@ -50,6 +51,8 @@ layers:
     type: 'dense'
     options:
       units: 16
-      dropout: 0.5
+      kernel_regularizer:
+        type: 'l1'
+        scale: [0.1]
     #saver:
       #load_params: True

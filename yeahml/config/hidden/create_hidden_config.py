@@ -2,7 +2,8 @@ import sys
 
 from yeahml.config.helper import parse_yaml_from_path
 from yeahml.config.hidden.components.pooling import configure_pooling_layer
-from yeahml.config.hidden.components.convolution import configure_conv_layer
+
+# from yeahml.config.hidden.components.convolution import configure_conv_layer
 
 
 def _get_hidden_layers(h_raw_config: dict):
