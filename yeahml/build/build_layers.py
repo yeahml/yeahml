@@ -13,10 +13,7 @@ from yeahml.build.layers.pooling import (
 )
 
 # conv layers
-from yeahml.build.layers.convolution import (
-    build_conv2d_transpose_layer,
-    build_conv2d_layer,
-)
+from yeahml.build.layers.convolution import build_conv_layer
 from yeahml.build.layers.recurrent import build_recurrent_layer
 from yeahml.build.layers.dense import build_dense_layer
 from yeahml.build.layers.other import (
@@ -46,15 +43,17 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
         actfn = get_activation_fn(layer_info["activation"])
 
         ltype = layer_info["type"].lower()
-        if ltype == "conv2d":
-            logger.debug("-> START building: {}".format(ltype))
-            cur_layer = build_conv2d_layer(opts, actfn, l_name, logger, g_logger)
-        elif ltype == "deconv2d":
+        # if ltype == "conv2d":
+        #     logger.debug("-> START building: {}".format(ltype))
+        #     cur_layer = build_conv2d_layer(opts, actfn, l_name, logger, g_logger)
+        if ltype == "deconv2d":
             logger.debug("-> START building: {}".format(ltype))
             # cur_input = build_conv2d_transpose_layer(
             #     cur_input, opts, actfn, l_name, logger, g_logger
             # )
             raise NotImplementedError
+        elif ltype == "conv":
+            cur_layer = build_conv_layer(opts, actfn, l_name, logger, g_logger)
         elif ltype == "flatten":
             logger.debug("-> START building: {}".format(ltype))
             cur_layer = tf.keras.layers.Flatten()
