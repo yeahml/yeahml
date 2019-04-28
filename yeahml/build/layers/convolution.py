@@ -12,6 +12,8 @@ def build_conv_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 
+    # TODO: implement tf.keras.layers.DepthwiseConv2D
+
     try:
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:

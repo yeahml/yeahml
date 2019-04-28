@@ -37,7 +37,13 @@ layers:
     options:
       rate: 0.5
   pool_1:
-    type: 'pooling2d'
+    type: 'pooling'
+    options:
+      dimension: 2
+      avg_max: 'max'
+      global: False
+      pool_size: 2
+      strides: 2
   flatten_1:
     type: 'flatten'
   dense_1:
@@ -45,6 +51,5 @@ layers:
     options:
       units: 16
       dropout: 0.5
-      trainable: True
     #saver:
       #load_params: True

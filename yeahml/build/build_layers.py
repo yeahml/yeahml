@@ -6,11 +6,7 @@ from yeahml.build.components.activation import get_activation_fn
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 # pooling layers
-from yeahml.build.layers.pooling import (
-    build_global_pooling_layer,
-    build_pool_1d_layer,
-    build_pool_2d_layer,
-)
+from yeahml.build.layers.pooling import build_pooling_layer
 
 # conv layers
 from yeahml.build.layers.convolution import build_conv_layer
@@ -44,57 +40,37 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
         actfn = get_activation_fn(layer_info["activation"])
 
         ltype = layer_info["type"].lower()
+        logger.debug(f"-> START building: {ltype} - {l_name}")
         if ltype == "conv":
-            logger.debug(f"-> START building: {ltype}")
             cur_layer = build_conv_layer(opts, actfn, l_name, logger, g_logger)
         elif ltype == "deconv" or ltype == "conv_transpose":  # TODO: simplify
-            logger.debug(f"-> START building: {ltype}")
             cur_input = build_deconv_layer(opts, actfn, l_name, logger, g_logger)
         elif ltype == "flatten":
-            logger.debug(f"-> START building: {ltype}")
             cur_layer = tf.keras.layers.Flatten()
         elif ltype == "dense":
-            logger.debug(f"-> START building: {ltype}")
             # TODO: need to flatten?
             cur_layer = build_dense_layer(opts, actfn, l_name, logger, g_logger)
-        elif ltype == "pooling2d":
-            logger.debug(f"-> START building: {ltype}")
-            cur_layer = build_pool_2d_layer(opts, l_name, logger, g_logger)
-        elif ltype == "pooling1d":
-            logger.debug(f"-> START building: {ltype}")
-            # cur_input = build_pool_1d_layer(
-            #     cur_input, training, opts, l_name, logger, g_logger
-            # )
-            raise NotImplementedError
-        elif ltype == "global_pooling":
-            logger.debug(f"-> START building: {ltype}")
-            # cur_input = build_global_pooling_layer(
-            #     cur_input, training, opts, l_name, logger, g_logger
-            # )
-            raise NotImplementedError
+        # TODO: consolidate pooling layers
+        elif ltype == "pooling":
+            cur_layer = build_pooling_layer(opts, l_name, logger, g_logger)
         elif ltype == "embedding":
-            logger.debug(f"-> START building: {ltype}")
             # cur_input = build_embedding_layer(
             #     cur_input, training, opts, l_name, logger, g_logger
             # )
             raise NotImplementedError
         elif ltype == "batch_normalization":
-            logger.debug(f"-> START building: {ltype}")
             # cur_input = build_batch_normalization_layer(
             #     cur_input, training, opts, l_name, logger, g_logger
             # )
             raise NotImplementedError
         elif ltype == "recurrent":
-            logger.debug(f"-> START building: {ltype}")
             # cur_input = build_recurrent_layer(
             #     cur_input, training, opts, actfn, l_name, logger, g_logger
             # )
             raise NotImplementedError
         elif ltype == "dropout":
-            logger.debug(f"-> START building: {ltype}")
             cur_layer = build_dropout_layer(opts, l_name, logger, g_logger)
         else:
-            logger.fatal(f"unable to build layer type: {ltype}")
             raise NotImplementedError(f"layer type: {ltype} not implemented yet")
 
         HIDDEN_LAYERS.append(cur_layer)
