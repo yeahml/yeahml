@@ -16,7 +16,7 @@ def build_dense_layer(opts: dict, actfn, name: str, logger, g_logger):
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:
         k_init_fn = None
-    logger.debug("k_init_fn set: {}".format(k_init_fn))
+    logger.debug(f"k_init_fn set: {k_init_fn}")
 
     try:
         k_reg = get_regularizer_fn(opts["kernel_regularizer"])
@@ -44,7 +44,6 @@ def build_dense_layer(opts: dict, actfn, name: str, logger, g_logger):
         name=name,
     )
 
-    g_logger.info("{}".format(fmt_tensor_info(out)))
-
-    logger.debug("[End] building: {}".format(name))
+    g_logger.info(f"{fmt_tensor_info(out)}")
+    logger.debug(f"[End] building: {name}")
     return out

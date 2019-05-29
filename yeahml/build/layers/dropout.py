@@ -40,7 +40,6 @@ def build_dropout_layer(opts, l_name, logger, g_logger) -> Any:
         raise NotImplementedError(f"dropout type {dropout_type} is not implemented yet")
 
     g_logger.info(f"{fmt_tensor_info(out)}")
-
     logger.debug(f"[End] building: {l_name}")
     return out
 

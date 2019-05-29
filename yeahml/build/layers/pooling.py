@@ -1,6 +1,6 @@
 import tensorflow as tf
 import sys
-
+from yeahml.helper import fmt_tensor_info
 from typing import Any
 
 
@@ -157,4 +157,6 @@ def build_pooling_layer(opts: dict, name: str, logger: Any, g_logger: Any) -> An
             f"pool_type {pool_type} not implemented. only [avg,max]"
         )
 
+    g_logger.info(f"{fmt_tensor_info(out)}")
+    logger.debug(f"[End] building: {name}")
     return out

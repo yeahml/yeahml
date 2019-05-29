@@ -19,25 +19,25 @@ def build_conv_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
         k_init_fn = get_initializer_fn(opts["kernel_initializer"])
     except KeyError:
         k_init_fn = None
-    logger.debug("k_init_fn set: {}".format(k_init_fn))
+    logger.debug(f"k_init_fn set: {k_init_fn}")
 
     try:
         k_reg = get_regularizer_fn(opts["kernel_regularizer"])
     except KeyError:
         k_reg = None
-    logger.debug("k_reg set: {}".format(k_reg))
+    logger.debug(f"k_reg set: {k_reg}")
 
     try:
         b_reg = get_regularizer_fn(opts["bias_regularizer"])
     except KeyError:
         b_reg = None
-    logger.debug("b_reg set: {}".format(b_reg))
+    logger.debug(f"b_reg set: {b_reg}")
 
     try:
         data_format = opts["data_format"]
     except:
         data_format = None
-    logger.debug("data_format set: {}".format(data_format))
+    logger.debug(f"data_format set: {data_format}")
 
     # try:
     #     dilation_rate = opts["dilation_rate"]
@@ -50,11 +50,11 @@ def build_conv_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
         padding = opts["padding"]
     except KeyError:
         padding = "SAME"
-    logger.debug("padding set: {}".format(padding))
+    logger.debug(f"padding set: {padding}")
 
     if not name:
         name = "unnamed_conv_layer"
-    logger.debug("name set: {}".format(name))
+    logger.debug(f"name set: {name}")
 
     # try:
     #     trainable = opts["trainable"]
@@ -148,6 +148,6 @@ def build_conv_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
     else:
         raise ValueError(f"conv_dim {conv_dim} for layer {name} not in [1,2,3]")
 
-    g_logger.info("{}".format(fmt_tensor_info(out)))
-    logger.debug("[End] building: {}".format(name))
+    g_logger.info(f"{fmt_tensor_info(out)}")
+    logger.debug(f"[End] building: {name}")
     return out
