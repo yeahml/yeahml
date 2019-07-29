@@ -15,8 +15,14 @@ layers:
     options:
       vocabulary_size: 10000
       embedding_size: 16
-  pool_global_1:
-    type: 'global_pooling'
+  # pool_global_1:
+  #   type: 'pooling'
+  #   options:
+  #     global: True
+  #     dimension: 1
+  #     avg_max: avg
+  #     pool_size: 3
+  #     strides: 3
   bi_rnn:
     type: 'recurrent'
     options:

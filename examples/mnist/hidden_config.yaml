@@ -30,6 +30,7 @@ layers:
       kernel_size: 3
       strides: 1
       trainable: True
+      activation: 'relu'
     #saver:
       #load_params: True
   dropout_1:
@@ -50,9 +51,13 @@ layers:
   dense_1:
     type: 'dense'
     options:
-      units: 16
+      units: 32
       kernel_regularizer:
         type: 'l1'
         scale: [0.1]
+  dense_2:
+    type: 'dense'
+    options:
+      units: 10
     #saver:
       #load_params: True

@@ -3,6 +3,8 @@ import sys
 from yeahml.config.helper import parse_yaml_from_path
 from yeahml.config.hidden.components.pooling import configure_pooling_layer
 
+from yeahml.build.layers.config import LAYER_FUNCTIONS
+
 # from yeahml.config.hidden.components.convolution import configure_conv_layer
 
 
@@ -26,6 +28,12 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
         HLD["type"] = hl_type
     except KeyError:
         sys.exit("layer does not have a 'type': {}".format(hl))
+
+    # TODO: could place a hl_type = get_hl_type_mapping() here
+    if hl_type in LAYER_FUNCTIONS.keys():
+        func = LAYER_FUNCTIONS[hl_type]["function"]
+    else:
+        raise NotImplementedError(f"layer type {hl_type} not implemented yet")
 
     ## option logic for each layer type
     # see if options exist
@@ -73,8 +81,8 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
             # relu: the reasoning here is that the relu is subjectively the most
             # common/default activation function in DNNs, but I don't LOVE this
             actfn_str = "relu"
-    # TODO: logger.debug("activation set: {}".format(actfn_str))
     HLD["activation"] = actfn_str
+    # TODO: logger.debug("activation set: {}".format(actfn_str))
 
     return HLD
 

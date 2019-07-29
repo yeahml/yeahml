@@ -61,3 +61,5 @@ examples/multi_segmentation/trial_01/best_params/
 examples/multi_segmentation/trial_01/tf_logs/*
 examples/multi_segmentation/trial_01/yf_logs/
 
+
+examples/mnist/saved_params/

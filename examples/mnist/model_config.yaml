@@ -17,7 +17,6 @@ overall:
       format_str: null
     graph_spec: True
   metrics: ["MeanAbsoluteError", "MeanSquaredError"]
-  num_classes: 10
 data:
   in: 
     dim: [784]
@@ -47,7 +46,7 @@ hyper_parameters:
   optimizer: 'adam'
   lr: 0.0001
   batch_size: 32
-  epochs: 3
+  epochs: 1
   default_activation: 'elu'
   shuffle_buffer: 128
   # early_stopping:

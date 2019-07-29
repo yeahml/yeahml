@@ -39,12 +39,12 @@ def get_lr_schedule():
     raise NotImplementedError
 
 
-def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) -> tuple:
-    # create the output layer (logits and preds) based on the type of loss function used.
-    raise NotImplementedError
-    logger.debug("pred created as {}: {}".format(loss_str, preds))
+# def get_logits_and_preds(loss_str: str, hidden_out, num_classes: int, logger) -> tuple:
+#     # create the output layer (logits and preds) based on the type of loss function used.
+#     raise NotImplementedError
+#     logger.debug("pred created as {}: {}".format(loss_str, preds))
 
-    return (logits, preds)
+#     return (logits, preds)
 
 
 def get_initializer_fn(init_str: str):

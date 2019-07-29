@@ -19,14 +19,14 @@ def parse_overall(MC: dict) -> dict:
         pass
 
     # TODO: this is a temp+new object in the dict
-    try:
-        MCd["num_classes"] = MC["overall"]["num_classes"]
-    except KeyError:
-        # no params will be loaded from previously trained params
-        # TODO: I don't feel great about this.. this is a temp fix
-        if MC["overall"]["metrics"]["type"] == "regression":
-            MCd["num_classes"] = 1
-        pass
+    # try:
+    #     MCd["num_classes"] = MC["overall"]["num_classes"]
+    # except KeyError:
+    #     # no params will be loaded from previously trained params
+    #     # TODO: I don't feel great about this.. this is a temp fix
+    #     if MC["overall"]["metrics"]["type"] == "regression":
+    #         MCd["num_classes"] = 1
+    #     pass
 
     # if (
     #     MC["overall"]["metrics"]["type"] == "classification"

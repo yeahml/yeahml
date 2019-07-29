@@ -80,3 +80,14 @@ def build_batch_normalization_layer(opts: dict, name: str, logger, g_logger):
 
     return out
 
+
+def build_flatten_layer(opts: dict, name: str, logger, g_logger):
+
+    out = tf.keras.layers.Flatten()
+
+    logger.debug(f"tensor ob batch_norm: {name}")
+    g_logger.info(f"{fmt_tensor_info(out)}")
+    logger.debug(f"[End] building: {name}")
+
+    return out
+

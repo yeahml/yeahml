@@ -7,7 +7,8 @@ from typing import Any
 
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
-from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
+
+# from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 from yeahml.build.components.loss import get_loss_fn
 from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metrics import get_metrics_fn

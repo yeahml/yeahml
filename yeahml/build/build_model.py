@@ -4,7 +4,8 @@ import sys
 from yeahml.log.yf_logging import config_logger
 from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
-from yeahml.build.get_components import get_logits_and_preds
+
+# from yeahml.build.get_components import get_logits_and_preds
 from yeahml.helper import fmt_tensor_info
 
 
@@ -40,6 +41,9 @@ def build_model(MCd: dict, HCd: dict):
 
     # TODO: currently hardcoded
     input_layer = tf.keras.Input(shape=(28, 28, 1))
+    # input_layer = tf.keras.Input(shape=(256,))
+    print("jack: {}".format(MCd["input_layer_dim"]))
+    # input_layer = tf.keras.Input(shape=MCd["input_layer_dim"])
 
     ## add layers
     ## create the architecture
@@ -53,6 +57,7 @@ def build_model(MCd: dict, HCd: dict):
 
     # TODO: output layer
     output_layer = tf.keras.layers.Dense(10, activation="softmax")(cur_output)
+    # output_layer = tf.keras.layers.Dense(1, activation="softmax")(cur_output)
 
     # TODO: need to ensure this is the API we want
     model = tf.keras.Model(inputs=input_layer, outputs=output_layer)

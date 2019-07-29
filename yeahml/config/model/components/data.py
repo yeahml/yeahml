@@ -5,7 +5,9 @@ import sys
 def parse_data(MC: dict) -> dict:
     MCd = {}
     ## inputs
+    # TODO: this is sloppy...
     # copy is used to prevent overwriting underlying data
+    MCd["input_layer_dim"] = None
     MCd["in_dim"] = MC["data"]["in"]["dim"].copy()
     if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
         MCd["in_dim"].insert(0, None)  # add batching
@@ -17,6 +19,10 @@ def parse_data(MC: dict) -> dict:
     except KeyError:
         # None in this case is representative of not reshaping
         MCd["reshape_in_to"] = None
+    if MCd["reshape_in_to"]:
+        MCd["input_layer_dim"] = MC["data"]["in"]["reshape_to"]
+    else:
+        MCd["input_layer_dim"] = MC["data"]["in"]["dim"].copy()
 
     # copy is used to prevent overwriting underlying data
     MCd["output_dim"] = MC["data"]["label"]["dim"].copy()
