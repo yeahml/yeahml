@@ -7,7 +7,7 @@ from typing import Any
 from yeahml.helper import fmt_tensor_info
 
 
-def build_deconv_layer(opts: dict, actfn, name: str, logger, g_logger) -> Any:
+def build_deconv_layer(opts: dict, activation, name: str, logger, g_logger) -> Any:
     # TODO: default behavior is w/in the exception block, this may need to change
     # default is 3x3, stride = 1
 

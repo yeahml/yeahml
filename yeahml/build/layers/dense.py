@@ -5,7 +5,7 @@ from yeahml.build.components.activation import get_activation_fn
 from yeahml.helper import fmt_tensor_info
 
 
-def build_dense_layer(opts: dict, actfn, name: str, logger, g_logger):
+def build_dense_layer(opts: dict, activation, name: str, logger, g_logger):
     try:
         units = opts["units"]
     except KeyError:

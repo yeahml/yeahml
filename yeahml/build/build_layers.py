@@ -5,6 +5,8 @@ from typing import Any, List
 from yeahml.build.components.activation import get_activation_fn
 from yeahml.log.yf_logging import config_logger  # custom logging
 
+from yeahml.helper import fmt_tensor_info
+
 # pooling layers
 # from yeahml.build.layers.pooling import build_pooling_layer
 
@@ -22,25 +24,15 @@ from yeahml.build.layers.other import (
     build_batch_normalization_layer,
 )
 
+from yeahml.build.components.regularizer import get_regularizer_fn
+from yeahml.build.components.activation import get_activation_fn
+
 # dropout
 # from yeahml.build.layers.dropout import build_dropout_layer
 
 
-def build_layer(ltype, opts, actfn, l_name, logger, g_logger):
+def build_layer(ltype, opts, activation, l_name, logger, g_logger):
 
-    # # TODO: this needs to be pushed down a level since some layers doesn't require act
-    # HLD["options"].update({"activation": None})
-    # try:
-    #     actfn_str = hl["activation"]
-    # except KeyError:
-    #     try:
-    #         # fall back to the default activation function specified
-    #         actfn_str = default_activation
-    #     except KeyError:
-    #         # relu: the reasoning here is that the relu is subjectively the most
-    #         # common/default activation function in DNNs, but I don't LOVE this
-    #         actfn_str = "relu"
-    # # TODO: logger.debug("activation set: {}".format(actfn_str))
     # HLD["options"]["activation"] = actfn_str
     # TODO: could place a ltype = get_ltype_mapping() here
     if ltype in LAYER_FUNCTIONS.keys():
@@ -50,14 +42,31 @@ def build_layer(ltype, opts, actfn, l_name, logger, g_logger):
             opts.update(func_args)
         except KeyError:
             pass
-        print(opts)
+        # print(opts)
+
+        # TODO: name should be set earlier, as an opts?
+        logger.debug(f"-> START building: {l_name}")
+        if opts:
+            # TODO: encapsulate this logic, expand as needed
+            for o in opts:
+                if o == "kernel_regularizer":
+                    opts[o] = get_regularizer_fn(opts[o])
+                elif o == "activation":
+                    opts[o] = get_activation_fn(opts[o])
+                print(opts)
+            cur_layer = func(**opts, name=l_name)
+        else:
+            cur_layer = func(name=l_name)
+        g_logger.info(f"{fmt_tensor_info(cur_layer)}")
+        logger.debug(f"[End] building: {cur_layer}")
 
         # .__code__.co_varnames provides a lits of func arguments
-        if "actfn" in func.__code__.co_varnames:
-            print("SUUUUUPPPPPPPP")
-            cur_layer = func(opts, actfn, l_name, logger, g_logger)
-        else:
-            cur_layer = func(opts, l_name, logger, g_logger)
+        # print(func)
+        # if "activation" in vars(func)["__init__"].__code__.co_varnames:
+        #     # if "activation" in func.__code__.co_varnames:
+        #     cur_layer = func(opts, activation, l_name, logger, g_logger)
+        # else:
+        #     cur_layer = func(opts, l_name, logger, g_logger)
 
     return cur_layer
 
@@ -77,11 +86,11 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
 
         # TODO: remove this assignment (already checked in config)
         opts = layer_info["options"]
-        actfn = get_activation_fn(layer_info["activation"])
+        activation = get_activation_fn(layer_info["activation"])
 
         ltype = layer_info["type"].lower()
         logger.debug(f"-> START building: {ltype} - {l_name}")
-        cur_layer = build_layer(ltype, opts, actfn, l_name, logger, g_logger)
+        cur_layer = build_layer(ltype, opts, activation, l_name, logger, g_logger)
         # if ltype == "conv":
         #     cur_layer = build_conv_layer(opts, actfn, l_name, logger, g_logger)
         # elif ltype == "deconv" or ltype == "conv_transpose":  # TODO: simplify

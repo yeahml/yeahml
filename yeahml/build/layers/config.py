@@ -11,9 +11,9 @@ standard_args = {"opts": None, "name": None, "logger": None, "g_logger": None}
 # TODO: specify input
 
 LAYER_FUNCTIONS = {}
-LAYER_FUNCTIONS["conv"] = {"function": build_conv_layer}
-LAYER_FUNCTIONS["dense"] = {"function": build_dense_layer}
-LAYER_FUNCTIONS["dropout"] = {"function": build_dropout_layer}
-LAYER_FUNCTIONS["pooling"] = {"function": build_pooling_layer}
-LAYER_FUNCTIONS["flatten"] = {"function": build_flatten_layer}
+LAYER_FUNCTIONS["conv2d"] = {"function": tf.keras.layers.Conv2D}
+LAYER_FUNCTIONS["dense"] = {"function": tf.keras.layers.Dense}
+LAYER_FUNCTIONS["dropout"] = {"function": tf.keras.layers.Dropout}
+LAYER_FUNCTIONS["averagepooling2d"] = {"function": tf.keras.layers.AveragePooling2D}
+LAYER_FUNCTIONS["flatten"] = {"function": tf.keras.layers.Flatten}
 

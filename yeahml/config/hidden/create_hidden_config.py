@@ -4,6 +4,11 @@ from yeahml.config.helper import parse_yaml_from_path
 from yeahml.config.hidden.components.pooling import configure_pooling_layer
 
 from yeahml.build.layers.config import LAYER_FUNCTIONS
+from inspect import getmembers, isfunction
+from yeahml.build.layers import config
+
+import tensorflow as tf
+import inspect
 
 # from yeahml.config.hidden.components.convolution import configure_conv_layer
 
@@ -35,13 +40,63 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
     else:
         raise NotImplementedError(f"layer type {hl_type} not implemented yet")
 
-    ## option logic for each layer type
-    # see if options exist
+    print(func)
+    allvars = list(vars(func)["__init__"].__code__.co_varnames)
+    # If of type layer, add kwargs
+    if issubclass(func, tf.keras.layers.Layer):
+        allvars.remove("kwargs")
+        # TODO: fix this so it isn't hard coded to layer
+        # print(vars(tf.keras.layers.Layer)["__init__"].__code__.co_varnames)
+        # print(tf.keras.layers.Layer.__code__.co_varnames)
+        # print(vars(tf.keras.layers.Layer)["__init__"].__code__.co_varnames)
+        allvars.extend(["trainable", "name", "dtype", "dynamic"])
+
+    # get name of current function
+    # get name of all functions defined within a module
+    # func_name = func.__name__
+    # print(func_name)
+    # avail_functions = [o for o in getmembers(config) if isfunction(o[1])]
+    # print(avail_functions)
+    # fidx = [name for name, fnptr in enumerate(avail_functions) if fnptr[0] == func_name]
+    # if len(fidx) == 1:
+    #     fidx = fidx[0]
+    # else:
+    #     raise ValueError(f"No function available for {func_name}")
+
+    # ('build_conv_layer', <function build_conv_layer at 0x7f34d6f09048>)
+    # [1] is used to get the actual function
+    # fn_kwargs = avail_functions[fidx][1].__code__.co_varnames
+    # print(getmembers(avail_functions[fidx][1]))
+    # print(avail_functions[fidx][1].__code__)
+
+    # print(fn_kwargs)
+    # print(hl["options"])
+    # aa = getmembers(avail_functions[fidx][1])
+    # print(aa.base_function)
+    # print(aa["__init__"])
+    # iindx = [i for i, (n, f) in enumerate(aa) if n == "__code__"][0]
+    # print(aa[iindx][1].co_varnames)
+    # for a in aa:
+    #     print(a)
+
     try:
         opts_raw = hl["options"]
     except:
         # will default to default options
         opts_raw = None
+
+    if opts_raw:
+        for opt in opts_raw:
+            if opt in allvars:
+                pass
+            else:
+                raise ValueError(f"option {opt} is not allowed by type {func}")
+
+    # print(getattr(avail_functions[fidx][1], "base_function"))
+    # all_vars = vars(base_function)["__init__"].__code__.co_varnames
+    # sys.exit("done")
+    ## option logic for each layer type
+    # see if options exist
 
     # opts_formatted = {}
     # if hl_type == "conv2d":
@@ -71,6 +126,7 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
     HLD["options"] = opts_raw  # opts_formatted
 
     # TODO: this needs to be pushed down a level since some layers doesn't require act
+    # if "actfn" in func.__code__.co_varnames:
     try:
         actfn_str = hl["activation"]
     except KeyError:

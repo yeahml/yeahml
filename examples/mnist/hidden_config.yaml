@@ -11,9 +11,8 @@
 
 layers:
   conv_1:
-    type: 'conv'
+    type: 'conv2d'
     options:
-      dimension: 2
       filters: 32
       kernel_size: 3
       strides: 1
@@ -23,9 +22,8 @@ layers:
       #load_path: null # in case the default is not usable - TODO: implement logic
       #load_name: null # in case of (likely) different names, current name is default
   conv_2:
-    type: 'conv'
+    type: 'conv2d'
     options:
-      dimension: 2
       filters: 64
       kernel_size: 3
       strides: 1
@@ -37,13 +35,9 @@ layers:
     type: 'dropout'
     options:
       rate: 0.5
-      type: 'alpha'
   pool_1:
-    type: 'pooling'
+    type: 'AveragePooling2D'
     options:
-      dimension: 2
-      avg_max: 'avg'
-      global: False
       pool_size: 2
       strides: 2
   flatten_1:
