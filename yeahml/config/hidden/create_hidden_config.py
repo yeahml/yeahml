@@ -8,7 +8,6 @@ from inspect import getmembers, isfunction
 from yeahml.build.layers import config
 
 import tensorflow as tf
-import inspect
 
 # from yeahml.config.hidden.components.convolution import configure_conv_layer
 

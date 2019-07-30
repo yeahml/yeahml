@@ -1,19 +1,79 @@
-from yeahml.build.layers.convolution import build_conv_layer
-from yeahml.build.layers.dense import build_dense_layer
-from yeahml.build.layers.dropout import build_dropout_layer
-from yeahml.build.layers.pooling import build_pooling_layer
 from yeahml.build.layers.other import build_flatten_layer
 
 import tensorflow as tf
 
 standard_args = {"opts": None, "name": None, "logger": None, "g_logger": None}
 
-# TODO: specify input
+# TOOD: could this be automated?
 
 LAYER_FUNCTIONS = {}
-LAYER_FUNCTIONS["conv2d"] = {"function": tf.keras.layers.Conv2D}
-LAYER_FUNCTIONS["dense"] = {"function": tf.keras.layers.Dense}
-LAYER_FUNCTIONS["dropout"] = {"function": tf.keras.layers.Dropout}
-LAYER_FUNCTIONS["averagepooling2d"] = {"function": tf.keras.layers.AveragePooling2D}
+# Convolutions
+LAYER_FUNCTIONS["Conv1D".lower()] = {"function": tf.keras.layers.Conv1D}
+LAYER_FUNCTIONS["Conv2D".lower()] = {"function": tf.keras.layers.Conv2D}
+LAYER_FUNCTIONS["Conv3D".lower()] = {"function": tf.keras.layers.Conv3D}
+LAYER_FUNCTIONS["Dense".lower()] = {"function": tf.keras.layers.Dense}
+
+# conv transpose
+LAYER_FUNCTIONS["Conv2DTranspose".lower()] = {
+    "function": tf.keras.layers.Conv2DTranspose
+}
+LAYER_FUNCTIONS["Conv3DTranspose".lower()] = {
+    "function": tf.keras.layers.Conv3DTranspose
+}
+
+# dropout
+LAYER_FUNCTIONS["Dropout".lower()] = {"function": tf.keras.layers.Dropout}
+LAYER_FUNCTIONS["AlphaDropout".lower()] = {"function": tf.keras.layers.AlphaDropout}
+LAYER_FUNCTIONS["GaussianDropout".lower()] = {
+    "function": tf.keras.layers.GaussianDropout
+}
+LAYER_FUNCTIONS["SpatialDropout1D".lower()] = {
+    "function": tf.keras.layers.SpatialDropout1D
+}
+LAYER_FUNCTIONS["SpatialDropout2D".lower()] = {
+    "function": tf.keras.layers.SpatialDropout2D
+}
+LAYER_FUNCTIONS["SpatialDropout3D".lower()] = {
+    "function": tf.keras.layers.SpatialDropout3D
+}
+
+
+# pooling
+LAYER_FUNCTIONS["GlobalAveragePooling1D".lower()] = {
+    "function": tf.keras.layers.GlobalAveragePooling1D
+}
+LAYER_FUNCTIONS["GlobalAveragePooling2D".lower()] = {
+    "function": tf.keras.layers.GlobalAveragePooling2D
+}
+LAYER_FUNCTIONS["GlobalAveragePooling3D".lower()] = {
+    "function": tf.keras.layers.GlobalAveragePooling3D
+}
+
+LAYER_FUNCTIONS["AveragePooling1D".lower()] = {
+    "function": tf.keras.layers.AveragePooling1D
+}
+LAYER_FUNCTIONS["AveragePooling2D".lower()] = {
+    "function": tf.keras.layers.AveragePooling2D
+}
+LAYER_FUNCTIONS["AveragePooling3D".lower()] = {
+    "function": tf.keras.layers.AveragePooling3D
+}
+
+LAYER_FUNCTIONS["GlobalMaxPool1D".lower()] = {
+    "function": tf.keras.layers.GlobalMaxPool1D
+}
+LAYER_FUNCTIONS["GlobalMaxPool2D".lower()] = {
+    "function": tf.keras.layers.GlobalMaxPool2D
+}
+LAYER_FUNCTIONS["GlobalMaxPool3D".lower()] = {
+    "function": tf.keras.layers.GlobalMaxPool3D
+}
+
+LAYER_FUNCTIONS["MaxPool1D".lower()] = {"function": tf.keras.layers.MaxPool1D}
+LAYER_FUNCTIONS["MaxPool2D".lower()] = {"function": tf.keras.layers.MaxPool2D}
+LAYER_FUNCTIONS["MaxPool3D".lower()] = {"function": tf.keras.layers.MaxPool3D}
+
+
+# others
 LAYER_FUNCTIONS["flatten"] = {"function": tf.keras.layers.Flatten}
 

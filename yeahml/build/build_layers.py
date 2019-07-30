@@ -7,18 +7,9 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 
 from yeahml.helper import fmt_tensor_info
 
-# pooling layers
-# from yeahml.build.layers.pooling import build_pooling_layer
-
-# conv layers
-# from yeahml.build.layers.convolution import build_conv_layer
-from yeahml.build.layers.deconvolution import build_deconv_layer
-
 from yeahml.build.layers.recurrent import build_recurrent_layer
-
-# from yeahml.build.layers.dense import build_dense_layer
+from yeahml.build.get_components import get_initializer_fn
 from yeahml.build.layers.config import LAYER_FUNCTIONS
-
 from yeahml.build.layers.other import (
     build_embedding_layer,
     build_batch_normalization_layer,
@@ -26,9 +17,6 @@ from yeahml.build.layers.other import (
 
 from yeahml.build.components.regularizer import get_regularizer_fn
 from yeahml.build.components.activation import get_activation_fn
-
-# dropout
-# from yeahml.build.layers.dropout import build_dropout_layer
 
 
 def build_layer(ltype, opts, activation, l_name, logger, g_logger):
@@ -48,12 +36,16 @@ def build_layer(ltype, opts, activation, l_name, logger, g_logger):
         logger.debug(f"-> START building: {l_name}")
         if opts:
             # TODO: encapsulate this logic, expand as needed
+            # could also implement a check upfront to see if the option is valid
             for o in opts:
                 if o == "kernel_regularizer":
                     opts[o] = get_regularizer_fn(opts[o])
                 elif o == "activation":
                     opts[o] = get_activation_fn(opts[o])
-                print(opts)
+                elif o == "kernel_initializer":
+                    opts[o] = get_initializer_fn(opts[o])
+                elif o == "bias_initializer":
+                    opts[o] = get_initializer_fn(opts[o])
             cur_layer = func(**opts, name=l_name)
         else:
             cur_layer = func(name=l_name)
