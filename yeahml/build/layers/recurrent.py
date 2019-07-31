@@ -57,7 +57,7 @@ from yeahml.helper import fmt_tensor_info
 #     return RETURN_CELL
 
 
-def build_cell_layer(opts: dict, actfn, logger, g_logger):
+def build_cell_layer(opts: dict, activation, logger, g_logger):
     # TODO: add dtype, add activation
     try:
         CELL_TYPE: str = opts["cell_type"].lower()
@@ -104,7 +104,7 @@ def build_cell_layer(opts: dict, actfn, logger, g_logger):
     return out
 
 
-def build_recurrent_layer(opts: dict, actfn, name: str, logger, g_logger):
+def build_recurrent_layer(opts: dict, activation, name: str, logger, g_logger):
 
     # Check the current input and whether a dim needs to be added
     # e.g. (None, 256) -> (None, 256, 1)
