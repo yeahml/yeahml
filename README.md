@@ -270,7 +270,6 @@ At the moment the project is being developed around a binary image classificatio
 - make sure all layer names are unique - could check against set
 - convert to f-string
 - Ensure dropout is only active during training
-- replace sys.exit() with raising errors
 
 ### TODO: stretch
 

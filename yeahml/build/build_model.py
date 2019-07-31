@@ -1,5 +1,4 @@
 import tensorflow as tf
-import sys
 
 from yeahml.log.yf_logging import config_logger
 from yeahml.build.build_layers import build_hidden_block

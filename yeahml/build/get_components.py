@@ -1,5 +1,4 @@
 import tensorflow as tf
-import sys
 
 from typing import Any
 
@@ -29,7 +28,7 @@ def get_tf_dtype(dtype: str):
     elif dtype == "string":
         tf_dtype = tf.string
     else:
-        sys.exit("Error: Exit: dtype {} not recognized/supported".format(dtype))
+        raise ValueError(f"Error: Exit: dtype {dtype} not recognized/supported")
 
     return tf_dtype
 

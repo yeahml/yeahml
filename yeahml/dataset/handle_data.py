@@ -2,7 +2,6 @@ import tensorflow as tf
 import pickle
 from tqdm import tqdm
 import os
-import sys
 import random
 
 from yeahml.build.get_components import get_tf_dtype
@@ -22,8 +21,8 @@ def get_parse_type(parse_dict: dict):
             [], get_tf_dtype(parse_dict["in_type"]), allow_missing=True
         )
     else:
-        sys.exit(
-            "tf_parse_type: {} -- is not supported or defined.".format(tf_parse_type)
+        raise ValueError(
+            "tf_parse_type: {tf_parse_type} -- is not supported or defined"
         )
     return tfr_obj
 

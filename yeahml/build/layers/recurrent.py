@@ -1,4 +1,3 @@
-# import sys
 import tensorflow as tf
 from yeahml.helper import fmt_tensor_info
 

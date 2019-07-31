@@ -1,5 +1,4 @@
 # import tensorflow as tf
-# import sys
 
 
 # def init_params_from_file(sess, MCd: dict, HCd: dict):

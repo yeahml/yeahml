@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import sys
 from typing import Any, List
 from yeahml.build.components.activation import get_activation_fn
 from yeahml.log.yf_logging import config_logger  # custom logging

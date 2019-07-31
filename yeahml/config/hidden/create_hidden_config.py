@@ -1,4 +1,3 @@
-import sys
 import tensorflow as tf
 from inspect import getmembers, isfunction
 
@@ -12,7 +11,7 @@ def _get_hidden_layers(h_raw_config: dict):
     try:
         hidden_layers = h_raw_config["layers"]
     except KeyError:
-        sys.exit("No Layers Found")
+        raise KeyError("No Layers Found in the config")
 
     return hidden_layers
 
@@ -96,7 +95,7 @@ def extract_hidden_dict_and_set_defaults(
     parsed_h_config = {}
     hidden_layers = _get_hidden_layers(h_raw_config)
     if not hidden_layers:
-        sys.exit(
+        raise ValueError(
             f"hidden layer field was found, but did not contain any layers: {h_raw_config}"
         )
 

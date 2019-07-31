@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import sys
 import yaml
 
 # helper to create dirs if they don't already exist
@@ -24,8 +23,8 @@ def parse_yaml_from_path(path: str) -> dict:
                 print(exc)
                 return dict()
     except FileNotFoundError:
-        sys.exit(
-            "Error > Exiting: the configuration file {} was not found".format(path)
+        raise FileNotFoundError(
+            f"Error > Exiting: the configuration file {path} was not found"
         )
 
 
@@ -39,8 +38,8 @@ def parse_json_from_path(path: str) -> dict:
                 print("Error loading json to dict for file {}".format(path))
                 return dict()
     except FileNotFoundError:
-        sys.exit(
-            "Error > Exiting: the configuration file {} was not found".format(path)
+        raise FileNotFoundError(
+            f"Error > Exiting: the configuration file {path} was not found"
         )
 
 

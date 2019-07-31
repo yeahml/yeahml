@@ -2,7 +2,6 @@ import tensorflow as tf
 import math
 import numpy as np
 import os
-import sys
 from typing import Any
 
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords

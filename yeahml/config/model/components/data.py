@@ -1,5 +1,4 @@
 # TODO
-import sys
 
 
 def parse_data(MC: dict) -> dict:
@@ -33,10 +32,8 @@ def parse_data(MC: dict) -> dict:
     try:
         temp_one_hot = MC["data"]["label"]["one_hot"]
         if temp_one_hot != False and temp_one_hot != True:
-            sys.exit(
-                "Error > Exiting: data:label:one_hot {} unsupported. Please use True or False".format(
-                    temp_one_hot
-                )
+            raise ValueError(
+                f"Error > Exiting: data:label:one_hot {temp_one_hot} unsupported. Please use True or False"
             )
         MCd["label_one_hot"] = temp_one_hot
     except KeyError:

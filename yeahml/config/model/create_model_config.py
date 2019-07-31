@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import sys
 
 # components
 from yeahml.config.model.components.overall import parse_overall

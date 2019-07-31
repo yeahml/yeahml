@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import logging
-import sys
-
 from yeahml.config.helper import (
     maybe_create_dir,
     parse_yaml_from_path,
@@ -28,10 +26,8 @@ def create_model_and_hidden_config(path: str) -> tuple:
     elif path.endswith("json"):
         raw_config = parse_json_from_path(path)
     if not raw_config:
-        sys.exit(
-            "Error > Exiting: the model config file was found {}, but appears to be empty".format(
-                path
-            )
+        raise ValueError(
+            f"Error > Exiting: the model config file was found {path}, but appears to be empty"
         )
 
     m_config = extract_model_dict_and_set_defaults(raw_config)
@@ -40,17 +36,15 @@ def create_model_and_hidden_config(path: str) -> tuple:
     try:
         hidden_path = raw_config["hidden"]["path"]
     except KeyError:
-        sys.exit("no path specified for the hidden layers")
+        raise KeyError("no path specified for the hidden layers (:'hidden':'path')")
 
     if hidden_path.endswith("yaml") or hidden_path.endswith("yml"):
         h_raw_config = parse_yaml_from_path(hidden_path)
     elif hidden_path.endswith("json"):
         h_raw_config = parse_json_from_path(hidden_path)
     if not h_raw_config:
-        sys.exit(
-            "Error > Exiting: the model config file was found {}, but appears to be empty".format(
-                path
-            )
+        raise ValueError(
+            f"Error > Exiting: the model config file was found {path}, but appears to be empty"
         )
 
     # TODO: does this belong here?

@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import sys
 from yeahml.config.helper import create_standard_dirs
 
 
@@ -113,10 +112,8 @@ def parse_overall(MC: dict) -> dict:
         else:
             temp_c_lvl = temp_c_lvl.upper()
             if temp_c_lvl not in ERR_LEVELS:
-                sys.exit(
-                    "console level {} not allowed. please select one of {}".format(
-                        temp_c_lvl, ERR_LEVELS
-                    )
+                raise ValueError(
+                    f"console level {temp_c_lvl} not allowed. please select one of {ERR_LEVELS}"
                 )
             else:
                 MCd["log_c_lvl"] = temp_c_lvl
@@ -144,10 +141,8 @@ def parse_overall(MC: dict) -> dict:
         else:
             temp_f_lvl = temp_f_lvl.upper()
             if temp_f_lvl not in ERR_LEVELS:
-                sys.exit(
-                    "console level {} not allowed. please select one of {}".format(
-                        temp_f_lvl, ERR_LEVELS
-                    )
+                raise ValueError(
+                    "console level {temp_f_lvl} not allowed. please select one of {ERR_LEVELS}"
                 )
             else:
                 MCd["log_f_lvl"] = temp_f_lvl.upper()
@@ -181,10 +176,8 @@ def parse_overall(MC: dict) -> dict:
         else:
             temp_g_lvl = temp_g_lvl.upper()
             if temp_g_lvl not in ERR_LEVELS:
-                sys.exit(
-                    "log level {} not allowed. please select one of {}".format(
-                        temp_g_lvl, ERR_LEVELS
-                    )
+                raise ValueError(
+                    "log level {temp_g_lvl} not allowed. please select one of {ERR_LEVELS}"
                 )
             else:
                 MCd["log_g_lvl"] = temp_g_lvl
@@ -206,10 +199,8 @@ def parse_overall(MC: dict) -> dict:
         else:
             temp_p_lvl = temp_p_lvl.upper()
             if temp_p_lvl not in ERR_LEVELS:
-                sys.exit(
-                    "log level {} not allowed. please select one of {}".format(
-                        temp_p_lvl, ERR_LEVELS
-                    )
+                raise ValueError(
+                    "log level {temp_p_lvl} not allowed. please select one of {ERR_LEVELS}"
                 )
             else:
                 MCd["log_p_lvl"] = temp_p_lvl
