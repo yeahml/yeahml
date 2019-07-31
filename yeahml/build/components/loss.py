@@ -5,6 +5,8 @@ from tensorflow.python.keras.utils import losses_utils  # ugly
 
 def get_loss_fn(loss_str: str) -> Any:
 
+    # TODO: this functionality should mimic that of Layers
+
     # TODO: this check should be pushed to the config logic
     if loss_str:
         loss_str = loss_str.lower()

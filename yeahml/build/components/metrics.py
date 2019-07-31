@@ -3,6 +3,9 @@ from typing import Any
 
 
 def get_metrics_fn(metric_str: str) -> Any:
+
+    # TODO: this functionality should mimic that of Layers
+
     # TODO: this check should be pushed to the config logic
     if metric_str:
         metric_str = metric_str.lower()

@@ -41,7 +41,7 @@ def build_model(MCd: dict, HCd: dict):
     # TODO: currently hardcoded
     input_layer = tf.keras.Input(shape=(28, 28, 1))
     # input_layer = tf.keras.Input(shape=(256,))
-    print("jack: {}".format(MCd["input_layer_dim"]))
+    print(f"jack: {MCd['input_layer_dim']}")
     # input_layer = tf.keras.Input(shape=MCd["input_layer_dim"])
 
     ## add layers

@@ -4,6 +4,8 @@ from typing import Any
 
 def get_activation_fn(act_str: str) -> Any:
 
+    # TODO: this functionality should mimic that of Layers
+
     # TODO: this check should be pushed to the config logic
     if act_str:
         act_str = act_str.lower()

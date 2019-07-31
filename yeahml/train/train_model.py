@@ -125,7 +125,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         if cur_val_loss_ < best_val_loss:
             best_val_loss = cur_val_loss_
             model.save_weights(MCd["save_weights_path"])
-            logger.debug("best params saved: val loss: {:.4f}".format(cur_val_loss_))
+            logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
 
         # logger.debug("-> END iterating validation dataset")
 

@@ -33,7 +33,7 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
     else:
         specified_path = MCd["save_weights_path"]
     model.load_weights(specified_path)
-    logger.info("params loaded from {}".format(specified_path))
+    logger.info(f"params loaded from {specified_path}")
 
     # loss
     # get loss function

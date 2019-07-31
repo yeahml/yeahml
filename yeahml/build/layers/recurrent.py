@@ -62,13 +62,13 @@ def build_cell_layer(opts: dict, activation, logger, g_logger):
         CELL_TYPE: str = opts["cell_type"].lower()
     except KeyError:
         CELL_TYPE = "lstm"
-    logger.debug("cell_type set: {}".format(CELL_TYPE))
+    logger.debug(f"cell_type set: {CELL_TYPE}")
 
     try:
         NUM_RNN_NEURONS: int = opts["num_neurons"]
     except KeyError:
         NUM_RNN_NEURONS = 3
-    logger.debug("num_neurons set: {}".format(NUM_RNN_NEURONS))
+    logger.debug(f"num_neurons set: {NUM_RNN_NEURONS}")
 
     # TODO: cell type
     # TODO: params
@@ -140,13 +140,13 @@ def build_recurrent_layer(opts: dict, activation, name: str, logger, g_logger):
         NUM_LAYERS: int = opts["num_layers"]
     except KeyError:
         NUM_LAYERS = 1
-    logger.debug("num_layers set: {}".format(NUM_LAYERS))
+    logger.debug(f"num_layers set: {NUM_LAYERS}")
 
     try:
         BIDIRECTIONAL: bool = opts["bidirectional"]
     except KeyError:
         BIDIRECTIONAL = False
-    logger.debug("bidirectional set: {}".format(BIDIRECTIONAL))
+    logger.debug(f"bidirectional set: {BIDIRECTIONAL}")
 
     # try:
     #     DENSE_OPTS_DICT: dict = opts["condense_out"]
@@ -161,8 +161,8 @@ def build_recurrent_layer(opts: dict, activation, name: str, logger, g_logger):
         merge_mode = None  # TODO: include (concat, ave, sum, mul)
         out = tf.keras.layers.Bidirectional(out, merge_mode=merge_mode)
 
-    logger.debug("tensor obj: {}".format(out))
-    logger.debug("[End] building: {}".format(name))
+    logger.debug(f"tensor obj: {out}")
+    logger.debug(f"[End] building: {name}")
 
     # if DENSE_OPTS_DICT:
     #     out = build_dense_layer(

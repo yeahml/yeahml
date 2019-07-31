@@ -5,11 +5,12 @@ import yaml
 
 # helper to create dirs if they don't already exist
 def maybe_create_dir(dir_path: str) -> None:
+    # TODO: convert to logger
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-        print("{} created".format(dir_path))
+        print(f"{dir_path} created")
     else:
-        print("{} already exists".format(dir_path))
+        print("{dir_path} already exists")
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -35,7 +36,7 @@ def parse_json_from_path(path: str) -> dict:
                 data = json.loads(data_file.read())
                 return data
             except:
-                print("Error loading json to dict for file {}".format(path))
+                print(f"Error loading json to dict for file {path}")
                 return dict()
     except FileNotFoundError:
         raise FileNotFoundError(

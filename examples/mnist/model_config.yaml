@@ -10,7 +10,7 @@ overall:
   # trace: Null
   logging:
     console:
-      level: 'critical'
+      level: 'debug'
       format_str: null
     file:
       level: 'debug'
@@ -18,7 +18,7 @@ overall:
     graph_spec: True
   metrics: ["MeanAbsoluteError", "MeanSquaredError"]
 data:
-  in: 
+  in:
     dim: [784]
     dtype: 'float32'
     reshape_to: [28, 28, 1]

@@ -4,6 +4,8 @@ from typing import Any
 
 def get_optimizer(MCd: dict) -> Any:
 
+    # TODO: this functionality should mimic that of Layers
+
     # TODO: this should be created in the config
     opt = MCd["optimizer"].lower()
     # TODO: this check should be pushed to the config logic
