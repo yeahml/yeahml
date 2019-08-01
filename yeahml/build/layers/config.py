@@ -1,4 +1,3 @@
-from yeahml.build.layers.other import build_flatten_layer
 import inspect
 import tensorflow as tf
 
