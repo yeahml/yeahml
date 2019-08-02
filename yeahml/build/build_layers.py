@@ -15,9 +15,25 @@ from yeahml.build.layers.other import (
 )
 
 from yeahml.build.components.regularizer import get_regularizer_fn
-from yeahml.build.components.activation import get_activation_fn
+from yeahml.build.components.config import return_activation
 
-import inspect
+
+def _configure_activation(opt_dict):
+    # TODO: this is dangerous.... (updating the __defaults__ like this)
+    act_fn = return_activation(opt_dict["type"])["function"]
+    temp_copy = opt_dict.copy()
+    _ = temp_copy.pop("type")
+    if temp_copy:
+        var_list = list(act_fn.__code__.co_varnames)
+        cur_defaults_list = list(act_fn.__defaults__)
+        # TODO: try?
+        var_list.remove("x")
+        for ao, v in temp_copy.items():
+            arg_index = var_list.index(ao)
+            # TODO: same type assertion?
+            cur_defaults_list[arg_index] = v
+
+    return act_fn
 
 
 def build_layer(ltype, opts, l_name, logger, g_logger):
@@ -41,7 +57,7 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
                 if o == "kernel_regularizer":
                     opts[o] = get_regularizer_fn(opts[o])
                 elif o == "activation":
-                    opts[o] = get_activation_fn(opts[o])
+                    opts[o] = _configure_activation(opts[o])
                 elif o == "kernel_initializer":
                     opts[o] = get_initializer_fn(opts[o])
                 elif o == "bias_initializer":
@@ -87,4 +103,7 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
 
     logger.info("[END] building hidden block")
 
+    # opt = return_activation("relu")
+    # print(opt)
+    # sys.exit()
     return HIDDEN_LAYERS

@@ -10,7 +10,7 @@ overall:
   # trace: Null
   logging:
     console:
-      level: 'info'
+      level: 'critical'
       format_str: null
     file:
       level: 'debug'
@@ -48,7 +48,8 @@ hyper_parameters:
     learning_rate: 0.0001
   batch_size: 32
   epochs: 1
-  default_activation: 'elu'
+  default_activation: 
+    type: 'elu'
   shuffle_buffer: 128
   # early_stopping:
   #   epochs: 3

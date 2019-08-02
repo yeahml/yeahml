@@ -60,9 +60,10 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
 
     optim_dict = return_optimizer(MCd["optimizer_dict"]["type"])
     optimizer = optim_dict["function"]
-    MCd["optimizer_dict"].pop("type")
     ## configure optimizer
-    optimizer = optimizer(**MCd["optimizer_dict"])
+    temp_dict = MCd["optimizer_dict"].copy()
+    temp_dict.pop("type")
+    optimizer = optimizer(**temp_dict)
 
     # get loss function
     loss_object = get_loss_fn(MCd["loss_fn"])
