@@ -52,10 +52,13 @@ layers:
       units: 32
       kernel_regularizer:
         type: 'l1'
-        scale: [0.1]
+        l: 0.3
   dense_2:
     type: 'dense'
     options:
       units: 10
+      kernel_regularizer:
+        type: 'l1'
+        l: 0.4
     #saver:
       #load_params: True

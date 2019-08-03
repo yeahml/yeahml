@@ -1,7 +1,8 @@
 import tensorflow as tf
 import numpy as np
 from typing import Any, List
-from yeahml.build.components.activation import get_activation_fn
+
+# from yeahml.build.components.activation import get_activation_fn
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 from yeahml.helper import fmt_tensor_info
@@ -15,12 +16,34 @@ from yeahml.build.layers.other import (
 )
 
 from yeahml.build.components.regularizer import get_regularizer_fn
-from yeahml.build.components.config import return_activation
+from yeahml.build.components.config import return_activation, return_regularizer
+import inspect
+
+import types
+import functools
+
+
+def copy_func(f):
+    """
+    Based on http://stackoverflow.com/a/6528148/190597
+    source: https://stackoverflow.com/questions/13503079/how-to-create-a-copy-of-a-python-function
+    """
+    g = types.FunctionType(
+        f.__code__,
+        f.__globals__,
+        name=f.__name__,
+        argdefs=f.__defaults__,
+        closure=f.__closure__,
+    )
+    g = functools.update_wrapper(g, f)
+    g.__kwdefaults__ = f.__kwdefaults__
+    return g
 
 
 def _configure_activation(opt_dict):
     # TODO: this is dangerous.... (updating the __defaults__ like this)
     act_fn = return_activation(opt_dict["type"])["function"]
+    act_fn = copy_func(act_fn)
     temp_copy = opt_dict.copy()
     _ = temp_copy.pop("type")
     if temp_copy:
@@ -32,8 +55,30 @@ def _configure_activation(opt_dict):
             arg_index = var_list.index(ao)
             # TODO: same type assertion?
             cur_defaults_list[arg_index] = v
+        act_fn.__defaults__ = tuple(cur_defaults_list)
 
     return act_fn
+
+
+def _configure_regularizer(opt_dict):
+    # TODO: this is dangerous.... (updating the __defaults__ like this)
+    reg_fn = return_regularizer(opt_dict["type"])["function"]
+    reg_fn = copy_func(reg_fn)
+    temp_copy = opt_dict.copy()
+    _ = temp_copy.pop("type")
+    if temp_copy:
+        var_list = list(reg_fn.__code__.co_varnames)
+        cur_defaults_list = list(reg_fn.__defaults__)
+        for ao, v in temp_copy.items():
+            try:
+                arg_index = var_list.index(ao)
+                cur_defaults_list[arg_index] = v
+            except ValueError:
+                raise ValueError(f"regularizer option {ao} not in options: {var_list}")
+            # TODO: same type assertion?
+        reg_fn.__defaults__ = tuple(cur_defaults_list)
+
+    return reg_fn
 
 
 def build_layer(ltype, opts, l_name, logger, g_logger):
@@ -54,14 +99,19 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
             # TODO: encapsulate this logic, expand as needed
             # could also implement a check upfront to see if the option is valid
             for o in opts:
-                if o == "kernel_regularizer":
-                    opts[o] = get_regularizer_fn(opts[o])
-                elif o == "activation":
-                    opts[o] = _configure_activation(opts[o])
-                elif o == "kernel_initializer":
-                    opts[o] = get_initializer_fn(opts[o])
-                elif o == "bias_initializer":
-                    opts[o] = get_initializer_fn(opts[o])
+                try:
+                    if o == "kernel_regularizer":
+                        opts[o] = _configure_regularizer(opts[o])
+                    elif o == "activation":
+                        opts[o] = _configure_activation(opts[o])
+                    elif o == "kernel_initializer":
+                        opts[o] = get_initializer_fn(opts[o])
+                    elif o == "bias_initializer":
+                        opts[o] = get_initializer_fn(opts[o])
+                except ValueError as e:
+                    raise ValueError(
+                        f"error creating option {o} for layer {l_name}:\n > {e}"
+                    )
             cur_layer = func(**opts, name=l_name)
         else:
             cur_layer = func(name=l_name)
@@ -79,12 +129,6 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
     for i, l_name in enumerate(HCd["layers"]):
         layer_info = HCd["layers"][str(l_name)]
         opts = layer_info["options"]
-        # # print(opts)
-        # try:
-        #     activation = get_activation_fn(layer_info["activation"])
-        # except KeyError:
-        #     pass
-
         ltype = layer_info["type"].lower()
         logger.debug(f"-> START building: {l_name} ({ltype}) opts: {layer_info}")
         cur_layer = build_layer(ltype, opts, l_name, logger, g_logger)
@@ -103,7 +147,4 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
 
     logger.info("[END] building hidden block")
 
-    # opt = return_activation("relu")
-    # print(opt)
-    # sys.exit()
     return HIDDEN_LAYERS
