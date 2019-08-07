@@ -30,7 +30,8 @@ def config_logger(MCd: dict, log_type: str):
 
     if log_type == "build":
         build_logger = logging.getLogger("build_logger")
-        build_logger.setLevel(get_level(MCd["log_c_lvl"]))  # set base to lowest level
+        build_logger.propagate = False
+        build_logger.setLevel(get_level("DEBUG"))  # set base to lowest level
         b_ch = logging.StreamHandler()
         b_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "build.log"))
 
@@ -46,7 +47,10 @@ def config_logger(MCd: dict, log_type: str):
         return build_logger
     elif log_type == "train":
         train_logger = logging.getLogger("train_logger")
-        train_logger.setLevel(get_level(MCd["log_c_lvl"]))  # set base to lowest level
+        train_logger.propagate = False
+        train_logger.setLevel(
+            get_level("DEBUG")
+        )  # get_level(MCd["log_c_lvl"])  # set base to lowest level
         t_ch = logging.StreamHandler()
         t_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "train.log"))
 
@@ -61,7 +65,8 @@ def config_logger(MCd: dict, log_type: str):
         return train_logger
     elif log_type == "eval":
         eval_logger = logging.getLogger("eval_logger")
-        eval_logger.setLevel(get_level(MCd["log_c_lvl"]))  # set base to lowest level
+        eval_logger.propagate = False
+        eval_logger.setLevel(get_level("DEBUG"))  # set base to lowest level
         e_ch = logging.StreamHandler()
         e_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "eval.log"))
 
@@ -76,7 +81,9 @@ def config_logger(MCd: dict, log_type: str):
         return eval_logger
     elif log_type == "graph":
         graph_logger = logging.getLogger("graph_logger")
-        graph_logger.setLevel(get_level(MCd["log_c_lvl"]))  # set base to lowest level
+        graph_logger.propagate = False
+        graph_logger.setLevel(get_level("DEBUG"))  # set base to lowest level
+
         g_ch = logging.StreamHandler()
         g_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "graph.log"))
 
@@ -91,7 +98,8 @@ def config_logger(MCd: dict, log_type: str):
         return graph_logger
     elif log_type == "preds":
         preds_logger = logging.getLogger("preds_logger")
-        preds_logger.setLevel(get_level("CRITICAL"))  # set base to lowest level
+        preds_logger.propagate = False
+        preds_logger.setLevel(get_level("DEBUG"))  # set base to lowest level
         p_ch = logging.StreamHandler()
         p_fh = logging.FileHandler(os.path.join(MCd["log_dir"], "yf_logs", "preds.log"))
 

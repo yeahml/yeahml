@@ -13,10 +13,10 @@ overall:
   # trace: Null
   logging:
     console:
-      level: 'critical'
+      level: 'info'
       format_str: null
     file:
-      level: 'debug'
+      level: 'ERROR'
       format_str: null
     graph_spec: True
   metrics: ["MeanAbsoluteError", "MeanSquaredError", "CategoricalAccuracy"]

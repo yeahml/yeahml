@@ -6,7 +6,6 @@ def return_available_regularizers():
 
     REGULARIZER_FUNCTIONS = {}
     available_keras_regularizers = tf.keras.regularizers.__dict__
-
     for opt_name, opt_func in available_keras_regularizers.items():
         if callable(opt_func) and not inspect.isclass(opt_func):
             if opt_name.lower() not in set(["deserialize", "get", "serialize"]):

@@ -162,6 +162,7 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
 
 
 def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
+
     logger.info("-> START building hidden block")
     HIDDEN_LAYERS = []
 
