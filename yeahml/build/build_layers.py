@@ -19,7 +19,6 @@ from yeahml.build.layers.other import (
 from yeahml.build.components.regularizer import return_regularizer
 from yeahml.build.components.initializer import return_initializer
 from yeahml.build.components.activation import return_activation
-
 import inspect
 
 import sys
@@ -158,14 +157,6 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
         else:
             cur_layer = func(name=l_name)
         g_logger.info(f"{fmt_tensor_info(cur_layer)}")
-
-    # inits = return_available_initializers()
-    # for v in inits:
-    #     print(v)
-    #     print(inits[v])
-    #     print("--")
-    # # print(inits.keys())
-    # sys.exit()
 
     return cur_layer
 

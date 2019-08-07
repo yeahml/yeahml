@@ -47,7 +47,7 @@ def parse_overall(MC: dict) -> dict:
         pass
 
     # convert to lowercase for consistency
-    MCd["loss_fn"] = MC["overall"]["loss_fn"].lower()
+    MCd["loss_fn"] = MC["overall"]["loss_fn"]
     # TODO: make sure loss_fn is allowed
 
     try:

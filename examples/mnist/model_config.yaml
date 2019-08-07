@@ -2,7 +2,10 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'mnist'
-  loss_fn: 'CategoricalCrossentropy'
+  loss_fn: 
+    type: 'categorical_crossentropy'
+    #options:
+      #label_smoothing: 0.2
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
@@ -16,7 +19,7 @@ overall:
       level: 'debug'
       format_str: null
     graph_spec: True
-  metrics: ["MeanAbsoluteError", "MeanSquaredError"]
+  metrics: ["MeanAbsoluteError", "MeanSquaredError", "CategoricalAccuracy"]
 data:
   in:
     dim: [784]

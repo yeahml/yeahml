@@ -6,7 +6,7 @@ from typing import Any
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.build.components.metrics import get_metrics_fn
-from yeahml.build.components.loss import get_loss_fn
+from yeahml.build.components.loss import configure_loss
 
 
 @tf.function
@@ -37,7 +37,7 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
 
     # loss
     # get loss function
-    loss_object = get_loss_fn(MCd["loss_fn"])
+    loss_object = configure_loss(MCd["loss_fn"])
 
     # mean loss
     avg_eval_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)

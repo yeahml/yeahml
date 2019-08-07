@@ -4,11 +4,12 @@ import numpy as np
 import os
 from typing import Any
 
+
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
-from yeahml.build.components.loss import get_loss_fn
+from yeahml.build.components.loss import configure_loss
 
 # from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metrics import get_metrics_fn
@@ -58,6 +59,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     # get model
     # get optimizer
 
+    # TODO: config optimizer (follow template for losses)
     optim_dict = return_optimizer(MCd["optimizer_dict"]["type"])
     optimizer = optim_dict["function"]
     ## configure optimizer
@@ -66,7 +68,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     optimizer = optimizer(**temp_dict)
 
     # get loss function
-    loss_object = get_loss_fn(MCd["loss_fn"])
+    loss_object = configure_loss(MCd["loss_fn"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
