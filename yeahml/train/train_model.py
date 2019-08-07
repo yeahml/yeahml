@@ -12,7 +12,7 @@ from yeahml.build.components.loss import get_loss_fn
 
 # from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metrics import get_metrics_fn
-from yeahml.build.components.config import return_optimizer
+from yeahml.build.components.optimizer import return_optimizer
 
 
 @tf.function

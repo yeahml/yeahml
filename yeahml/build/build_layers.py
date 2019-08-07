@@ -15,13 +15,11 @@ from yeahml.build.layers.other import (
     build_batch_normalization_layer,
 )
 
-from yeahml.build.components.regularizer import get_regularizer_fn
-from yeahml.build.components.config import (
-    return_activation,
-    return_regularizer,
-    # return_available_initializers,
-    return_initializer,
-)
+
+from yeahml.build.components.regularizer import return_regularizer
+from yeahml.build.components.initializer import return_initializer
+from yeahml.build.components.activation import return_activation
+
 import inspect
 
 import sys

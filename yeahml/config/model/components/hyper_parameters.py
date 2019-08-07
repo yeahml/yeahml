@@ -1,6 +1,6 @@
 # TODO
-from yeahml.build.components.config import return_available_optimizers
-from yeahml.build.components.config import return_optimizer
+from yeahml.build.components.optimizer import return_available_optimizers
+from yeahml.build.components.optimizer import return_optimizer
 
 
 def parse_hyper_parameters(MC: dict) -> dict:

@@ -1,39 +1,30 @@
+import inspect
 import tensorflow as tf
 
 
-def get_regularizer_fn(reg_ops: dict):
+def return_available_regularizers():
 
-    if not reg_ops:
-        return None
+    REGULARIZER_FUNCTIONS = {}
+    available_keras_regularizers = tf.keras.regularizers.__dict__
 
+    for opt_name, opt_func in available_keras_regularizers.items():
+        if callable(opt_func) and not inspect.isclass(opt_func):
+            if opt_name.lower() not in set(["deserialize", "get", "serialize"]):
+                REGULARIZER_FUNCTIONS[opt_name.lower()] = {}
+                REGULARIZER_FUNCTIONS[opt_name.lower()]["function"] = opt_func
+                args = list(opt_func.__code__.co_varnames)
+                REGULARIZER_FUNCTIONS[opt_name.lower()]["func_args"] = args
+    return REGULARIZER_FUNCTIONS
+    # print(tf.keras.regularizers.__dict__)
+
+
+def return_regularizer(regularizer_str):
+    avail_regularizers = return_available_regularizers()
     try:
-        reg_type = reg_ops["type"].lower()
-        if reg_type not in ["l1", "l2", "l1l2"]:
-            raise NotImplementedError(
-                f"reg_type {reg_type} not implemented, allowed: [l1,l2,l1l2]"
-            )
+        regularizer = avail_regularizers[regularizer_str]
     except KeyError:
-        raise ValueError("reg_type not specified, allowed: [l1,l2,l1l2]")
-
-    try:
-        scale = reg_ops["scale"]
-        # TODO: ensure scale is a number (within range preferably)
-        # TODO: handle list/value
-    except KeyError:
-        raise ValueError("scale not specified")
-
-    if reg_type == "l1":
-        # TODO: handle list/value
-        reg_fn = tf.keras.regularizers.l1(l=scale[0])
-    elif reg_type == "l2":
-        # TODO: handle list/value
-        reg_fn = tf.keras.regularizers.l2(l=scale[0])
-    elif reg_type == "l1l2":
-        # TODO: handle list/value and multiple values
-        reg_fn = tf.keras.regularizers.L1L2(l1=scale[0], l2=scale[1])
-    else:
-        raise NotImplementedError(
-            f"regularization type {reg_str} not implemented, only [l1,l2,l1l2]"
+        raise KeyError(
+            f"activation {regularizer_str} not available in options {avail_regularizers.keys()}"
         )
 
-    return reg_fn
+    return regularizer
