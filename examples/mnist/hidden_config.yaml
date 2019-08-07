@@ -31,6 +31,10 @@ layers:
       kernel_size: 3
       strides: 1
       trainable: True
+      kernel_initializer: 
+        type: "glorot_normal"
+        options:
+          seed: 42
       activation: 
         type: 'relu'
     #saver:
