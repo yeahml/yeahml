@@ -12,7 +12,7 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.build.components.loss import configure_loss
 
 # from yeahml.build.components.optimizer import get_optimizer
-from yeahml.build.components.metrics import get_metrics_fn
+from yeahml.build.components.metrics import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
 
 
@@ -78,10 +78,16 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     train_metric_fns = []
     val_metric_fns = []
     metric_order = []
-    for metric in MCd["met_set"]:
-        train_metric = get_metrics_fn(metric)
+    met_opts = MCd["met_opts_list"]
+    for i, metric in enumerate(MCd["met_list"]):
+        try:
+            met_opt = met_opts[i]
+        except TypeError:
+            # no options
+            met_opt = None
+        train_metric = configure_metric(metric, met_opt)
         train_metric_fns.append(train_metric)
-        val_metric = get_metrics_fn(metric)
+        val_metric = configure_metric(metric, met_opt)
         val_metric_fns.append(val_metric)
         metric_order.append(metric)
 

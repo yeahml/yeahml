@@ -19,6 +19,7 @@ from yeahml.build.layers.other import (
 from yeahml.build.components.regularizer import return_regularizer
 from yeahml.build.components.initializer import return_initializer
 from yeahml.build.components.activation import return_activation
+from yeahml.build.components.metrics import return_metric
 import inspect
 
 import sys

@@ -42,7 +42,7 @@ def return_initializer(initializer_str):
         initializer = avail_initializers[initializer_str]
     except KeyError:
         raise KeyError(
-            f"activation {initializer_str} not available in options {avail_initializers.keys()}"
+            f"initializer {initializer_str} not available in options {avail_initializers.keys()}"
         )
 
     return initializer

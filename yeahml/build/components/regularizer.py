@@ -23,7 +23,7 @@ def return_regularizer(regularizer_str):
         regularizer = avail_regularizers[regularizer_str]
     except KeyError:
         raise KeyError(
-            f"activation {regularizer_str} not available in options {avail_regularizers.keys()}"
+            f"regularizer {regularizer_str} not available in options {avail_regularizers.keys()}"
         )
 
     return regularizer
