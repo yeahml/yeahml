@@ -51,15 +51,21 @@ def parse_overall(MC: dict) -> dict:
     # TODO: make sure loss_fn is allowed
 
     try:
-        met_list = MC["overall"]["metrics"]
+        met_list = MC["overall"]["metrics"]["type"]
+        met_list = [m.lower() for m in met_list]
 
         # TODO: check that metrics are ok/allowed
         # convert to set to remove duplication
-        met_set = set(met_list)
+        # met_set = set(met_list)
     except KeyError:
-        met_set = None
+        met_list = None
         # raise ValueError("No metrics specified")
-    MCd["met_set"] = met_set
+    try:
+        met_opts_list = MC["overall"]["metrics"]["options"]
+    except KeyError:
+        met_opts_list = None
+    MCd["met_list"] = met_list
+    MCd["met_opts_list"] = met_opts_list
 
     # ## "type" of problem (will set the default performance metrics)
     # try:

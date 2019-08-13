@@ -19,7 +19,11 @@ overall:
       level: 'ERROR'
       format_str: null
     graph_spec: True
-  metrics: ["MeanAbsoluteError", "MeanSquaredError", "CategoricalAccuracy"]
+  metrics: 
+    type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
+    options: [null, 
+              {"k": 2}, 
+              null]
 data:
   in:
     dim: [784]

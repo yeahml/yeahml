@@ -27,7 +27,7 @@ def return_loss(loss_str):
         loss = avail_losses[loss_str]
     except KeyError:
         raise KeyError(
-            f"activation {loss_str} not available in options {avail_losses.keys()}"
+            f"loss {loss_str} not available in options {avail_losses.keys()}"
         )
 
     return loss

@@ -5,7 +5,8 @@ from typing import Any
 
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
-from yeahml.build.components.metrics import get_metrics_fn
+
+from yeahml.build.components.metrics import configure_metric
 from yeahml.build.components.loss import configure_loss
 
 
@@ -44,10 +45,20 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
 
     # metrics
     eval_metric_fns, metric_order = [], []
-    for metric in MCd["met_set"]:
-        eval_metric_fn = get_metrics_fn(metric)
-        metric_order.append(metric)
+    met_opts = MCd["met_opts_list"]
+    for i, metric in enumerate(MCd["met_list"]):
+        try:
+            met_opt_dict = met_opts[i]
+        except TypeError:
+            # no options
+            met_opt_dict = None
+        except IndexError:
+            # No options for particular metric
+            met_opt_dict = None
+            pass
+        eval_metric_fn = configure_metric(metric, met_opt_dict)
         eval_metric_fns.append(eval_metric_fn)
+        metric_order.append(metric)
 
     # reset metrics (should already be reset)
     for eval_metric_fn in eval_metric_fns:
