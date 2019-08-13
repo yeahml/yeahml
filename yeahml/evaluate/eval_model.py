@@ -48,13 +48,17 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
     met_opts = MCd["met_opts_list"]
     for i, metric in enumerate(MCd["met_list"]):
         try:
-            met_opt = met_opts[i]
+            met_opt_dict = met_opts[i]
         except TypeError:
             # no options
-            met_opt = None
-        eval_metric_fn = configure_metric(metric, met_opt)
-        metric_order.append(metric)
+            met_opt_dict = None
+        except IndexError:
+            # No options for particular metric
+            met_opt_dict = None
+            pass
+        eval_metric_fn = configure_metric(metric, met_opt_dict)
         eval_metric_fns.append(eval_metric_fn)
+        metric_order.append(metric)
 
     # reset metrics (should already be reset)
     for eval_metric_fn in eval_metric_fns:

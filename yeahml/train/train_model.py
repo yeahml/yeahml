@@ -81,14 +81,18 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     met_opts = MCd["met_opts_list"]
     for i, metric in enumerate(MCd["met_list"]):
         try:
-            met_opt = met_opts[i]
+            met_opt_dict = met_opts[i]
         except TypeError:
             # no options
-            met_opt = None
-        train_metric = configure_metric(metric, met_opt)
-        train_metric_fns.append(train_metric)
-        val_metric = configure_metric(metric, met_opt)
-        val_metric_fns.append(val_metric)
+            met_opt_dict = None
+        except IndexError:
+            # No options for particular metric
+            met_opt_dict = None
+            pass
+        train_metric_fn = configure_metric(metric, met_opt_dict)
+        train_metric_fns.append(train_metric_fn)
+        val_metric_fn = configure_metric(metric, met_opt_dict)
+        val_metric_fns.append(val_metric_fn)
         metric_order.append(metric)
 
     # get datasets

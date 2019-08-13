@@ -20,9 +20,10 @@ overall:
       format_str: null
     graph_spec: True
   metrics: 
-    type: ["MeanAbsoluteError", "MeanSquaredError", "CategoricalAccuracy"]
-    # options:
-    #   [""]
+    type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
+    options: [null, 
+              {"k": 2}, 
+              null]
 data:
   in:
     dim: [784]

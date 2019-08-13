@@ -1,6 +1,7 @@
 import tensorflow as tf
 from typing import Any
 import inspect
+from yeahml.build.components.configure import copy_func
 
 
 def return_available_metrics():
@@ -36,26 +37,27 @@ def return_metric(metric_str):
     return metric
 
 
-def configure_metric(cur_type, met_opts):
+def configure_metric(cur_type, met_opt_dict):
+    # TODO: this needs to be tested
 
     metric_obj = return_metric(cur_type.lower())
     metric_fn = metric_obj["function"]
-    options = met_opts
+    options = met_opt_dict
 
     if options:
-        if not set(opt_dict["options"].keys()).issubset(metric_obj["func_args"]):
+        if not set(options.keys()).issubset(metric_obj["func_args"]):
             raise ValueError(
-                f"options {opt_dict['options'].keys()} not in {init_obj['func_args']}"
+                f"options {options.keys()} not in {metric_obj['func_args']}"
             )
-        metric_fn = copy_func(metric_fn)
-        var_list = list(metric_fn.__code__.co_varnames)
-        print(var_list)
-        sys.exit()
-        cur_defaults_list = list(metric_fn.__defaults__)
+        var_list = list(vars(metric_fn)["__init__"].__code__.co_varnames)
+        new_def_dict = {}
         for ao, v in options.items():
             arg_index = var_list.index(ao)
             # TODO: same type assertion?
-            cur_defaults_list[arg_index] = v
-        metric_fn.__defaults__ = tuple(cur_defaults_list)
+            new_def_dict[ao] = v
 
-    return metric_fn()
+        metric_fn = metric_fn(**new_def_dict)
+    else:
+        metric_fn = metric_fn()
+
+    return metric_fn
