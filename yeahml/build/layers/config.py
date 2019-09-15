@@ -1,4 +1,5 @@
 import inspect
+
 import tensorflow as tf
 
 # standard_args = {"opts": None, "name": None, "logger": None, "g_logger": None}
@@ -91,4 +92,3 @@ def return_available_layers():
 
 # # others
 # LAYER_FUNCTIONS["flatten"] = {"function": tf.keras.layers.Flatten}
-
