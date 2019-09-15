@@ -270,6 +270,8 @@ At the moment the project is being developed around a binary image classificatio
 - make sure all layer names are unique - could check against set
 - convert to f-string
 - Ensure dropout is only active during training
+- Create data_config file option (`path`, e.g. model_config:data:path) if the path is present, use it and make sure no other fields are filled
+- Create hyperparam_config file option (`path`, e.g. model_config:hyperparam:path) if the path is present, use it and make sure no other fields are filled
 
 ### TODO: stretch
 

@@ -45,27 +45,3 @@ def get_lr_schedule():
 
 #     return (logits, preds)
 
-
-def get_initializer_fn(init_str: str):
-    # NOTE: will use uniform (not normal) by default
-
-    if init_str:
-        init_str = init_str.lower()
-    if init_str == "":
-        init_fn = None  # default is glorot
-    elif init_str == "glorot":
-        raise NotImplementedError
-    elif init_str == "zeros" or init_str == "zero":
-        init_fn = tf.zeros_initializer(dtype=tf.float32)
-    elif init_str == "ones" or init_str == "one":
-        init_fn = tf.ones_initializer(dtype=tf.float32)
-    elif init_str == "rand" or init_str == "random":
-        # TODO: this will need a value for maxval
-        raise NotImplementedError
-    elif init_str == "he":
-        raise NotImplementedError
-    else:
-        # TODO: Error
-        init_fn = None
-    return init_fn
-

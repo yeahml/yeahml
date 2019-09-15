@@ -1,5 +1,26 @@
 import inspect
 import tensorflow as tf
+from yeahml.build.components.util import copy_func
+
+
+def _configure_activation(opt_dict):
+    # TODO: this is dangerous.... (updating the __defaults__ like this)
+    act_fn = return_activation(opt_dict["type"])["function"]
+    act_fn = copy_func(act_fn)
+    temp_copy = opt_dict.copy()
+    _ = temp_copy.pop("type")
+    if temp_copy:
+        var_list = list(act_fn.__code__.co_varnames)
+        cur_defaults_list = list(act_fn.__defaults__)
+        # TODO: try?
+        var_list.remove("x")
+        for ao, v in temp_copy.items():
+            arg_index = var_list.index(ao)
+            # TODO: same type assertion?
+            cur_defaults_list[arg_index] = v
+        act_fn.__defaults__ = tuple(cur_defaults_list)
+
+    return act_fn
 
 
 def return_available_activations():
