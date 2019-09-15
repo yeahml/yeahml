@@ -1,4 +1,5 @@
 import tensorflow as tf
+import sys
 
 from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.get_components import get_tf_dtype
@@ -38,27 +39,23 @@ def build_model(MCd: dict, HCd: dict):
 
     g_logger = config_logger(MCd, "graph")
 
-    # TODO: currently hardcoded
-    input_layer = tf.keras.Input(shape=(28, 28, 1))
-    # input_layer = tf.keras.Input(shape=(256,))
-    print(f"jack: {MCd['input_layer_dim']}")
-    # input_layer = tf.keras.Input(shape=MCd["input_layer_dim"])
+    # TODO: this method is a bit sloppy and I'm not sure it's needed anymore.
+    # previously, the batch dimension [0], which was filled as (-1) was needed, but
+    # maybe it is no longer needed with tf2. `parse_data()` is where this originally
+    # created.
+    if MCd["input_layer_dim"][0] == -1:
+        input_layer = tf.keras.Input(shape=(MCd["input_layer_dim"][1:]))
+    else:
+        input_layer = tf.keras.Input(shape=(MCd["input_layer_dim"]))
 
-    ## add layers
-    ## create the architecture
+    # create the architecture
     hidden_layers = build_hidden_block(MCd, HCd, logger, g_logger)
-
-    # TODO: build model
     cur_input, cur_output = input_layer, None
     for layer in hidden_layers:
         cur_output = layer(cur_input)
         cur_input = cur_output
 
-    # TODO: output layer
-    output_layer = tf.keras.layers.Dense(10, activation="softmax")(cur_output)
-    # output_layer = tf.keras.layers.Dense(1, activation="softmax")(cur_output)
-
     # TODO: need to ensure this is the API we want
-    model = tf.keras.Model(inputs=input_layer, outputs=output_layer)
+    model = tf.keras.Model(inputs=input_layer, outputs=cur_output)
 
     return model

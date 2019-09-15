@@ -1,3 +1,5 @@
+# TODO: this should be the "architecture config"
+
 # documentation will be key - "sane" defaults
 # key: value
 # key will be the "name" of the layer, value will hold the type+
@@ -57,12 +59,11 @@ layers:
       kernel_regularizer:
         type: 'l1'
         l: 0.3
-  dense_2:
+  dense_2_output:
     type: 'dense'
     options:
       units: 10
-      kernel_regularizer:
-        type: 'l1'
-        l: 0.4
+      activation:
+        type: 'softmax'
     #saver:
       #load_params: True
