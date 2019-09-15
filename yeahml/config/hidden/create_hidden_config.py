@@ -43,7 +43,9 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
     if hl_type in LAYER_FUNCTIONS.keys():
         func = LAYER_FUNCTIONS[hl_type]["function"]
     else:
-        raise NotImplementedError(f"layer type {hl_type} not implemented yet")
+        raise NotImplementedError(
+            f"layer type {hl_type} not implemented yet. Current supported layers are: {LAYER_FUNCTIONS.keys()}"
+        )
 
     cur_func_vars = list(vars(func)["__init__"].__code__.co_varnames)
     if issubclass(func, tf.keras.layers.Layer):

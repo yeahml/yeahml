@@ -85,7 +85,9 @@ def _parse_function(
 
     # decode string
     if l_dict["in_type"] == "string":
-        label = tf.decode_raw(parsed_features[labelName], get_tf_dtype(l_dict["dtype"]))
+        label = tf.io.decode_raw(
+            parsed_features[labelName], get_tf_dtype(l_dict["dtype"])
+        )
         # if a reshape is present in the config for the label, reshape the data
     else:
         label = parsed_features[labelName]

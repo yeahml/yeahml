@@ -2,20 +2,22 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'segmentation'
-  loss_fn: 'softmax_binary_segmentation_temp' # TODO: this will need to be fixed
+  loss_fn: 
+    type: 'binary_crossentropy' # TODO: this will need to be fixed
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
   logging:
     console:
-      level: 'critical'
+      level: 'info'
     file:
       level: 'debug'
     graph_spec: True
   metrics:
-    type: 'segmentation'
-  num_classes: 2
-  class_weights: [1.0, 8.75]
+    type: ['binaryaccuracy']
+    #options: [{"num_classes": 2}]
+  num_classes: 2 # TOOD: ensure use
+  class_weights: [1.0, 8.75] # TOOD: ensure use
 data:
   in:
     dim: [224, 224, 3]
@@ -23,6 +25,7 @@ data:
   label:
     dim: [224, 224]
     dtype: 'int32'
+    reshape_to: [224, 224, 1]
   TFR_parse:
     feature:
       name: "/image"
@@ -40,15 +43,17 @@ data:
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
 hyper_parameters:
-  optimizer: 'adam'
-  lr: 0.001
+  optimizer: 
+    type: 'adam'
+    learning_rate: 0.001
   batch_size: 16
   epochs: 20 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
-  default_activation: 'elu'
+  default_activation: 
+    type: 'elu'
   shuffle_buffer: 128
-  early_stopping:
-    epochs: 10
-    warm_up_epochs: 5
+  # early_stopping:
+  #   epochs: 10
+  #   warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)

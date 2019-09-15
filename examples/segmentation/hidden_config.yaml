@@ -5,18 +5,21 @@ layers:
       filters: 16
       kernel_size: 3
       strides: 2
+      padding: 'same'
   conv_2:
     type: 'conv2d'
     options:
       filters: 32
       kernel_size: 3
       strides: 2
+      padding: 'same'
   conv_3:
     type: 'conv2d'
     options:
       filters: 32
       kernel_size: 3
       strides: 2
+      padding: 'same'
   conv_4:
     type: 'conv2d'
     options:
@@ -24,27 +27,31 @@ layers:
       kernel_size: 3
       strides: 1
   deconv_1:
-    type: 'deconv2d'
+    type: 'Conv2DTranspose'
     options:
       filters: 32
       kernel_size: 3
       strides: 1
   deconv_2:
-    type: 'deconv2d'
+    type: 'Conv2DTranspose'
     options:
       filters: 32
       kernel_size: 3
       strides: 2
+      padding: 'same'
   deconv_3:
-    type: 'deconv2d'
+    type: 'Conv2DTranspose'
     options:
       filters: 16
       kernel_size: 3
       strides: 2
+      padding: 'same'
   deconv_4:
-    type: 'deconv2d'
+    type: 'Conv2DTranspose'
     options:
-      filters: 2
+      filters: 1
       kernel_size: 3
       strides: 2
-    activation: 'identity'
+      padding: 'same'
+      activation: 
+        type: 'linear'
