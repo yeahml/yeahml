@@ -1,9 +1,10 @@
-import tensorflow as tf
 from inspect import getmembers, isfunction
 
-from yeahml.config.helper import parse_yaml_from_path
-from yeahml.build.layers.config import return_available_layers
+import tensorflow as tf
+
 from yeahml.build.layers import config
+from yeahml.build.layers.config import return_available_layers
+from yeahml.config.helper import parse_yaml_from_path
 from yeahml.config.hidden.config import DEFAULT_ACT
 
 

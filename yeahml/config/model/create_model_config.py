@@ -1,10 +1,12 @@
-import numpy as np
 import os
+
+import numpy as np
+
+from yeahml.config.model.components.data import parse_data
+from yeahml.config.model.components.hyper_parameters import parse_hyper_parameters
 
 # components
 from yeahml.config.model.components.overall import parse_overall
-from yeahml.config.model.components.data import parse_data
-from yeahml.config.model.components.hyper_parameters import parse_hyper_parameters
 
 # from yeahml.config.components.hidden import parse_hidden
 
