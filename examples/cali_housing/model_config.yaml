@@ -2,18 +2,19 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'cali_housing'
-  loss_fn: 'RMSE'
+  loss_fn: 
+    type: 'mean_squared_error'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
   logging:
     console:
-      level: 'critical'
+      level: 'info'
     file:
-      level: 'debug'
+      level: 'ERROR'
     graph_spec: True
   metrics:
-    type: 'regression'
+    type: ['MeanAbsoluteError']
 data:
   in: 
     dim: [8]
@@ -38,15 +39,17 @@ data:
     validation: 'final_validation.tfrecords'
     test: 'final_test.tfrecords'
 hyper_parameters:
-  optimizer: 'adam'
-  lr: 0.005
+  optimizer: 
+    type: 'adam'
+    learning_rate: 0.005
   batch_size: 32
-  epochs: 20 # 200 epochs = 3:47min on 1080ti, 5 = ~5sec on cpu
-  default_activation: 'elu'
+  epochs: 20 # 200 epochs = 3:47min on 1080ti, 5epocs = ~5sec on cpu
+  default_activation: 
+    type: 'elu'
   shuffle_buffer: 128
-  early_stopping:
-    epochs: 10
-    warm_up_epochs: 5
+  # early_stopping:
+  #   epochs: 10
+  #   warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)

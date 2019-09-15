@@ -276,6 +276,7 @@ At the moment the project is being developed around a binary image classificatio
 - logic that if a layer name is the same, a _n will be appended?
 - logic that recommends changing the layer name to the correct spelling. e.g. batch_normalization to BatchNormalization or batchmormalization (m vs n typo) to BatchNormalization
 - shape of layers does not appear when building the network.. tf1 had this by default, but this logic will need to be changed for tf2
+- it might make sense for the final layer to require an activation function to be specified.. it may also be smart to have the name of the layer named "output" (or similar), not sure.
 
 ### TODO: stretch
 

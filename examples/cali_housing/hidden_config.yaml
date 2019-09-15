@@ -14,24 +14,39 @@ layers:
     type: 'dense'
     options:
       units: 64
-      dropout: 0.6
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
   dense_2:
     type: 'dense'
     options:
       units: 32
-      dropout: 0.6
+  dropout_2:
+    type: 'dropout'
+    options:
+      rate: 0.5
   dense_3:
     type: 'dense'
     options:
       units: 32
-      dropout: 0.6
+  dropout_3:
+    type: 'dropout'
+    options:
+      rate: 0.5
   dense_4:
     type: 'dense'
     options:
       units: 16
-      dropout: 0.6
+  dropout_4:
+    type: 'dropout'
+    options:
+      rate: 0.5
   dense_5:
     type: 'dense'
     options:
       units: 16
-      dropout: 0.6
+  dense_out:
+    type: 'dense'
+    options:
+      units: 1
