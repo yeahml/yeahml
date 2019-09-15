@@ -1,6 +1,7 @@
 import logging
 import os
 
+
 # this may be a "dumb" way of accomplishing this, but I want to wait until
 # the modules are implemented correctly
 def config_logger(MCd: dict, log_type: str):
@@ -115,4 +116,3 @@ def config_logger(MCd: dict, log_type: str):
         return preds_logger
     else:
         raise ValueError(f"can't get this logger type: {log_type}")
-
