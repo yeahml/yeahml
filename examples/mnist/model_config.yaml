@@ -32,7 +32,7 @@ data:
   label:
     dim: [10]
     dtype: 'float32'
-    one_hot: True
+    one_hot: True # TODO: ensure this is being used
   TFR_parse:
     feature:
       name: "/image"

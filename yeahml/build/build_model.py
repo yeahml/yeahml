@@ -1,11 +1,8 @@
 import tensorflow as tf
-import sys
 
 from yeahml.build.build_layers import build_hidden_block
-from yeahml.build.get_components import get_tf_dtype
 
 # from yeahml.build.get_components import get_logits_and_preds
-from yeahml.helper import fmt_tensor_info
 from yeahml.log.yf_logging import config_logger
 
 

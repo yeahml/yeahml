@@ -2,24 +2,26 @@
 # TODO: naming/structure will need to be improved
 overall:
   name: 'cats_v_dogs'
-  loss_fn: 'sigmoid'
+  loss_fn: 
+    type: 'binary_crossentropy'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
   # trace: Null
   logging:
     console:
-      level: 'critical'
+      level: 'info'
       format_str: null
     file:
       level: 'debug'
       format_str: null
     graph_spec: True
+  metrics:
+    type: ["BinaryAccuracy"]
     # TODO: preds
     # TODO: preds csv? w/fmt string
-  num_classes: 1
-  metrics:
-    type: 'classification'
+  #num_classes: 1
+  
 data:
   in: 
     dim: [150, 150, 3]
@@ -43,24 +45,26 @@ data:
     train: 'train.tfrecords'
     validation: 'val.tfrecords'
     test: 'test.tfrecords'
-  image:
-    standardize: True
-    augmentation:
-      aug_val: True
-      v_flip: True
-      h_flip: True
-      #rotate: 0
-      max_brightness: 0.2
+  # image:
+  #   standardize: True
+  #   augmentation:
+  #     aug_val: True
+  #     v_flip: True
+  #     h_flip: True
+  #     #rotate: 0
+  #     max_brightness: 0.2
 hyper_parameters:
-  optimizer: 'adam'
-  lr: 0.0001
+  optimizer: 
+    type: 'adam'
+    learning_rate: 0.001
   batch_size: 32
-  epochs: 20
-  default_activation: 'elu'
+  epochs: 4
+  default_activation: 
+    type: 'elu'
   shuffle_buffer: 128
-  early_stopping:
-    epochs: 3
-    warm_up_epochs: 5
+  # early_stopping:
+  #   epochs: 3
+  #   warm_up_epochs: 5
 hidden:
   # TODO: maybe this could also be a .py file containing a graph
   # > (clear input/output would need to be defined)

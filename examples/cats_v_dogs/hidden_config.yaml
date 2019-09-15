@@ -10,19 +10,22 @@
 
 layers:
   batch_norm_0:
-    type: 'batch_normalization'
+    type: 'batchnormalization'
   conv_1:
     type: 'conv2d'
     options:
       filters: 16
       kernel_size: 3
       strides: 2
+      activation:
+        type: 'elu'
   batch_norm_1:
-    type: 'batch_normalization'
+    type: 'batchnormalization'
   pool_1:
-    type: 'pooling2d'
+    type: 'AveragePooling2D'
     options:
-      pool_type: "avg"
+      pool_size: 2
+      strides: 2
   conv_2:
     type: 'conv2d'
     options:
@@ -30,9 +33,12 @@ layers:
       kernel_size: 3
       strides: 1
   batch_norm_2:
-    type: 'batch_normalization'
+    type: 'batchnormalization'
   pool_2:
-    type: 'pooling2d'
+    type: 'AveragePooling2D'
+    options:
+      pool_size: 2
+      strides: 2
   conv_3:
     type: 'conv2d'
     options:
@@ -40,21 +46,39 @@ layers:
       kernel_size: 3
       strides: 1
   batch_norm_3:
-    type: 'batch_normalization'
+    type: 'batchnormalization'
   pool_3:
-    type: 'pooling2d'
+    type: 'MaxPooling2D'
     options:
-      pool_type: "max"
-      dropout: 0.5
+      pool_size: 2
+      strides: 2
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  flatten_1:
+    type: 'flatten'
   dense_1:
     type: 'dense'
     options:
       units: 64
-      dropout: 0.5
+  dropout_2:
+    type: 'dropout'
+    options:
+      rate: 0.5
   batch_norm_4:
-    type: 'batch_normalization'
+    type: 'batchnormalization'
   dense_2:
     type: 'dense'
     options:
       units: 16
-      dropout: 0.5
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  dense_out:
+    type: 'dense'
+    options:
+      units: 1
+      activation:
+        type: 'sigmoid'

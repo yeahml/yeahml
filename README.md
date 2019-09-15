@@ -273,6 +273,9 @@ At the moment the project is being developed around a binary image classificatio
 - Create data_config file option (`path`, e.g. model_config:data:path) if the path is present, use it and make sure no other fields are filled
 - Create hyperparam_config file option (`path`, e.g. model_config:hyperparam:path) if the path is present, use it and make sure no other fields are filled
 - update to pathlib.Path
+- logic that if a layer name is the same, a _n will be appended?
+- logic that recommends changing the layer name to the correct spelling. e.g. batch_normalization to BatchNormalization or batchmormalization (m vs n typo) to BatchNormalization
+- shape of layers does not appear when building the network.. tf1 had this by default, but this logic will need to be changed for tf2
 
 ### TODO: stretch
 
