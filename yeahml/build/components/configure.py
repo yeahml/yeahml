@@ -1,5 +1,5 @@
-import types
 import functools
+import types
 
 
 def copy_func(f):
@@ -17,4 +17,3 @@ def copy_func(f):
     g = functools.update_wrapper(g, f)
     g.__kwdefaults__ = f.__kwdefaults__
     return g
-

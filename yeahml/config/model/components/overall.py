@@ -1,5 +1,7 @@
-import numpy as np
 import os
+
+import numpy as np
+
 from yeahml.config.helper import create_standard_dirs
 
 

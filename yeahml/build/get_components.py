@@ -1,6 +1,6 @@
-import tensorflow as tf
-
 from typing import Any
+
+import tensorflow as tf
 
 
 def get_tf_dtype(dtype: str):
@@ -44,4 +44,3 @@ def get_lr_schedule():
 #     logger.debug("pred created as {}: {}".format(loss_str, preds))
 
 #     return (logits, preds)
-

@@ -1,8 +1,9 @@
-import tensorflow as tf
-import pickle
-from tqdm import tqdm
 import os
+import pickle
 import random
+
+import tensorflow as tf
+from tqdm import tqdm
 
 from yeahml.build.get_components import get_tf_dtype
 
@@ -176,4 +177,3 @@ def return_batched_iter(set_type: str, MCd: dict, tfr_f_path):
     # iterator = dataset.make_initializable_iterator()
 
     return dataset
-

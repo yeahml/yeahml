@@ -1,13 +1,13 @@
-import tensorflow as tf
 import os
-import numpy as np
 from typing import Any
 
+import numpy as np
+import tensorflow as tf
+
+from yeahml.build.components.loss import configure_loss
+from yeahml.build.components.metrics import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.log.yf_logging import config_logger  # custom logging
-
-from yeahml.build.components.metrics import configure_metric
-from yeahml.build.components.loss import configure_loss
 
 
 @tf.function
@@ -83,4 +83,3 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
     # TODO: log each instance
 
     return eval_dict
-

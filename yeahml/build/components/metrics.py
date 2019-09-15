@@ -1,6 +1,8 @@
-import tensorflow as tf
-from typing import Any
 import inspect
+from typing import Any
+
+import tensorflow as tf
+
 from yeahml.build.components.configure import copy_func
 
 

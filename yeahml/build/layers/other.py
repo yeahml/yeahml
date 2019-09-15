@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from yeahml.helper import fmt_tensor_info
 
 
@@ -90,4 +91,3 @@ def build_flatten_layer(opts: dict, name: str, logger, g_logger):
     logger.debug(f"[End] building: {name}")
 
     return out
-
