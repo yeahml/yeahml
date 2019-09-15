@@ -18,9 +18,11 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
     # NOTE: only allow one loss
     loss_avg(loss)
 
+    # TODO: log outputs
+
     # TODO: ensure pred, gt order
     for eval_metric_fn in metric_fns:
-        eval_metric_fn(prediction, y_batch)
+        eval_metric_fn(y_batch, prediction)
 
 
 def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
