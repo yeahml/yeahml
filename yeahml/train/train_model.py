@@ -22,7 +22,6 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
         prediction = model(x_batch)
 
         # TODO: apply mask?
-
         loss = loss_fn(y_batch, prediction)
 
     grads = tape.gradient(loss, model.trainable_variables)
@@ -33,7 +32,7 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
     # TODO: ensure pred, gt order
     for train_metric in metrics:
-        train_metric(prediction, y_batch)
+        train_metric(y_batch, prediction)
 
 
 @tf.function
@@ -46,7 +45,7 @@ def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
 
     # TODO: ensure pred, gt order
     for val_metric in metrics:
-        val_metric(prediction, y_batch)
+        val_metric(y_batch, prediction)
 
 
 def train_model(model, MCd: dict, HCd: dict) -> dict:
