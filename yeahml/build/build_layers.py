@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, List
 
 from yeahml.build.components.activation import _configure_activation
@@ -11,9 +12,38 @@ from yeahml.build.layers.other import (
 from yeahml.helper import fmt_tensor_info
 
 
+def log_and_time_layer_build(func):
+    def function_wrapper(*args, **kwargs):
+
+        # TODO: this is currently hardcoded and dangerous.. are kwargs the answer?
+        ltype = args[0]
+        opts = args[1]
+        l_name = args[2]
+        logger = args[3]
+        g_logger = args[4]
+
+        logger.debug(
+            f"START ({func.__name__}):  {l_name} type:({ltype}), opts:({opts})"
+        )
+        start_time = datetime.now()
+        out = func(*args, **kwargs)
+        end_time = datetime.now()
+        logger.debug(
+            f"[End] ({func.__name__}): {l_name} - build duration: ({(end_time - start_time).total_seconds()})"
+        )
+        g_logger.info(f"{fmt_tensor_info(out)}")
+
+        return out
+
+    return function_wrapper
+
+
+@log_and_time_layer_build
 def build_layer(ltype, opts, l_name, logger, g_logger):
 
     # TODO: could place a ltype = get_ltype_mapping() here
+    # NOTE: this in LAYER_FUNCTIONS.keys() is a check that should already
+    # be caught when creating the config
     LAYER_FUNCTIONS = return_available_layers()
     if ltype in LAYER_FUNCTIONS.keys():
         func = LAYER_FUNCTIONS[ltype]["function"]
@@ -24,13 +54,13 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
             pass
 
         # TODO: name should be set earlier, as an opts?
-        logger.debug(f"-> START building: {l_name}")
         if opts:
             # TODO: encapsulate this logic, expand as needed
             # could also implement a check upfront to see if the option is valid
             # functions to configure
             for o in opts:
                 try:
+                    # TODO: .endswith("_regularizer")?
                     if (
                         o == "kernel_regularizer"
                         or o == "bias_regularizer"
@@ -52,7 +82,6 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
             cur_layer = func(**opts, name=l_name)
         else:
             cur_layer = func(name=l_name)
-        g_logger.info(f"{fmt_tensor_info(cur_layer)}")
 
     return cur_layer
 
@@ -68,9 +97,7 @@ def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
         layer_info = HCd["layers"][str(l_name)]
         opts = layer_info["options"]
         ltype = layer_info["type"].lower()
-        logger.debug(f"-> START building: {l_name} ({ltype}) opts: {layer_info}")
         cur_layer = build_layer(ltype, opts, l_name, logger, g_logger)
-        logger.debug(f"[End] building: {cur_layer}")
 
         # elif ltype == "embedding":
         #     cur_layer = build_embedding_layer(opts, l_name, logger, g_logger)
