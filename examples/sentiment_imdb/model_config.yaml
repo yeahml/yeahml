@@ -1,21 +1,21 @@
 overall:
   name: 'sentiment_imdb'
-  loss_fn: 'sigmoid'
+  loss_fn: 
+    type: 'binary_crossentropy'
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
   # trace: Null
   logging:
     console:
-      level: 'critical'
+      level: 'debug'
       format_str: null
     file:
       level: 'debug'
       format_str: null
     graph_spec: True
   metrics: 
-    type: 'classification'
-  num_classes: 1 # TODO: this should be inferred for sigmoid
+    type: ["BinaryAccuracy"]
 data:
   in: 
     dim: [256]
@@ -40,11 +40,13 @@ data:
     validation: 'val.tfrecords'
     test: 'test.tfrecords'
 hyper_parameters:
-  optimizer: 'adam'
-  lr: 0.0001
+  optimizer: 
+    type: 'adam'
+    learning_rate: 0.001
   batch_size: 32
   epochs: 10
-  default_activation: 'elu'
+  default_activation: # TODO: fix this dep
+    type: 'elu'
   shuffle_buffer: 128
   # early_stopping:
   #   epochs: 3

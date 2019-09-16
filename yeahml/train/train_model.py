@@ -113,7 +113,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         for val_metric in val_metric_fns:
             val_metric.reset_states()
 
-        # logger.debug("-> START iterating training dataset")
+        logger.debug("-> START iterating training dataset")
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
             train_step(
                 model,
@@ -124,10 +124,10 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
                 avg_train_loss,
                 train_metric_fns,
             )
-        # logger.debug("-> END iterating training dataset")
+        logger.debug("-> END iterating training dataset")
 
         # iterate validation after iterating entire training.. this will/should change
-        # logger.debug("-> START iterating validation dataset")
+        logger.debug("-> START iterating validation dataset")
         for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
             val_step(
                 model,
@@ -137,6 +137,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
                 avg_val_loss,
                 val_metric_fns,
             )
+        logger.debug("-> END iterating validation dataset")
 
         # check save best metrics
         cur_val_loss_ = avg_val_loss.result().numpy()
@@ -144,8 +145,6 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
             best_val_loss = cur_val_loss_
             model.save_weights(MCd["save_weights_path"])
             logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
-
-        # logger.debug("-> END iterating validation dataset")
 
         # TODO: loop metrics
         cur_train_loss_ = avg_train_loss.result().numpy()

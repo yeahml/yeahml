@@ -13,34 +13,19 @@ layers:
   embedding:
     type: 'embedding'
     options:
-      vocabulary_size: 10000
-      embedding_size: 16
-  # pool_global_1:
-  #   type: 'pooling'
-  #   options:
-  #     global: True
-  #     dimension: 1
-  #     avg_max: avg
-  #     pool_size: 3
-  #     strides: 3
-  bi_rnn:
-    type: 'recurrent'
+      input_dim: 20000
+      output_dim: 128
+  lstm_1:
+    type: 'LSTM'
     options:
-      cell_type: 'gru'
-      num_layers: 1
-      bidirectional: False
-      #use_peepholes: True
-      num_neurons: 3
-      keep_prob: 0.9
-      condense_out:
-        units: 1
-        dropout: 0.2
-        trainable: True
-  dense_2:
+      units: 128
+      dropout: 0.2
+      recurrent_dropout: 0.2
+      activation:
+        type: 'tanh'
+  dense_3_output:
     type: 'dense'
     options:
-      units: 8
-      dropout: 0.2
-      trainable: True
-  batch_norm:
-    type: 'batch_normalization'
+      units: 1
+      activation:
+        type: 'sigmoid'
