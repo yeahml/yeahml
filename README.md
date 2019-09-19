@@ -37,27 +37,27 @@ The core implementation is as follows:
 import yeahml as yml
 
 ## parse config files
-model_config, hidden_config = yml.create_model_and_hidden_config(
-    "./examples/cats_v_dogs_01/model_config.yaml"
+main_cdict, model_cdict = yml.create_configs(
+    "./examples/cats_v_dogs_01/main_config.yaml"
 )
 
 ## build graph
-g = yml.build_graph(model_config, hidden_config)
+g = yml.build_graph(main_cdict, model_cdict)
 
 ## train graph
-train_dict = yml.train_graph(g, model_config, hidden_config)
+train_dict = yml.train_graph(g, main_cdict, model_cdict)
 # train_dict contains metrics from training and validation
 
 ## evaluate graph
-eval_dict = yml.eval_graph_from_saver(model_config)
+eval_dict = yml.eval_graph_from_saver(main_cdict)
 # eval_dict contains metrics from the test set
 ```
 
-Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_config.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
+Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_cdict.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). Additional information, such as documentation for the currently supported layer types [conv2d](./docs/configuration_files/layers/conv2d.md), [pooling](./docs/configuration_files/layers/pooling2d.md), and [dense](./docs/configuration_files/layers/dense.md) are also included.
 
 ## [Examples](./examples)
 
-To help people get started, on a variety of different tasks, there are included examples in the [./examples](./examples) directory.  Each notebook contains a [`model_config`](./docs/configuration_files/model_config.md) file, a [`hidden_config`](./docs/configuration_files/hidden_config.md) file, and a directory called `make_records` that will create `.tfrecords`.
+To help people get started, on a variety of different tasks, there are included examples in the [./examples](./examples) directory.  Each notebook contains a [`model_cdict`](./docs/configuration_files/model_cdict.md) file, a [`hidden_config`](./docs/configuration_files/hidden_config.md) file, and a directory called `make_records` that will create `.tfrecords`.
 
 The current examples are:
 
@@ -270,8 +270,8 @@ At the moment the project is being developed around a binary image classificatio
 - make sure all layer names are unique - could check against set
 - convert to f-string
 - Ensure dropout is only active during training
-- Create data_config file option (`path`, e.g. model_config:data:path) if the path is present, use it and make sure no other fields are filled
-- Create hyperparam_config file option (`path`, e.g. model_config:hyperparam:path) if the path is present, use it and make sure no other fields are filled
+- Create data_config file option (`path`, e.g. model_cdict:data:path) if the path is present, use it and make sure no other fields are filled
+- Create hyperparam_config file option (`path`, e.g. model_cdict:hyperparam:path) if the path is present, use it and make sure no other fields are filled
 - update to pathlib.Path
 - logic that if a layer name is the same, a _n will be appended?
 - logic that recommends changing the layer name to the correct spelling. e.g. batch_normalization to BatchNormalization or batchmormalization (m vs n typo) to BatchNormalization

@@ -123,31 +123,31 @@ def _parse_function(
     return image, label
 
 
-def return_batched_iter(set_type: str, MCd: dict, tfr_f_path):
+def return_batched_iter(set_type: str, main_cdict: dict, tfr_f_path):
 
     try:
-        aug_opts = MCd["augmentation"]
+        aug_opts = main_cdict["augmentation"]
     except KeyError:
         aug_opts = None
 
     try:
-        standardize_img = MCd["image_standardize"]
+        standardize_img = main_cdict["image_standardize"]
     except KeyError:
         standardize_img = False
 
     # TODO: revamp this. This calculation should be performed in the parse fn
     # the config file will also need to be adjusted
-    if MCd["reshape_in_to"]:
-        parse_shape = MCd["reshape_in_to"]
-        if MCd["reshape_in_to"][0] != -1:
-            parse_shape = MCd["reshape_in_to"]
+    if main_cdict["reshape_in_to"]:
+        parse_shape = main_cdict["reshape_in_to"]
+        if main_cdict["reshape_in_to"][0] != -1:
+            parse_shape = main_cdict["reshape_in_to"]
         else:  # e.g. [-1, 28, 28, 1]
-            parse_shape = MCd["reshape_in_to"][1:]
+            parse_shape = main_cdict["reshape_in_to"][1:]
     else:
-        if MCd["in_dim"][0]:
-            parse_shape = MCd["in_dim"]
+        if main_cdict["in_dim"][0]:
+            parse_shape = main_cdict["in_dim"]
         else:  # e.g. [None, 28, 28, 1]
-            parse_shape = MCd["in_dim"][1:]
+            parse_shape = main_cdict["in_dim"][1:]
     # parse_shape = list(parse_shape)
 
     # TODO: implement directory or files logic
@@ -160,20 +160,20 @@ def return_batched_iter(set_type: str, MCd: dict, tfr_f_path):
             standardize_img,
             aug_opts,
             parse_shape,
-            MCd["label_one_hot"],
-            MCd["output_dim"][-1],  # used for one_hot encoding
-            MCd["data_in_dict"],
-            MCd["data_out_dict"],
-            MCd["TFR_parse"],
+            main_cdict["label_one_hot"],
+            main_cdict["output_dim"][-1],  # used for one_hot encoding
+            main_cdict["data_in_dict"],
+            main_cdict["data_out_dict"],
+            main_cdict["TFR_parse"],
         )
     )  # Parse the record into tensors.
     if set_type == "train":
-        dataset = dataset.shuffle(buffer_size=MCd["shuffle_buffer"])
+        dataset = dataset.shuffle(buffer_size=main_cdict["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
     # prefetch is used to ensure one batch is always ready
     # TODO: this prefetch should have some logic based on the
     # system environment, batchsize, and data size
-    dataset = dataset.batch(MCd["batch_size"]).prefetch(1)
+    dataset = dataset.batch(main_cdict["batch_size"]).prefetch(1)
     dataset = dataset.repeat(1)
 
     # iterator = dataset.make_initializable_iterator()

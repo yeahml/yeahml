@@ -11,31 +11,32 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 ## Core Logic
 
 ## Config files for currently supported modes
-# example = "./examples/cats_v_dogs/model_config.yaml"  # sigmoid example
-# example = "./examples/cats_v_dogs/model_config.json"
-# example = "./examples/mnist/model_config.yaml"  # softmax example
-# example = "./examples/cali_housing/model_config.yaml"  # regression example
-# example = "./examples/segmentation/model_config.yaml"  # binary segmentation example
+# NOTE the model_cdict.yaml will need to be updated to model_cdict.yaml
+# I'm leaving the names as is as a way to mark which examples I need to update
+# example = "./examples/cats_v_dogs/model_cdict.yaml"  # sigmoid example
+example = "./examples/mnist/main_config.yaml"  # softmax example
+# example = "./examples/cali_housing/model_cdict.yaml"  # regression example
+# example = "./examples/segmentation/model_cdict.yaml"  # binary segmentation example
 # example = (
-#     "./examples/multi_segmentation/model_config.yaml"
+#     "./examples/multi_segmentation/model_cdict.yaml"
 # )  # multi segmentation example
-example = "./examples/sentiment_imdb/model_config.yaml"  # sentiment analysis example
-model_config, hidden_config = yml.create_model_and_hidden_config(example)
+# example = "./examples/sentiment_imdb/model_cdict.yaml"  # sentiment analysis example
+main_cdict, model_cdict = yml.create_configs(example)
 
 
 ## build graph
-model = yml.build_model(model_config, hidden_config)
+model = yml.build_model(main_cdict, model_cdict)
 
 ## train graph
-train_dict = yml.train_model(model, model_config, hidden_config)
+train_dict = yml.train_model(model, main_cdict, model_cdict)
 print(train_dict)
 
 # ## evaluate graph
-# # yml.eval_graph(g, model_config) # not currently implemented (use eval_graph_from_saver)
+# # yml.eval_graph(g, model_cdict) # not currently implemented (use eval_graph_from_saver)
 # # same as eval_graph(), but will not require manual graph creation
 # # > will load a graph from the saver path (if present)
 eval_dict = yml.eval_model(
-    model, model_config  # "./examples/mnist/saved_params/best_params_saver.h5"
+    model, main_cdict  # "./examples/mnist/saved_params/best_params_saver.h5"
 )
 print(eval_dict)
 

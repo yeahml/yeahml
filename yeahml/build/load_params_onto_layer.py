@@ -1,7 +1,7 @@
 # import tensorflow as tf
 
 
-# def init_params_from_file(sess, MCd: dict, HCd: dict):
+# def init_params_from_file(sess, main_cdict: dict, model_cdict: dict):
 
 #     # TODO: if a special path is listed to load vars from for a particular layer,
 #     # a second init is needed. I don't think this use case will be very common
@@ -9,13 +9,13 @@
 
 #     FULL_ERROR = True
 #     load_names, layer_tensor_params = [], []
-#     for l_name in HCd["layers"]:
+#     for l_name in model_cdict["layers"]:
 #         try:
-#             if HCd["layers"][l_name]["saver"]["load_params"]:
+#             if model_cdict["layers"][l_name]["saver"]["load_params"]:
 #                 # set name to load var from the indicated path, will default to
 #                 # the current name of the layer
 #                 try:
-#                     load_name = HCd["layers"][l_name]["saver"]["load_name"]
+#                     load_name = model_cdict["layers"][l_name]["saver"]["load_name"]
 #                     if load_name == None:
 #                         load_name = l_name
 #                 except KeyError:
@@ -23,9 +23,9 @@
 #                 # set the path from which to load the variables. The default path
 #                 # is set in the model config but an option is presented to load from other files
 #                 # try:
-#                 #    load_path = HCd["layers"][l_name]["saver"]["load_path"]
+#                 #    load_path = model_cdict["layers"][l_name]["saver"]["load_path"]
 #                 # except KeyError:
-#                 #    load_name = MCd["load_params_path"]
+#                 #    load_name = main_cdict["load_params_path"]
 
 #                 try:
 #                     name_str = "{}".format(l_name)
@@ -66,7 +66,7 @@
 #     if len(init_vars) > 0:
 #         restore_saver = tf.train.Saver(init_vars)
 #         try:
-#             restore_saver.restore(sess, MCd["load_params_path"])
+#             restore_saver.restore(sess, main_cdict["load_params_path"])
 #         except tf.errors.InvalidArgumentError as err:
 #             if FULL_ERROR:
 #                 print(err)

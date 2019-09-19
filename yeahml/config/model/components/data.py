@@ -2,32 +2,32 @@
 
 
 def parse_data(MC: dict) -> dict:
-    MCd = {}
+    main_cdict = {}
     ## inputs
     # TODO: this is sloppy...
     # copy is used to prevent overwriting underlying data
-    MCd["input_layer_dim"] = None
-    MCd["in_dim"] = MC["data"]["in"]["dim"].copy()
-    if MCd["in_dim"][0]:  # as oppposed to [None, x, y, z]
-        MCd["in_dim"].insert(0, None)  # add batching
-    MCd["in_dtype"] = MC["data"]["in"]["dtype"]
+    main_cdict["input_layer_dim"] = None
+    main_cdict["in_dim"] = MC["data"]["in"]["dim"].copy()
+    if main_cdict["in_dim"][0]:  # as oppposed to [None, x, y, z]
+        main_cdict["in_dim"].insert(0, None)  # add batching
+    main_cdict["in_dtype"] = MC["data"]["in"]["dtype"]
     try:
-        MCd["reshape_in_to"] = MC["data"]["in"]["reshape_to"]
-        if MCd["reshape_in_to"][0] != -1:  # as oppposed to [None, x, y, z]
-            MCd["reshape_in_to"].insert(0, -1)  # -1
+        main_cdict["reshape_in_to"] = MC["data"]["in"]["reshape_to"]
+        if main_cdict["reshape_in_to"][0] != -1:  # as oppposed to [None, x, y, z]
+            main_cdict["reshape_in_to"].insert(0, -1)  # -1
     except KeyError:
         # None in this case is representative of not reshaping
-        MCd["reshape_in_to"] = None
-    if MCd["reshape_in_to"]:
-        MCd["input_layer_dim"] = MC["data"]["in"]["reshape_to"]
+        main_cdict["reshape_in_to"] = None
+    if main_cdict["reshape_in_to"]:
+        main_cdict["input_layer_dim"] = MC["data"]["in"]["reshape_to"]
     else:
-        MCd["input_layer_dim"] = MC["data"]["in"]["dim"].copy()
+        main_cdict["input_layer_dim"] = MC["data"]["in"]["dim"].copy()
 
     # copy is used to prevent overwriting underlying data
-    MCd["output_dim"] = MC["data"]["label"]["dim"].copy()
-    if MCd["output_dim"][0]:  # as oppposed to [None, x, y, z]
-        MCd["output_dim"].insert(0, None)  # add batching
-    MCd["label_dtype"] = MC["data"]["label"]["dtype"]
+    main_cdict["output_dim"] = MC["data"]["label"]["dim"].copy()
+    if main_cdict["output_dim"][0]:  # as oppposed to [None, x, y, z]
+        main_cdict["output_dim"].insert(0, None)  # add batching
+    main_cdict["label_dtype"] = MC["data"]["label"]["dtype"]
 
     try:
         temp_one_hot = MC["data"]["label"]["one_hot"]
@@ -35,31 +35,31 @@ def parse_data(MC: dict) -> dict:
             raise ValueError(
                 f"Error > Exiting: data:label:one_hot {temp_one_hot} unsupported. Please use True or False"
             )
-        MCd["label_one_hot"] = temp_one_hot
+        main_cdict["label_one_hot"] = temp_one_hot
     except KeyError:
         # None in this case is representative of not using one hot encoding
-        MCd["label_one_hot"] = False
+        main_cdict["label_one_hot"] = False
 
     # currently required
-    MCd["TFR_dir"] = MC["data"]["TFR"]["dir"]
-    MCd["TFR_train"] = MC["data"]["TFR"]["train"]
-    MCd["TFR_test"] = MC["data"]["TFR"]["test"]
-    MCd["TFR_val"] = MC["data"]["TFR"]["validation"]
+    main_cdict["TFR_dir"] = MC["data"]["TFR"]["dir"]
+    main_cdict["TFR_train"] = MC["data"]["TFR"]["train"]
+    main_cdict["TFR_test"] = MC["data"]["TFR"]["test"]
+    main_cdict["TFR_val"] = MC["data"]["TFR"]["validation"]
 
     # TODO: this is a first draft for this type of organization and will
     # will likely be changed
-    MCd["data_in_dict"] = MC["data"]["in"]
-    MCd["data_out_dict"] = MC["data"]["label"]
-    MCd["TFR_parse"] = MC["data"]["TFR_parse"]
+    main_cdict["data_in_dict"] = MC["data"]["in"]
+    main_cdict["data_out_dict"] = MC["data"]["label"]
+    main_cdict["TFR_parse"] = MC["data"]["TFR_parse"]
 
     try:
-        MCd["augmentation"] = MC["data"]["image"]["augmentation"]
+        main_cdict["augmentation"] = MC["data"]["image"]["augmentation"]
     except KeyError:
         pass
 
     try:
-        MCd["image_standardize"] = MC["data"]["image"]["standardize"]
+        main_cdict["image_standardize"] = MC["data"]["image"]["standardize"]
     except KeyError:
         pass
 
-    return MCd
+    return main_cdict

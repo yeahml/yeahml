@@ -48,25 +48,25 @@ def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
         val_metric(y_batch, prediction)
 
 
-def train_model(model, MCd: dict, HCd: dict) -> dict:
+def train_model(model, main_cdict: dict, model_cdict: dict) -> dict:
     return_dict = {}
 
-    logger = config_logger(MCd, "train")
+    logger = config_logger(main_cdict, "train")
     logger.info("-> START training graph")
 
     # get model
     # get optimizer
 
     # TODO: config optimizer (follow template for losses)
-    optim_dict = return_optimizer(MCd["optimizer_dict"]["type"])
+    optim_dict = return_optimizer(main_cdict["optimizer_dict"]["type"])
     optimizer = optim_dict["function"]
     ## configure optimizer
-    temp_dict = MCd["optimizer_dict"].copy()
+    temp_dict = main_cdict["optimizer_dict"].copy()
     temp_dict.pop("type")
     optimizer = optimizer(**temp_dict)
 
     # get loss function
-    loss_object = configure_loss(MCd["loss_fn"])
+    loss_object = configure_loss(main_cdict["loss_fn"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
@@ -76,8 +76,8 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
     train_metric_fns = []
     val_metric_fns = []
     metric_order = []
-    met_opts = MCd["met_opts_list"]
-    for i, metric in enumerate(MCd["met_list"]):
+    met_opts = main_cdict["met_opts_list"]
+    for i, metric in enumerate(main_cdict["met_list"]):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:
@@ -94,17 +94,17 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         metric_order.append(metric)
 
     # get datasets
-    tfr_train_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
-    train_ds = return_batched_iter("train", MCd, tfr_train_path)
+    tfr_train_path = os.path.join(main_cdict["TFR_dir"], main_cdict["TFR_train"])
+    train_ds = return_batched_iter("train", main_cdict, tfr_train_path)
 
-    tfr_val_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
-    val_ds = return_batched_iter("train", MCd, tfr_val_path)
+    tfr_val_path = os.path.join(main_cdict["TFR_dir"], main_cdict["TFR_train"])
+    val_ds = return_batched_iter("train", main_cdict, tfr_val_path)
 
     # train loop
     best_val_loss = np.inf
     steps, train_losses, val_losses = [], [], []
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
-    for e in range(MCd["epochs"]):
+    for e in range(main_cdict["epochs"]):
         # TODO: abstract to fn to clear *all* metrics and loss objects
         avg_train_loss.reset_states()
         avg_val_loss.reset_states()
@@ -143,7 +143,7 @@ def train_model(model, MCd: dict, HCd: dict) -> dict:
         cur_val_loss_ = avg_val_loss.result().numpy()
         if cur_val_loss_ < best_val_loss:
             best_val_loss = cur_val_loss_
-            model.save_weights(MCd["save_weights_path"])
+            model.save_weights(main_cdict["save_weights_path"])
             logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
 
         # TODO: loop metrics

@@ -17,23 +17,23 @@ def extract_model_dict_and_set_defaults(MC: dict) -> dict:
 
     # TODO: do type checking here... and convert all strings to lower
 
-    MCd = {}
+    main_cdict = {}
 
     # https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
 
     # overall
     overal_dict = parse_overall(MC)
-    MCd = {**MCd, **overal_dict}
+    main_cdict = {**main_cdict, **overal_dict}
 
     # data
     data_dict = parse_data(MC)
-    MCd = {**MCd, **data_dict}
+    main_cdict = {**main_cdict, **data_dict}
 
     # hyperparameters
     hyper_param_dict = parse_hyper_parameters(MC)
-    MCd = {**MCd, **hyper_param_dict}
+    main_cdict = {**main_cdict, **hyper_param_dict}
 
-    return MCd
+    return main_cdict
 
 
 # TODO: will need to implement preprocessing logic

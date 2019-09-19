@@ -1,80 +1,69 @@
-# all paths are relative to yaml/execution?
-# TODO: naming/structure will need to be improved
-overall:
-  name: 'mnist'
-  loss_fn: 
-    type: 'categorical_crossentropy'
-    #options:
-      #label_smoothing: 0.2
-  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
-  saver:
-    save_params_name: "best_params_saver"
-    # load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
-  # trace: Null
-  logging:
-    console:
-      level: 'info'
-      format_str: null
-    file:
-      level: 'ERROR'
-      format_str: null
-    graph_spec: True
-  metrics: 
-    type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
-    options: [null, 
-              {"k": 2}, 
-              null]
-data:
-  in:
-    dim: [784]
-    dtype: 'float32'
-    reshape_to: [28, 28, 1]
-  label:
-    dim: [10]
-    dtype: 'float32'
-    one_hot: True # TODO: ensure this is being used
-  TFR_parse:
-    feature:
-      name: "/image"
-      dtype: "int8"
-      tftype: "fixedlenfeature"
-      in_type: "string"
-    label:
-      name: "/label"
-      dtype: "int64" # what to decode it to
-      tftype: "fixedlenfeature"
-      in_type: "int64" # what it is encoded as
-  TFR:
-    dir: './examples/mnist/data/'
-    train: 'train.tfrecords'
-    validation: 'validation.tfrecords'
-    test: 'test.tfrecords'
-hyper_parameters:
-  optimizer: 
-    type: 'adam'
-    learning_rate: 0.0001
-  batch_size: 32
-  epochs: 1
-  default_activation: 
-    type: 'elu'
-  shuffle_buffer: 128
-  # early_stopping:
-  #   epochs: 3
-  #   warm_up_epochs: 5
-hidden:
-  # TODO: maybe this could also be a .py file containing a graph
-  # > (clear input/output would need to be defined)
-  path: './examples/mnist/hidden_config.yaml'
-# train:
-#   image_standardize: True
-  # augmentation:
-  #   aug_val: True
-  #   v_flip: True
-  #   h_flip: True
-  #   #rotate: 0
-  #   max_brightness: 0.2
+# TODO: this should be the "architecture config"
 
-# todo implement
-# advanced:
-#   resources:
-#     GPU_thresh: 0.9
+# documentation will be key - "sane" defaults
+# key: value
+# key will be the "name" of the layer, value will hold the type+
+# TODO: set *NECESSARTY/REQUIRED* params
+
+# TODO: initialization
+# TODO: option to write scalar
+# TODO: default conv = conv2d?
+# TODO: default strides = 1, padding='SAME'
+# TODO: regularization
+
+layers:
+  conv_1:
+    type: 'conv2d'
+    options:
+      filters: 32
+      kernel_size: 3
+      strides: 1
+      trainable: False
+      activation:
+        type: 'relu'
+        max_value: 6
+    #saver:
+      #load_params: True # default is False
+      #load_path: null # in case the default is not usable - TODO: implement logic
+      #load_name: null # in case of (likely) different names, current name is default
+  conv_2:
+    type: 'conv2d'
+    options:
+      filters: 64
+      kernel_size: 3
+      strides: 1
+      trainable: True
+      kernel_initializer: 
+        type: "glorot_normal"
+        options:
+          seed: 42
+      activation: 
+        type: 'relu'
+    #saver:
+      #load_params: True
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  pool_1:
+    type: 'AveragePooling2D'
+    options:
+      pool_size: 2
+      strides: 2
+  flatten_1:
+    type: 'flatten'
+  dense_1:
+    type: 'dense'
+    options:
+      units: 32
+      kernel_regularizer:
+        type: 'l1'
+        l: 0.3
+  dense_2_output:
+    type: 'dense'
+    options:
+      units: 10
+      activation:
+        type: 'softmax'
+    #saver:
+      #load_params: True

@@ -86,15 +86,15 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
     return cur_layer
 
 
-def build_hidden_block(MCd: dict, HCd: dict, logger, g_logger) -> List[Any]:
+def build_hidden_block(model_cdict: dict, logger, g_logger) -> List[Any]:
 
     logger.info("-> START building hidden block")
     HIDDEN_LAYERS = []
 
     # build each layer based on the (ordered) yaml specification
-    logger.debug(f"loop+start building layers: {HCd['layers'].keys()}")
-    for i, l_name in enumerate(HCd["layers"]):
-        layer_info = HCd["layers"][str(l_name)]
+    logger.debug(f"loop+start building layers: {model_cdict['layers'].keys()}")
+    for i, l_name in enumerate(model_cdict["layers"]):
+        layer_info = model_cdict["layers"][str(l_name)]
         opts = layer_info["options"]
         ltype = layer_info["type"].lower()
         cur_layer = build_layer(ltype, opts, l_name, logger, g_logger)
