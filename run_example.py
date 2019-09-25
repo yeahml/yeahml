@@ -1,4 +1,3 @@
-import logging
 import os
 
 import yeahml as yml
@@ -21,14 +20,14 @@ example = "./examples/mnist/main_config.yaml"  # softmax example
 #     "./examples/multi_segmentation/model_cdict.yaml"
 # )  # multi segmentation example
 # example = "./examples/sentiment_imdb/model_cdict.yaml"  # sentiment analysis example
-main_cdict, model_cdict = yml.create_configs(example)
+config_dict = yml.create_configs(example)
 
 
 ## build graph
-model = yml.build_model(main_cdict, model_cdict)
+model = yml.build_model(config_dict)
 
 ## train graph
-train_dict = yml.train_model(model, main_cdict, model_cdict)
+train_dict = yml.train_model(model, config_dict)
 print(train_dict)
 
 # ## evaluate graph
@@ -36,7 +35,7 @@ print(train_dict)
 # # same as eval_graph(), but will not require manual graph creation
 # # > will load a graph from the saver path (if present)
 eval_dict = yml.eval_model(
-    model, main_cdict  # "./examples/mnist/saved_params/best_params_saver.h5"
+    model, config_dict  # "./examples/mnist/saved_params/best_params_saver.h5"
 )
 print(eval_dict)
 

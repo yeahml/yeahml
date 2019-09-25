@@ -1,9 +1,7 @@
 # all paths are relative to yaml/execution?
 # TODO: naming/structure will need to be improved
-overall:
+meta:
   name: 'mnist'
-  loss_fn: 
-    type: 'categorical_crossentropy'
     #options:
       #label_smoothing: 0.2
   experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
@@ -11,19 +9,22 @@ overall:
     save_params_name: "best_params_saver"
     # load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
   # trace: Null
-  logging:
-    console:
-      level: 'info'
-      format_str: null
-    file:
-      level: 'ERROR'
-      format_str: null
-    graph_spec: True
-  metrics: 
-    type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
-    options: [null, 
-              {"k": 2}, 
-              null]
+logging:
+  console:
+    level: 'info'
+    format_str: null
+  file:
+    level: 'ERROR'
+    format_str: null
+  graph_spec: True
+
+performance:
+  loss_fn: 
+    type: 'categorical_crossentropy'
+  type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
+  options: [null, 
+            {"k": 2}, 
+            null]
 data:
   in:
     dim: [784]
@@ -49,6 +50,7 @@ data:
     train: 'train.tfrecords'
     validation: 'validation.tfrecords'
     test: 'test.tfrecords'
+
 hyper_parameters:
   optimizer: 
     type: 'adam'

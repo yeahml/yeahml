@@ -5,6 +5,7 @@ import yaml
 
 # helper to create dirs if they don't already exist
 def maybe_create_dir(dir_path: str) -> None:
+    # TODO: update to pathlib
     # TODO: convert to logger
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
@@ -46,6 +47,7 @@ def parse_json_from_path(path: str) -> dict:
 
 def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     # this logic is messy
+    # TODO: update to pathlib
     if wipe_dirs:
         if os.path.exists(root_dir):
             shutil.rmtree(root_dir)
