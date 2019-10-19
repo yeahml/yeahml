@@ -36,7 +36,6 @@ def format_hyper_parameters_config(raw_config: dict) -> dict:
                     f"option {opt} not available; please use one of {opt['func_args']}"
                 )
 
-    formatted_config["def_act"] = raw_config["default_activation"]
     formatted_config["shuffle_buffer"] = raw_config["shuffle_buffer"]
 
     try:

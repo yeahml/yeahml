@@ -82,14 +82,14 @@ CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "mo
 def create_configs(main_path: str) -> dict:
     main_config_raw = extract_dict_from_path(main_path)
     cur_keys = main_config_raw.keys()
-    no_keys = []
+    invalid_keys = []
     for key in CONFIG_KEYS:
         if key not in cur_keys:
-            no_keys.append(key)
+            invalid_keys.append(key)
             # not all of these *need* to be present, but for now that will be enforced
-    if no_keys:
+    if invalid_keys:
         raise ValueError(
-            f"The main config does not contain the key(s) {no_keys}: current keys: {cur_keys}"
+            f"The main config does not contain the key(s) {invalid_keys}: current keys: {cur_keys}"
         )
 
     # build dict containing configs
@@ -112,10 +112,6 @@ def create_configs(main_path: str) -> dict:
             formatted_config = format_model_config(raw_config)
         else:
             raise ValueError(f"config type {config_type} is not yet implemented")
-        print(formatted_config)
         config_dict[config_type] = formatted_config
 
-    # print(main_cdict.keys())
-    sys.exit()
-    print(config_dict)
     return config_dict

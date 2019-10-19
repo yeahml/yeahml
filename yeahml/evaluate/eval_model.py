@@ -27,7 +27,7 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
 
 def eval_model(model: Any, main_cdict: dict, weights_path: str = None) -> dict:
 
-    logger = config_logger(main_cdict, "eval")
+    logger = config_logger(meta_cdict["log_dir"], main_cdict, "eval")
 
     # load best weights
     # TODO: load specific weights according to a param

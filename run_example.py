@@ -22,9 +22,17 @@ example = "./examples/mnist/main_config.yaml"  # softmax example
 # example = "./examples/sentiment_imdb/model_cdict.yaml"  # sentiment analysis example
 config_dict = yml.create_configs(example)
 
+meta_cdict = config_dict["meta"]
+log_cdict = config_dict["logging"]
+perf_cdict = config_dict["performance"]
+data_cdict = config_dict["data"]
+hp_cdict = config_dict["hyper_parameters"]
+model_cdict = config_dict["model"]
+
 
 ## build graph
-model = yml.build_model(config_dict)
+model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
+sys.exit("model - built")
 
 ## train graph
 train_dict = yml.train_model(model, config_dict)

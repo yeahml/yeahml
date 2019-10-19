@@ -94,7 +94,7 @@ def create_layer_config(hl: dict, default_activation: str) -> dict:
 def format_model_config(raw_config: dict) -> dict:
 
     try:
-        default_activation = raw_config["meta"]["default_activation"]
+        default_activation = raw_config["meta"]["activation"]
     except KeyError:
         default_activation = DEFAULT_ACT
     # create architecture config
