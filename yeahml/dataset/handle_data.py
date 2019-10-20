@@ -123,7 +123,7 @@ def _parse_function(
     return image, label
 
 
-def return_batched_iter(set_type: str, main_cdict: dict, tfr_f_path):
+def return_batched_iter(set_type: str, main_cdict: dict, hp_cdict: dict, tfr_f_path):
 
     try:
         aug_opts = main_cdict["augmentation"]
@@ -168,12 +168,14 @@ def return_batched_iter(set_type: str, main_cdict: dict, tfr_f_path):
         )
     )  # Parse the record into tensors.
     if set_type == "train":
-        dataset = dataset.shuffle(buffer_size=main_cdict["shuffle_buffer"])
+        # TODO: try
+        # TODO: does this belong in hp_cdict?
+        dataset = dataset.shuffle(buffer_size=hp_cdict["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
     # prefetch is used to ensure one batch is always ready
     # TODO: this prefetch should have some logic based on the
     # system environment, batchsize, and data size
-    dataset = dataset.batch(main_cdict["batch_size"]).prefetch(1)
+    dataset = dataset.batch(hp_cdict["batch_size"]).prefetch(1)
     dataset = dataset.repeat(1)
 
     # iterator = dataset.make_initializable_iterator()

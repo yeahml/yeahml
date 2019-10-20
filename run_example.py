@@ -32,11 +32,14 @@ model_cdict = config_dict["model"]
 
 ## build graph
 model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
-sys.exit("model - built")
+
 
 ## train graph
-train_dict = yml.train_model(model, config_dict)
+train_dict = yml.train_model(
+    model, meta_cdict, model_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
+)
 print(train_dict)
+sys.exit("model - train")
 
 # ## evaluate graph
 # # yml.eval_graph(g, model_cdict) # not currently implemented (use eval_graph_from_saver)

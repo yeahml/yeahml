@@ -36,8 +36,6 @@ def format_hyper_parameters_config(raw_config: dict) -> dict:
                     f"option {opt} not available; please use one of {opt['func_args']}"
                 )
 
-    formatted_config["shuffle_buffer"] = raw_config["shuffle_buffer"]
-
     try:
         formatted_config["early_stopping_e"] = raw_config["early_stopping"]["epochs"]
     except KeyError:
@@ -54,4 +52,8 @@ def format_hyper_parameters_config(raw_config: dict) -> dict:
         # default behavior is to have a warm up period of 5 epochs
         # TODO: Log information - default warm_up_epochs set to 5
         formatted_config["warm_up_epochs"] = 5
+
+    # TODO: try + default
+    formatted_config["shuffle_buffer"] = raw_config["shuffle_buffer"]
+
     return formatted_config
