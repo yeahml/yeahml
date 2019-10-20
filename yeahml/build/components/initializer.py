@@ -41,8 +41,6 @@ def return_available_initializers():
     INITIALIZER_FUNCTIONS = {}
     available_keras_initializers = tf.keras.initializers.__dict__
 
-    # print(available_keras_initializers.keys())
-
     for opt_name, opt_func in available_keras_initializers.items():
         if inspect.isclass(opt_func) and issubclass(
             opt_func, tf.keras.initializers.Initializer

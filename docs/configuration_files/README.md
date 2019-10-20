@@ -2,5 +2,5 @@
 
 Documentation for the current configuration files:
 
-- [Model Configuration](./model_config.md)
-- [Architecture Configuration](./hidden_config.md)
+- [Main Configuration](./model_config.md)
+- [Model Configuration](./hidden_config.md)

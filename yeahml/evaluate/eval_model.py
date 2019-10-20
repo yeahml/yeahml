@@ -25,30 +25,38 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
         eval_metric_fn(y_batch, prediction)
 
 
-def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
+def eval_model(
+    model: Any,
+    meta_cdict,
+    log_cdict,
+    data_cdict,
+    hp_cdict,
+    perf_cdict,
+    weights_path: str = None,
+) -> dict:
 
-    logger = config_logger(MCd, "eval")
+    logger = config_logger(meta_cdict["log_dir"], log_cdict, "eval")
 
     # load best weights
     # TODO: load specific weights according to a param
     if weights_path:
         specified_path = weights_path
     else:
-        specified_path = MCd["save_weights_path"]
+        specified_path = meta_cdict["save_weights_path"]
     model.load_weights(specified_path)
     logger.info(f"params loaded from {specified_path}")
 
     # loss
     # get loss function
-    loss_object = configure_loss(MCd["loss_fn"])
+    loss_object = configure_loss(perf_cdict["loss_fn"])
 
     # mean loss
     avg_eval_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
 
     # metrics
     eval_metric_fns, metric_order = [], []
-    met_opts = MCd["met_opts_list"]
-    for i, metric in enumerate(MCd["met_list"]):
+    met_opts = perf_cdict["met_opts_list"]
+    for i, metric in enumerate(perf_cdict["met_list"]):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:
@@ -67,8 +75,8 @@ def eval_model(model: Any, MCd: dict, weights_path: str = None) -> dict:
         eval_metric_fn.reset_states()
 
     # get datasets
-    tfr_eval_path = os.path.join(MCd["TFR_dir"], MCd["TFR_train"])
-    eval_ds = return_batched_iter("eval", MCd, tfr_eval_path)
+    tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
+    eval_ds = return_batched_iter("eval", data_cdict, hp_cdict, tfr_eval_path)
 
     logger.info("-> START evaluating model")
     for step, (x_batch, y_batch) in enumerate(eval_ds):

@@ -5,12 +5,12 @@ import tensorflow as tf
 from yeahml.build.layers import config
 from yeahml.build.layers.config import return_available_layers
 from yeahml.config.helper import parse_yaml_from_path
-from yeahml.config.hidden.config import DEFAULT_ACT
+from yeahml.config.model.config import DEFAULT_ACT
 
 
-def _get_hidden_layers(h_raw_config: dict):
+def _get_hidden_layers(raw_config: dict):
     try:
-        hidden_layers = h_raw_config["layers"]
+        hidden_layers = raw_config["layers"]
     except KeyError:
         raise KeyError("No Layers Found in the config")
 
@@ -91,15 +91,18 @@ def create_layer_config(hl: dict, default_activation: str) -> dict:
     return HLD
 
 
-def extract_hidden_dict_and_set_defaults(
-    h_raw_config: dict, default_activation: str
-) -> dict:
+def format_model_config(raw_config: dict) -> dict:
+
+    try:
+        default_activation = raw_config["meta"]["activation"]
+    except KeyError:
+        default_activation = DEFAULT_ACT
     # create architecture config
-    parsed_h_config = {}
-    hidden_layers = _get_hidden_layers(h_raw_config)
+    formatted_config = {}
+    hidden_layers = _get_hidden_layers(raw_config)
     if not hidden_layers:
         raise ValueError(
-            f"hidden layer field was found, but did not contain any layers: {h_raw_config}"
+            f"hidden layer field was found, but did not contain any layers: {raw_config}"
         )
 
     approved_layers_config = {}
@@ -108,6 +111,6 @@ def extract_hidden_dict_and_set_defaults(
             hidden_layers[hl], default_activation
         )
 
-    parsed_h_config["layers"] = approved_layers_config
+    formatted_config["layers"] = approved_layers_config
 
-    return parsed_h_config
+    return formatted_config

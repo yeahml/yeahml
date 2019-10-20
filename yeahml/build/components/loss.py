@@ -2,7 +2,8 @@ import inspect
 from typing import Any
 
 import tensorflow as tf
-from tensorflow.python.keras.utils import losses_utils  # ugly
+
+# from tensorflow.python.keras.utils import losses_utils  # ugly
 
 from yeahml.build.components.configure import copy_func
 

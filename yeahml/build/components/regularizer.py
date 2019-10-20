@@ -38,7 +38,6 @@ def return_available_regularizers():
                 args = list(opt_func.__code__.co_varnames)
                 REGULARIZER_FUNCTIONS[opt_name.lower()]["func_args"] = args
     return REGULARIZER_FUNCTIONS
-    # print(tf.keras.regularizers.__dict__)
 
 
 def return_regularizer(regularizer_str):
