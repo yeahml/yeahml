@@ -76,6 +76,7 @@ def eval_model(
 
     # get datasets
     tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
+    # TODO: the hp_cdict isn't needed here
     eval_ds = return_batched_iter("eval", data_cdict, hp_cdict, tfr_eval_path)
 
     logger.info("-> START evaluating model")
