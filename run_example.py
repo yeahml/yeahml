@@ -36,19 +36,24 @@ model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
 
 ## train graph
 train_dict = yml.train_model(
-    model, meta_cdict, model_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
+    model, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
 )
 print(train_dict)
-sys.exit("model - train")
 
 # ## evaluate graph
 # # yml.eval_graph(g, model_cdict) # not currently implemented (use eval_graph_from_saver)
 # # same as eval_graph(), but will not require manual graph creation
 # # > will load a graph from the saver path (if present)
 eval_dict = yml.eval_model(
-    model, config_dict  # "./examples/mnist/saved_params/best_params_saver.h5"
+    model,
+    meta_cdict,
+    log_cdict,
+    data_cdict,
+    hp_cdict,
+    perf_cdict,  # "./examples/mnist/saved_params/best_params_saver.h5"
 )
 print(eval_dict)
+sys.exit("model - eval")
 
 
 ## Serving

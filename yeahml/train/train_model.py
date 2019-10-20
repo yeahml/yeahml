@@ -51,7 +51,6 @@ def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
 def train_model(
     model,
     meta_cdict: dict,
-    model_cdict: dict,
     log_cdict: dict,
     data_cdict: dict,
     hp_cdict: dict,
