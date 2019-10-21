@@ -19,6 +19,7 @@ def _get_hidden_layers(raw_config: dict):
 
 def _get_name_mapping(hl_type):
     # TODO: reverse many to one dict
+    # NOTE: I'm not sure if/why this fn is needed - 20Oct19
     # naming_dict = {}
     return hl_type
 
@@ -78,6 +79,13 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
             except KeyError:
                 actfn_str = DEFAULT_ACT
         HLD["options"]["activation"] = actfn_str
+
+    # TODO: at some point, there should be a check to ensure this name is valid
+    try:
+        input_str = hl["input"]
+    except KeyError:
+        input_str = None
+    HLD["input_str"] = input_str
 
     return HLD
 

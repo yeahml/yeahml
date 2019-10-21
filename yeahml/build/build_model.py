@@ -40,6 +40,7 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     # previously, the batch dimension [0], which was filled as (-1) was needed, but
     # maybe it is no longer needed with tf2. `parse_data()` is where this originally
     # created.
+    # TODO: remove this from the data_cdict
     if data_cdict["input_layer_dim"][0] == -1:
         input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"][1:]))
     else:
@@ -52,6 +53,10 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     # create the architecture
     hidden_layers = build_hidden_block(model_cdict, logger, g_logger)
     cur_input, cur_output = input_layer, None
+
+    print("-------" * 10)
+    print(hidden_layers)
+    print("-------" * 10)
 
     for i, layer in enumerate(hidden_layers):
         cur_output = layer(cur_input)

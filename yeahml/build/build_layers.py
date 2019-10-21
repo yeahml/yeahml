@@ -89,11 +89,16 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
 def build_hidden_block(model_cdict: dict, logger, g_logger) -> List[Any]:
 
     logger.info("-> START building hidden block")
-    HIDDEN_LAYERS = []
+    HIDDEN_LAYERS = {}
 
     # build each layer based on the (ordered) yaml specification
     logger.debug(f"loop+start building layers: {model_cdict['layers'].keys()}")
+
+    # NOTE: ordered_l_names is used to provide the input to a layer if one is not
+    # specified.
+    ordered_l_names = []
     for i, l_name in enumerate(model_cdict["layers"]):
+        ordered_l_names.append(l_name)
         layer_info = model_cdict["layers"][str(l_name)]
         opts = layer_info["options"]
         ltype = layer_info["type"].lower()
@@ -108,7 +113,32 @@ def build_hidden_block(model_cdict: dict, logger, g_logger) -> List[Any]:
         # else:
         #     raise NotImplementedError(f"layer type: {ltype} not implemented yet")
 
-        HIDDEN_LAYERS.append(cur_layer)
+        # TODO this could probably be checked in the parsing logic
+        # TODO: eventually, duplicate names could be included but a _n could
+        # be appended. However, this is dangerous because then we would be assuming what
+        # the user meant -- which isn't ideal
+        if l_name in HIDDEN_LAYERS.keys():
+            raise ValueError(
+                f"layer {l_name} already exists in [{HIDDEN_LAYERS.keys()}] and duplicate names are not allowed. please change the name of {l_name}"
+            )
+        # HIDDEN_LAYERS[l_name] = cur_layer
+        HIDDEN_LAYERS[l_name] = {}
+        HIDDEN_LAYERS[l_name]["layer_fn"] = cur_layer
+
+        # set layer input name
+        if layer_info["input_str"]:
+            HIDDEN_LAYERS[l_name]["input_str"] = layer_info["input_str"]
+        elif i == 0:
+            # TODO: this could likely be handled more elegantly. this ensures the
+            # first layer uses the data input. The logic here will likely need to be
+            # reconsidered. The issue is that we are 1) hard coding `'data_input'` and
+            # 2) we are not ensuring the data_generator and input align.
+            HIDDEN_LAYERS[l_name]["input_str"] = "data_input"
+        else:
+            # NOTE: if input not specified, assume sequential. This will need to be
+            # documented.
+            prev_name = ordered_l_names[i - 1]
+            HIDDEN_LAYERS[l_name]["input_str"] = prev_name
 
     logger.info("[END] building hidden block")
 
