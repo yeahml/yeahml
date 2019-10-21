@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any, List
 
 from yeahml.build.components.activation import _configure_activation
 from yeahml.build.components.initializer import _configure_initializer
@@ -86,7 +85,7 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
     return cur_layer
 
 
-def build_hidden_block(model_cdict: dict, logger, g_logger) -> List[Any]:
+def build_hidden_block(model_cdict: dict, logger, g_logger) -> dict:
 
     logger.info("-> START building hidden block")
     HIDDEN_LAYERS = {}
@@ -132,7 +131,8 @@ def build_hidden_block(model_cdict: dict, logger, g_logger) -> List[Any]:
             # TODO: this could likely be handled more elegantly. this ensures the
             # first layer uses the data input. The logic here will likely need to be
             # reconsidered. The issue is that we are 1) hard coding `'data_input'` and
-            # 2) we are not ensuring the data_generator and input align.
+            # 2) we are not ensuring the data_generator and input align. 3) we are no
+            # longer allowed to use data_input as a layer name
             HIDDEN_LAYERS[l_name]["input_str"] = "data_input"
         else:
             # NOTE: if input not specified, assume sequential. This will need to be

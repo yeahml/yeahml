@@ -33,7 +33,6 @@ model_cdict = config_dict["model"]
 ## build graph
 model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
 
-
 ## train graph
 train_dict = yml.train_model(
     model, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
@@ -53,8 +52,11 @@ eval_dict = yml.eval_model(
     perf_cdict,  # "./examples/mnist/saved_params/best_params_saver.h5"
 )
 print(eval_dict)
-sys.exit("model - eval")
 
 
 ## Serving
 ## TODO: implementation
+
+# TODO: Convert to js
+# TODO: tfx
+# TODO: shrink model
