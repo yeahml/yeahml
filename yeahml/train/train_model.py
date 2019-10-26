@@ -107,6 +107,11 @@ def train_model(
     tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
     val_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
 
+    # Tensorboard
+    tb_logdir = meta_cdict["tf_logs"]
+    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
+    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
+
     # train loop
     best_val_loss = np.inf
     steps, train_losses, val_losses = [], [], []

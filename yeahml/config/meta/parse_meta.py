@@ -47,6 +47,9 @@ def format_meta_config(raw_config):
         formatted_dict["save_params"] + ".h5",  # TODO: modify
     )
     # wipe is set to true for now
-    create_standard_dirs(formatted_dict["log_dir"], True)
+    new_dirs = create_standard_dirs(
+        formatted_dict["log_dir"], ["best_params", "tf_logs", "yf_logs"], True
+    )
+    formatted_dict = {**formatted_dict, **new_dirs}
 
     return formatted_dict
