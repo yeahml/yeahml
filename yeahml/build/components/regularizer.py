@@ -7,6 +7,7 @@ from yeahml.build.components.util import copy_func
 
 def _configure_regularizer(opt_dict):
     # TODO: this is dangerous.... (updating the __defaults__ like this)
+    # TODO: add a try for the "type" here .like in constraint/initializer
     reg_fn = return_regularizer(opt_dict["type"])["function"]
     reg_fn = copy_func(reg_fn)
     temp_copy = opt_dict.copy()
@@ -27,7 +28,6 @@ def _configure_regularizer(opt_dict):
 
 
 def return_available_regularizers():
-
     REGULARIZER_FUNCTIONS = {}
     available_keras_regularizers = tf.keras.regularizers.__dict__
     for opt_name, opt_func in available_keras_regularizers.items():
@@ -43,7 +43,8 @@ def return_available_regularizers():
 def return_regularizer(regularizer_str):
     avail_regularizers = return_available_regularizers()
     try:
-        regularizer = avail_regularizers[regularizer_str]
+        # NOTE: this feels like the wrong place to add a .lower()
+        regularizer = avail_regularizers[regularizer_str.lower()]
     except KeyError:
         raise KeyError(
             f"regularizer {regularizer_str} not available in options {avail_regularizers.keys()}"

@@ -1,6 +1,4 @@
-import math
 import os
-from typing import Any
 
 import numpy as np
 import tensorflow as tf
@@ -23,15 +21,25 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
         # TODO: apply mask?
         loss = loss_fn(y_batch, prediction)
+
+        # TODO: custom weighting for training could be applied here
+        # weighted_losses = loss * weights_per_instance
         main_loss = tf.reduce_mean(loss)
 
         # model.losses contains the kernel/bias constrains/regularizers
         full_loss = tf.add_n([main_loss] + model.losses)
 
     grads = tape.gradient(full_loss, model.trainable_variables)
+
+    # NOTE: any gradient adjustments would happen here
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    # NOTE: only allow one loss
+    # from HOML2:
+    for variable in model.variables:
+        if variable.constraint is not None:
+            variable.assign(variable.constraint(variable))
+
+    # NOTE: only allow one loss? I don't see why only one loss should be allowed?
     loss_avg(loss)
 
     # TODO: ensure pred, gt order
@@ -44,8 +52,6 @@ def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
     # TODO: confirm that training is working as expected
     prediction = model(x_batch, training=False)
     loss = loss_fn(y_batch, prediction)
-    # main_loss = tf.reduce_mean(loss)
-    # full_loss = tf.add_n([main_loss] + model.losses)
 
     # NOTE: only allow one loss
     loss_avg(loss)
@@ -100,7 +106,6 @@ def train_model(
         except IndexError:
             # No options for particular metric
             met_opt_dict = None
-            pass
         train_metric_fn = configure_metric(metric, met_opt_dict)
         train_metric_fns.append(train_metric_fn)
         val_metric_fn = configure_metric(metric, met_opt_dict)

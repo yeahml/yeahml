@@ -1,8 +1,10 @@
 from datetime import datetime
+import sys
 
 from yeahml.build.components.activation import _configure_activation
 from yeahml.build.components.initializer import _configure_initializer
 from yeahml.build.components.regularizer import _configure_regularizer
+from yeahml.build.components.constraint import _configure_constraint
 from yeahml.build.layers.config import return_available_layers
 from yeahml.build.layers.other import (
     build_batch_normalization_layer,
@@ -59,6 +61,8 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
             # functions to configure
             for o in opts:
                 try:
+                    # TODO: the config logic of these four blocks needs to be checked
+                    # > check constraint(**config)
                     # TODO: .endswith("_regularizer")?
                     if (
                         o == "kernel_regularizer"
@@ -68,11 +72,20 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
                         # TODO: I'm not sure why the regularizer needs to be called()
                         # but the activation and initializer don't?
                         reg = _configure_regularizer(opts[o])
+
                         opts[o] = reg()
                     elif o == "activation":
                         opts[o] = _configure_activation(opts[o])
                     elif o == "kernel_initializer" or o == "bias_initializer":
                         opts[o] = _configure_initializer(opts[o])
+                    elif o == "kernel_constraint" or o == "bias_constraint":
+                        constraint = _configure_constraint(opts[o])
+                        # print("here_________a")
+                        # print(constraint)
+                        # print(constraint.get_config())
+                        # print("here_________b")
+                        # sys.exit()
+                        opts[o] = constraint
                 except ValueError as e:
                     raise ValueError(
                         f"error creating option {o} for layer {l_name}:\n > {e}"

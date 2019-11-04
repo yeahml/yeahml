@@ -29,7 +29,7 @@ def _configure_initializer(opt_dict):
     cur_config = init_fn().get_config()
     for k, v in opt_dict["options"].items():
         cur_config[k] = v
-    out = init_fn.from_config(cur_config)
+    out = init_fn().from_config(cur_config)
 
     return out
 
@@ -56,12 +56,6 @@ def return_available_initializers():
                     args = None
 
                 INITIALIZER_FUNCTIONS[opt_name.lower()]["func_args"] = args
-        # elif callable(opt_func):
-        #     if opt_name.lower() not in set(["deserialize", "get", "serialize"]):
-        #         INITIALIZER_FUNCTIONS[opt_name.lower()] = {}
-        #         INITIALIZER_FUNCTIONS[opt_name.lower()]["function"] = opt_func
-        #         args = list(opt_func.__code__.co_varnames)
-        #         INITIALIZER_FUNCTIONS[opt_name.lower()]["func_args"] = args
 
     return INITIALIZER_FUNCTIONS
 
@@ -69,7 +63,8 @@ def return_available_initializers():
 def return_initializer(initializer_str):
     avail_initializers = return_available_initializers()
     try:
-        initializer = avail_initializers[initializer_str]
+        # NOTE: this feels like the wrong place to add a .lower()
+        initializer = avail_initializers[initializer_str.lower()]
     except KeyError:
         raise KeyError(
             f"initializer {initializer_str} not available in options {avail_initializers.keys()}"

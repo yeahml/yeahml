@@ -42,7 +42,7 @@ layers:
         options:
           seed: 42
       activation: 
-        type: 'relu'
+        type: 'Relu'
     #saver:
       #load_params: True
   dropout_1:
@@ -61,8 +61,11 @@ layers:
     options:
       units: 32
       kernel_regularizer:
-        type: 'l1'
-        l: 0.001
+        type: 'L1'
+        # TODO: this should be an `options`
+        l: 0.01
+      kernel_constraint:
+        type: 'MaxNorm'
   dense_2_output:
     type: 'dense'
     options:
