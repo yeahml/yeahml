@@ -65,7 +65,10 @@ def build_layer(ltype, opts, l_name, logger, g_logger):
                         or o == "bias_regularizer"
                         or o == "activity_regularizer"
                     ):
-                        opts[o] = _configure_regularizer(opts[o])
+                        # TODO: I'm not sure why the regularizer needs to be called()
+                        # but the activation and initializer don't?
+                        reg = _configure_regularizer(opts[o])
+                        opts[o] = reg()
                     elif o == "activation":
                         opts[o] = _configure_activation(opts[o])
                     elif o == "kernel_initializer" or o == "bias_initializer":

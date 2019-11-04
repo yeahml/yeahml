@@ -19,12 +19,16 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
     with tf.GradientTape() as tape:
-        prediction = model(x_batch)
+        prediction = model(x_batch, training=True)
 
         # TODO: apply mask?
         loss = loss_fn(y_batch, prediction)
+        main_loss = tf.reduce_mean(loss)
 
-    grads = tape.gradient(loss, model.trainable_variables)
+        # model.losses contains the kernel/bias constrains/regularizers
+        full_loss = tf.add_n([main_loss] + model.losses)
+
+    grads = tape.gradient(full_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
     # NOTE: only allow one loss
@@ -37,8 +41,11 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
 @tf.function
 def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
-    prediction = model(x_batch)
+    # TODO: confirm that training is working as expected
+    prediction = model(x_batch, training=False)
     loss = loss_fn(y_batch, prediction)
+    # main_loss = tf.reduce_mean(loss)
+    # full_loss = tf.add_n([main_loss] + model.losses)
 
     # NOTE: only allow one loss
     loss_avg(loss)

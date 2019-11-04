@@ -62,7 +62,7 @@ layers:
       units: 32
       kernel_regularizer:
         type: 'l1'
-        l: 0.3
+        l: 0.001
   dense_2_output:
     type: 'dense'
     options:
