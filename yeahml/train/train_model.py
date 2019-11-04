@@ -1,6 +1,4 @@
-import math
 import os
-from typing import Any
 
 import numpy as np
 import tensorflow as tf
@@ -19,15 +17,29 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
     with tf.GradientTape() as tape:
-        prediction = model(x_batch)
+        prediction = model(x_batch, training=True)
 
         # TODO: apply mask?
         loss = loss_fn(y_batch, prediction)
 
-    grads = tape.gradient(loss, model.trainable_variables)
+        # TODO: custom weighting for training could be applied here
+        # weighted_losses = loss * weights_per_instance
+        main_loss = tf.reduce_mean(loss)
+
+        # model.losses contains the kernel/bias constrains/regularizers
+        full_loss = tf.add_n([main_loss] + model.losses)
+
+    grads = tape.gradient(full_loss, model.trainable_variables)
+
+    # NOTE: any gradient adjustments would happen here
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    # NOTE: only allow one loss
+    # from HOML2:
+    for variable in model.variables:
+        if variable.constraint is not None:
+            variable.assign(variable.constraint(variable))
+
+    # NOTE: only allow one loss? I don't see why only one loss should be allowed?
     loss_avg(loss)
 
     # TODO: ensure pred, gt order
@@ -37,7 +49,8 @@ def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
 
 @tf.function
 def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
-    prediction = model(x_batch)
+    # TODO: confirm that training is working as expected
+    prediction = model(x_batch, training=False)
     loss = loss_fn(y_batch, prediction)
 
     # NOTE: only allow one loss
@@ -93,7 +106,6 @@ def train_model(
         except IndexError:
             # No options for particular metric
             met_opt_dict = None
-            pass
         train_metric_fn = configure_metric(metric, met_opt_dict)
         train_metric_fns.append(train_metric_fn)
         val_metric_fn = configure_metric(metric, met_opt_dict)
@@ -106,6 +118,13 @@ def train_model(
 
     tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
     val_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
+
+    # Tensorboard
+    # TODO: eventually, this needs to be flexible enough to allow for new writes
+    # every n steps
+    tb_logdir = meta_cdict["tf_logs"]
+    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
+    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
 
     # train loop
     best_val_loss = np.inf
@@ -159,6 +178,18 @@ def train_model(
         val_losses.append(cur_val_loss_)
         steps.append(e)
         logger.debug(template_str.format(e + 1, cur_train_loss_, cur_val_loss_))
+
+        with tr_writer.as_default():
+            tf.summary.scalar("loss", cur_train_loss_, step=e)
+            for i, name in enumerate(metric_order):
+                cur_train_metric_fn = train_metric_fns[i]
+                tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
+
+        with v_writer.as_default():
+            tf.summary.scalar("loss", cur_val_loss_, step=e)
+            for i, name in enumerate(metric_order):
+                cur_val_metric_fn = val_metric_fns[i]
+                tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
 
     logger.info("start creating train_dict")
     return_dict = {}

@@ -45,7 +45,8 @@ def return_available_activations():
 def return_activation(activation_str):
     avail_acts = return_available_activations()
     try:
-        activation = avail_acts[activation_str]
+        # NOTE: this feels like the wrong place to add a .lower()
+        activation = avail_acts[activation_str.lower()]
     except KeyError:
         raise KeyError(
             f"activation {activation_str} not available in options {avail_acts.keys()}"

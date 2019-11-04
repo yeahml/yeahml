@@ -12,6 +12,7 @@ def maybe_create_dir(dir_path: str) -> None:
         print(f"{dir_path} created")
     else:
         print("{dir_path} already exists")
+    return dir_path
 
 
 def parse_yaml_from_path(path: str) -> dict:
@@ -45,7 +46,7 @@ def parse_json_from_path(path: str) -> dict:
         )
 
 
-def create_standard_dirs(root_dir: str, wipe_dirs: bool):
+def create_standard_dirs(root_dir: str, dirs_to_make: list, wipe_dirs: bool):
     # this logic is messy
     # TODO: update to pathlib
     if wipe_dirs:
@@ -59,9 +60,11 @@ def create_standard_dirs(root_dir: str, wipe_dirs: bool):
     # `best_params/` will hold a serialized version of the best params
     # I like to keep this as a backup in case I run into issues with
     # the saver files
-    maybe_create_dir(os.path.join(root_dir, "best_params"))
     # `tf_logs/` will hold the logs that will be visible in tensorboard
-    maybe_create_dir(os.path.join(root_dir, "tf_logs"))
-
     # `yf_logs/` will hold the custom logs
-    maybe_create_dir(os.path.join(root_dir, "yf_logs"))
+    new_dirs = {}
+    for dir_path in dirs_to_make:
+        new_dirs[dir_path] = maybe_create_dir(os.path.join(root_dir, dir_path))
+
+    return new_dirs
+
