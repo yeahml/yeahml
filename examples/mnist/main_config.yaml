@@ -21,7 +21,7 @@ logging:
 performance:
   loss_fn: 
     type: 'categorical_crossentropy'
-  type: [ "MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
+  type: ["MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
   options: [null, 
             {"k": 2}, 
             null]

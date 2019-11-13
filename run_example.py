@@ -32,6 +32,7 @@ model_cdict = config_dict["model"]
 
 ## build graph
 model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
+print(model.summary())
 
 ## train graph
 train_dict = yml.train_model(

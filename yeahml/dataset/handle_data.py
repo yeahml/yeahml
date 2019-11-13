@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 from tqdm import tqdm
 
-from yeahml.build.get_components import get_tf_dtype
+from yeahml.build.components.dtype import return_dtype
 
 
 def augment_image(img_tensor, gt_tensor, aug_opts: dict) -> tuple:
@@ -16,10 +16,10 @@ def get_parse_type(parse_dict: dict):
     tfr_obj = None
     tf_parse_type = parse_dict["tftype"].lower()
     if tf_parse_type == "fixedlenfeature":
-        tfr_obj = tf.io.FixedLenFeature([], get_tf_dtype(parse_dict["in_type"]))
+        tfr_obj = tf.io.FixedLenFeature([], return_dtype(parse_dict["in_type"]))
     elif tf_parse_type == "fixedlensequencefeature":
         tfr_obj = tf.io.FixedLenSequenceFeature(
-            [], get_tf_dtype(parse_dict["in_type"]), allow_missing=True
+            [], return_dtype(parse_dict["in_type"]), allow_missing=True
         )
     else:
         raise ValueError(
@@ -62,7 +62,7 @@ def _parse_function(
     # decode string
     if f_dict["in_type"] == "string" and f_dict["dtype"] != "string":
         image = tf.io.decode_raw(
-            parsed_features[featureName], get_tf_dtype(f_dict["dtype"])
+            parsed_features[featureName], return_dtype(f_dict["dtype"])
         )
         image = tf.dtypes.cast(image, dtype=tf.float32)
     else:
@@ -86,7 +86,7 @@ def _parse_function(
     # decode string
     if l_dict["in_type"] == "string":
         label = tf.io.decode_raw(
-            parsed_features[labelName], get_tf_dtype(l_dict["dtype"])
+            parsed_features[labelName], return_dtype(l_dict["dtype"])
         )
         # if a reshape is present in the config for the label, reshape the data
     else:

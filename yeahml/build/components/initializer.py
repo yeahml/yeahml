@@ -60,7 +60,7 @@ def return_available_initializers():
     return INITIALIZER_FUNCTIONS
 
 
-def return_initializer(initializer_str):
+def return_initializer(initializer_str: str):
     avail_initializers = return_available_initializers()
     try:
         # NOTE: this feels like the wrong place to add a .lower()
