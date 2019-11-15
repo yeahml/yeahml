@@ -1,6 +1,7 @@
 import logging
 import os
 
+# TODO: there is a lot of repetitiveness here
 
 # this may be a "dumb" way of accomplishing this, but I want to wait until
 # the modules are implemented correctly
@@ -41,9 +42,9 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
 
         b_ch.setFormatter(c_fmt)
         b_fh.setFormatter(f_fmt)
-
-        build_logger.addHandler(b_ch)
-        build_logger.addHandler(b_fh)
+        if not len(build_logger.handlers):
+            build_logger.addHandler(b_ch)
+            build_logger.addHandler(b_fh)
 
         return build_logger
     elif log_type == "train":
@@ -60,6 +61,9 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
 
         t_ch.setFormatter(c_fmt)
         t_fh.setFormatter(f_fmt)
+        if not len(train_logger.handlers):
+            train_logger.addHandler(t_ch)
+            train_logger.addHandler(t_fh)
 
         train_logger.addHandler(t_ch)
         train_logger.addHandler(t_fh)
@@ -74,8 +78,11 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
         e_ch.setLevel(get_level(log_cdict["log_c_lvl"]))
         e_fh.setLevel(get_level(log_cdict["log_f_lvl"]))
 
-        e_fh.setFormatter(f_fmt)
         e_ch.setFormatter(c_fmt)
+        e_fh.setFormatter(f_fmt)
+        if not len(eval_logger.handlers):
+            eval_logger.addHandler(e_ch)
+            eval_logger.addHandler(e_fh)
 
         eval_logger.addHandler(e_ch)
         eval_logger.addHandler(e_fh)
@@ -93,9 +100,10 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
 
         g_fh.setFormatter(g_fmt)
         g_ch.setFormatter(g_fmt)
+        if not len(graph_logger.handlers):
+            graph_logger.addHandler(g_ch)
+            graph_logger.addHandler(g_fh)
 
-        graph_logger.addHandler(g_ch)
-        graph_logger.addHandler(g_fh)
         return graph_logger
     elif log_type == "preds":
         preds_logger = logging.getLogger("preds_logger")
@@ -111,8 +119,10 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
         p_fh.setFormatter(p_fmt)
         p_ch.setFormatter(p_fmt)
 
-        preds_logger.addHandler(p_ch)
-        preds_logger.addHandler(p_fh)
+        if not len(preds_logger.handlers):
+            preds_logger.addHandler(p_ch)
+            preds_logger.addHandler(p_fh)
+
         return preds_logger
     else:
         raise ValueError(f"can't get this logger type: {log_type}")
