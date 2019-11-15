@@ -25,7 +25,7 @@ def reset_graph(seed=42):
 
 
 def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict: dict):
-    # logger = logging.getLogger("build_logger")
+
     logger = config_logger(meta_cdict["log_dir"], log_cdict, "build")
     logger.info("-> START building graph")
 

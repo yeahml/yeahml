@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-import sys
 
 from yeahml.config.data.parse_data import format_data_config
 from yeahml.config.helper import (
+    extract_dict_from_path,
+    get_raw_dict_from_string,
     maybe_create_dir,
-    parse_json_from_path,
-    parse_yaml_from_path,
 )
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,
@@ -23,18 +22,6 @@ from yeahml.config.performance.parse_performance import format_performance_confi
 # > maybe this belongs in "build graph?"
 
 # TODO: A config logger should be generated / used
-
-
-def extract_dict_from_path(cur_path):
-    if cur_path.endswith("yaml") or path.endswith("yml"):
-        main_config_raw = parse_yaml_from_path(cur_path)
-    elif cur_path.endswith("json"):
-        main_config_raw = parse_json_from_path(cur_path)
-    if not main_config_raw:
-        raise ValueError(
-            f"Error > Exiting: the model config file was found {cur_path}, but appears to be empty"
-        )
-    return main_config_raw
 
 
 def maybe_extract_from_path(cur_dict: dict) -> dict:
@@ -80,7 +67,7 @@ CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "mo
 
 
 def create_configs(main_path: str) -> dict:
-    main_config_raw = extract_dict_from_path(main_path)
+    main_config_raw = get_raw_dict_from_string(main_path)
     cur_keys = main_config_raw.keys()
     invalid_keys = []
     for key in CONFIG_KEYS:
