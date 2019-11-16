@@ -290,3 +290,6 @@ At the moment the project is being developed around a binary image classificatio
   - Support for multi-output
 - Hyperparameter optimization (hyperopt support?)
 - Make code/atom extension for autocomplete yaml (and json)
+
+### Other:
+if you experience problems with tensorboard in jupyter, try running this script found [here](https://raw.githubusercontent.com/tensorflow/tensorboard/master/tensorboard/tools/diagnose_tensorboard.py)

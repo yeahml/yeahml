@@ -89,7 +89,7 @@ def is_yaml(cur_string: str) -> bool:
 # TODO: will need to implement json logic as well
 def parse_yaml_string(ys):
     fd = StringIO(ys)
-    dct = yaml.load(fd)
+    dct = yaml.load(fd, Loader=yaml.FullLoader)
     return dct
 
 
