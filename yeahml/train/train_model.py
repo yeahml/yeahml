@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+
 import tensorflow as tf
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
@@ -13,26 +14,40 @@ from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfre
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 
+def get_apply_grad_fn():
+    # https://github.com/tensorflow/tensorflow/issues/27120
+    # this allows the model to continue to be trained on multiple calls
+    @tf.function
+    def apply_grad(model, x_batch, y_batch, loss_fn, optimizer):
+        with tf.GradientTape() as tape:
+            prediction = model(x_batch, training=True)
+
+            # TODO: apply mask?
+            loss = loss_fn(y_batch, prediction)
+
+            # TODO: custom weighting for training could be applied here
+            # weighted_losses = loss * weights_per_instance
+            main_loss = tf.reduce_mean(loss)
+
+            # model.losses contains the kernel/bias constrains/regularizers
+            full_loss = tf.add_n([main_loss] + model.losses)
+
+        grads = tape.gradient(full_loss, model.trainable_variables)
+
+        # NOTE: any gradient adjustments would happen here
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+        return prediction, full_loss
+
+    return apply_grad
+
+
 @tf.function
-def train_step(model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics):
+def train_step(
+    model, x_batch, y_batch, loss_fn, optimizer, loss_avg, metrics, model_apply_grads_fn
+):
 
-    with tf.GradientTape() as tape:
-        prediction = model(x_batch, training=True)
-
-        # TODO: apply mask?
-        loss = loss_fn(y_batch, prediction)
-
-        # TODO: custom weighting for training could be applied here
-        # weighted_losses = loss * weights_per_instance
-        main_loss = tf.reduce_mean(loss)
-
-        # model.losses contains the kernel/bias constrains/regularizers
-        full_loss = tf.add_n([main_loss] + model.losses)
-
-    grads = tape.gradient(full_loss, model.trainable_variables)
-
-    # NOTE: any gradient adjustments would happen here
-    optimizer.apply_gradients(zip(grads, model.trainable_variables))
+    prediction, loss = model_apply_grads_fn(model, x_batch, y_batch, loss_fn, optimizer)
 
     # from HOML2:
     for variable in model.variables:
@@ -80,7 +95,8 @@ def train_model(
     # TODO: config optimizer (follow template for losses)
     optim_dict = return_optimizer(hp_cdict["optimizer_dict"]["type"])
     optimizer = optim_dict["function"]
-    ## configure optimizer
+
+    # configure optimizer
     temp_dict = hp_cdict["optimizer_dict"].copy()
     temp_dict.pop("type")
     optimizer = optimizer(**temp_dict)
@@ -127,6 +143,7 @@ def train_model(
     v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
 
     # train loop
+    apply_grad_fn = get_apply_grad_fn()
     best_val_loss = np.inf
     steps, train_losses, val_losses = [], [], []
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
@@ -149,6 +166,7 @@ def train_model(
                 optimizer,
                 avg_train_loss,
                 train_metric_fns,
+                apply_grad_fn,
             )
         logger.debug("-> END iterating training dataset")
 
@@ -193,10 +211,12 @@ def train_model(
 
     logger.info("start creating train_dict")
     return_dict = {}
+
     # loss history
     return_dict["train_losses"] = train_losses
     return_dict["val_losses"] = val_losses
     return_dict["epochs"] = steps
+
     # metrics
     for i, name in enumerate(metric_order):
         cur_train_metric_fn = train_metric_fns[i]
