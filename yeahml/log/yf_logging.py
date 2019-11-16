@@ -65,8 +65,6 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
             train_logger.addHandler(t_ch)
             train_logger.addHandler(t_fh)
 
-        train_logger.addHandler(t_ch)
-        train_logger.addHandler(t_fh)
         return train_logger
     elif log_type == "eval":
         eval_logger = logging.getLogger("eval_logger")
@@ -84,8 +82,6 @@ def config_logger(log_dir_str, log_cdict: dict, log_type: str):
             eval_logger.addHandler(e_ch)
             eval_logger.addHandler(e_fh)
 
-        eval_logger.addHandler(e_ch)
-        eval_logger.addHandler(e_fh)
         return eval_logger
     elif log_type == "graph":
         graph_logger = logging.getLogger("graph_logger")
