@@ -64,7 +64,7 @@ def train_step(
 
 @tf.function
 def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
-    # TODO: confirm that training is working as expected
+
     prediction = model(x_batch, training=False)
     loss = loss_fn(y_batch, prediction)
 
@@ -74,6 +74,12 @@ def val_step(model, x_batch, y_batch, loss_fn, loss_avg, metrics):
     # TODO: ensure pred, gt order
     for val_metric in metrics:
         val_metric(y_batch, prediction)
+
+
+def log_model_params(tr_writer, g_train_step, model):
+    with tr_writer.as_default():
+        for v in model.variables:
+            tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
 
 def train_model(
@@ -157,7 +163,12 @@ def train_model(
             val_metric.reset_states()
 
         logger.debug("-> START iterating training dataset")
+        g_train_step = 0
+        LOGSTEPSIZE = 10
+        HIST_LOGGED = False
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
+            g_train_step += 1
+
             train_step(
                 model,
                 x_batch_train,
@@ -168,6 +179,14 @@ def train_model(
                 train_metric_fns,
                 apply_grad_fn,
             )
+            if g_train_step % LOGSTEPSIZE == 0:
+                HIST_LOGGED = True
+                log_model_params(tr_writer, g_train_step, model)
+
+        if not HIST_LOGGED:
+            # in case there are not LOGSTEPSIZE in the training set
+            log_model_params(tr_writer, g_train_step, model)
+
         logger.debug("-> END iterating training dataset")
 
         # iterate validation after iterating entire training.. this will/should change
@@ -181,6 +200,7 @@ def train_model(
                 avg_val_loss,
                 val_metric_fns,
             )
+
         logger.debug("-> END iterating validation dataset")
 
         # check save best metrics
