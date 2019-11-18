@@ -14,6 +14,7 @@ def reset_graph_deterministic(seed=42):
     # > tf issue https://github.com/tensorflow/tensorflow/issues/18096
     # os.environ["TF_CUDNN_USE_AUTOTUNE"] = "0"
     tf.random.set_seed(seed)
+    tf.keras.backend.clear_session()
     # np.random.seed(seed)
 
 
@@ -22,6 +23,7 @@ def reset_graph(seed=42):
     # logger.info("reset_graph")
     # tf.reset_default_graph()
     tf.random.set_seed(seed)
+    tf.keras.backend.clear_session()
 
 
 def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict: dict):
