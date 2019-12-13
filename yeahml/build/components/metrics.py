@@ -1,9 +1,6 @@
 import inspect
-from typing import Any
 
 import tensorflow as tf
-
-from yeahml.build.components.configure import copy_func
 
 
 def return_available_metrics():
@@ -54,7 +51,7 @@ def configure_metric(cur_type, met_opt_dict):
         var_list = list(vars(metric_fn)["__init__"].__code__.co_varnames)
         new_def_dict = {}
         for ao, v in options.items():
-            arg_index = var_list.index(ao)
+            var_list.index(ao)
             # TODO: same type assertion?
             new_def_dict[ao] = v
 

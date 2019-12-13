@@ -1,7 +1,6 @@
 import os
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
 from yeahml.build.components.loss import configure_loss
@@ -65,7 +64,6 @@ def eval_model(
         except IndexError:
             # No options for particular metric
             met_opt_dict = None
-            pass
         eval_metric_fn = configure_metric(metric, met_opt_dict)
         eval_metric_fns.append(eval_metric_fn)
         metric_order.append(metric)

@@ -1,7 +1,6 @@
 import os
 
 import numpy as np
-
 import tensorflow as tf
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
@@ -147,6 +146,28 @@ def train_model(
     tb_logdir = meta_cdict["tf_logs"]
     tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
     v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
+
+    # # write graph
+    # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
+    # prof_ds = train_ds.take(2)
+    # # tf.summary.trace_on(graph=True, profiler=True)
+    # for (x_batch, _) in prof_ds:
+    #     _ = model(x_batch, training=False)
+    #     # with g_writer.as_default():
+    #     #     tf.summary.trace_export(
+    #     #         "dataset_input",
+    #     #         step=0,
+    #     #         profiler_outdir=os.path.join(tb_logdir, "graph"),
+    #     #     )
+    #     tf.summary.trace_on(graph=True, profiler=True)
+    #     _ = model(x_batch, training=False)
+    #     with g_writer.as_default():
+    #         tf.summary.trace_export(
+    #             "model_inference",
+    #             step=0,
+    #             profiler_outdir=os.path.join(tb_logdir, "graph"),
+    #         )
+    # print("done profile")
 
     # train loop
     apply_grad_fn = get_apply_grad_fn()

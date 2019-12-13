@@ -1,14 +1,8 @@
-# all paths are relative to yaml/execution?
-# TODO: naming/structure will need to be improved
 meta:
   name: 'mnist'
-    #options:
-      #label_smoothing: 0.2
-  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
+  experiment_dir: 'trial_01'
   saver:
     save_params_name: "best_params_saver"
-    # load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning
-  # trace: Null
 logging:
   console:
     level: 'info'
@@ -60,23 +54,6 @@ hyper_parameters:
   batch_size: 32
   epochs: 3
   shuffle_buffer: 128
-  # early_stopping:
-  #   epochs: 3
-  #   warm_up_epochs: 5
 model:
-  # TODO: maybe this could also be a .py file containing a graph
-  # > (clear input/output would need to be defined)
   path: './examples/mnist/model_config.yaml'
-# train:
-#   image_standardize: True
-  # augmentation:
-  #   aug_val: True
-  #   v_flip: True
-  #   h_flip: True
-  #   #rotate: 0
-  #   max_brightness: 0.2
 
-# todo implement
-# advanced:
-#   resources:
-#     GPU_thresh: 0.9

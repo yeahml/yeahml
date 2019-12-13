@@ -1,0 +1,64 @@
+# TODO and in Progress
+
+- move all examples to a new repository?
+- package for conda/pip installation
+- handle instance id when not present in the dataset (mnist) - include warning
+- include 'WIPE' option to delete current logs as needed
+- include documentation on what is possible (likely when the project is a little further along)
+- don't wipe directories when running eval
+- handle class imbalance (this is a bit loaded...)
+- find way to simplify/standardize input type (beyond the current three tfrecords)
+- find way to automate the reshaping of the label from the batch
+- output preds csv (with format string) -- could be useful for competitions
+- load params from specified paths for specified layers (beyond the default file)
+  - this could be, potentially, useful for concatenation layer
+- basic sanity check for building the parse/config file
+- support type and name declarations from config for parsing tf records
+- logging for initializing weights
+- resource management/device placement
+- config option for one_hot -- currently requires manual input
+- An option for displaying sample outputs during training/evaluation
+- allow prediction from regular values
+  - not just tfrecords. This will also be important for serving implications
+- Binary classification with the IMDB dataset
+- Support `opts` for the optimizer
+- Support different types of loss functions (right now these are hardcoded by (type)
+- [sphinx](http://www.sphinx-doc.org/en/master/) documentation
+- Add docstrings to each function
+- Support for concatenation (would allow for the creation of custom modules -- similar to inception)
+- Depthwise separable convolutions
+- support k fold cross validation
+- make config mapping dictionary read only [related SO](https://stackoverflow.com/questions/19022868/how-to-make-dictionary-read-only-in-python)
+- update graph printing/logging methodology -- more table like
+- add confusion matrix for classification problems
+- make sure all layer names are unique - could check against set
+- convert to f-string
+- Ensure dropout is only active during training
+- Create data_config file option (`path`, e.g. model_cdict:data:path) if the path is present, use it and make sure no other fields are filled
+- Create hyperparam_config file option (`path`, e.g. model_cdict:hyperparam:path) if the path is present, use it and make sure no other fields are filled
+- update to pathlib.Path
+- logic that if a layer name is the same, a _n will be appended?
+- logic that recommends changing the layer name to the correct spelling. e.g. batch_normalization to BatchNormalization or batchmormalization (m vs n typo) to BatchNormalization
+- shape of layers does not appear when building the network.. tf1 had this by default, but this logic will need to be changed for tf2
+- it might make sense for the final layer to require an activation function to be specified.. it may also be smart to have the name of the layer named "output" (or similar), not sure.
+- Serving
+- Convert to js
+- tfx
+- shrink model
+
+## TODO: stretch
+
+- An option for implementing ~smooth grad + for visualizations/ interpret-ability
+- capsule layers (and scalar -> vect, vect -> scalar?)
+- methodology for reducing model size for serving - plot performance as the dtype of operations are reduced / can some operations be removed from the graph?
+- prepackaged models + params trained on well known datasets
+- support custom loss functions (likely through link to .py file?)
+- Break from single sequential pattern
+  - Support for multi-input
+  - Support for multi-output
+- Hyperparameter optimization (hyperopt support?)
+- Make code/atom extension for autocomplete yaml (and json)
+- resources
+  - advanced:
+    - resources:
+      - GPU_thresh: 0.9

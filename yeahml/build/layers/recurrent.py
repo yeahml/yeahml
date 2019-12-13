@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-from yeahml.helper import fmt_tensor_info
-
 # from yeahml.build.layers.dense import build_dense_layer
 
 

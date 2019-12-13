@@ -66,5 +66,3 @@ examples/mnist/saved_params/
 yeahml/*/\.mypy_cache/3\.6/
 
 \.ipynb_checkpoints/
-
-example\.ipynb

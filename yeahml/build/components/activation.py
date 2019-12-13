@@ -1,5 +1,3 @@
-import inspect
-
 import tensorflow as tf
 
 from yeahml.build.components.util import copy_func
