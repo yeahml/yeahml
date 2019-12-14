@@ -1,78 +1,89 @@
-# all paths are relative to yaml/execution?
-# TODO: naming/structure will need to be improved
-overall:
-  name: 'cats_v_dogs'
-  loss_fn: 
-    type: 'binary_crossentropy'
-  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
-  saver:
-    save_params_name: "best_params_saver"
-  # trace: Null
-  logging:
-    console:
-      level: 'info'
-      format_str: null
-    file:
-      level: 'debug'
-      format_str: null
-    graph_spec: True
-  metrics:
-    type: ["BinaryAccuracy"]
-    # TODO: preds
-    # TODO: preds csv? w/fmt string
-  #num_classes: 1
-  
-data:
-  in: 
-    dim: [150, 150, 3]
-    dtype: 'float32'
-  label:
-    dim: [1]
-    dtype: 'int64'
-  TFR_parse:
-    feature:
-      name: "/image"
-      dtype: "float32"
-      tftype: "fixedlenfeature"
-      in_type: "string"
-    label:
-      name: "/label"
-      dtype: "int64" # what to decode it to
-      tftype: "fixedlenfeature"
-      in_type: "int64" # what it is encoded as
-  TFR:
-    dir: './examples/cats_v_dogs/data/record_holder/150'
-    train: 'train.tfrecords'
-    validation: 'val.tfrecords'
-    test: 'test.tfrecords'
-  # image:
-  #   standardize: True
-  #   augmentation:
-  #     aug_val: True
-  #     v_flip: True
-  #     h_flip: True
-  #     #rotate: 0
-  #     max_brightness: 0.2
-hyper_parameters:
-  optimizer: 
-    type: 'adam'
-    learning_rate: 0.001
-  batch_size: 32
-  epochs: 4
-  default_activation: 
-    type: 'elu'
-  shuffle_buffer: 128
-  # early_stopping:
-  #   epochs: 3
-  #   warm_up_epochs: 5
-hidden:
-  # TODO: maybe this could also be a .py file containing a graph
-  # > (clear input/output would need to be defined)
-  path: './examples/cats_v_dogs/hidden_config.yaml'
+# documentation will be key - "sane" defaults
+# key: value
+# key will be the "name" of the layer, value will hold the type+
+# TODO: set *NECESSARTY/REQUIRED* params
+
+# TODO: initialization
+# TODO: option to write scalar
+# TODO: default conv = conv2d?
+# TODO: default strides = 1, padding='SAME'
+meta:
+  activation:
+    type: 'relu'
+    max_value: 6
 
 
-
-# todo implement
-# advanced:
-#   resources:
-#     GPU_thresh: 0.9
+layers:
+  batch_norm_0:
+    type: 'batchnormalization'
+  conv_1:
+    type: 'conv2d'
+    options:
+      filters: 16
+      kernel_size: 3
+      strides: 2
+      activation:
+        type: 'elu'
+  batch_norm_1:
+    type: 'batchnormalization'
+  pool_1:
+    type: 'AveragePooling2D'
+    options:
+      pool_size: 2
+      strides: 2
+  conv_2:
+    type: 'conv2d'
+    options:
+      filters: 32
+      kernel_size: 3
+      strides: 1
+  batch_norm_2:
+    type: 'batchnormalization'
+  pool_2:
+    type: 'AveragePooling2D'
+    options:
+      pool_size: 2
+      strides: 2
+  conv_3:
+    type: 'conv2d'
+    options:
+      filters: 64
+      kernel_size: 3
+      strides: 1
+  batch_norm_3:
+    type: 'batchnormalization'
+  pool_3:
+    type: 'MaxPooling2D'
+    options:
+      pool_size: 2
+      strides: 2
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  flatten_1:
+    type: 'flatten'
+  dense_1:
+    type: 'dense'
+    options:
+      units: 64
+  dropout_2:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  batch_norm_4:
+    type: 'batchnormalization'
+  dense_2:
+    type: 'dense'
+    options:
+      units: 16
+  dropout_1:
+    type: 'dropout'
+    options:
+      rate: 0.5
+  dense_out:
+    type: 'dense'
+    options:
+      units: 1
+      activation:
+        type: 'sigmoid'
