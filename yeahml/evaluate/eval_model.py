@@ -1,4 +1,5 @@
 import os
+import pathlib
 from typing import Any
 
 import tensorflow as tf
@@ -41,7 +42,23 @@ def eval_model(
     if weights_path:
         specified_path = weights_path
     else:
-        specified_path = meta_cdict["save_weights_path"]
+        # TODO: this needs to allow an easier specification for which params to load
+        # The issue here is that if someone alters the model (perhaps in a notebook), then
+        # retrains the model (but doesn't update the config), the "old" model, not new model
+        # will be evaluated.  This will need to change
+        if pathlib.Path(meta_cdict["save_weights_dir"]).is_file():
+            specified_path = meta_cdict["save_weights_dir"]
+        elif pathlib.Path(meta_cdict["save_weights_dir"]).is_dir():
+            p = pathlib.Path(meta_cdict["save_weights_dir"])
+            sub_dirs = [x for x in p.iterdir() if x.is_dir()]
+            most_recent_subdir = sub_dirs[0]
+            # TODO: this assumes .h5 is the filetype and that model.h5 is present
+            specified_path = os.path.join(most_recent_subdir, "best_params.h5")
+        else:
+            raise ValueError(
+                f"specified path is neither an h5 path, nor a directory containing directories of h5: {meta_cdict['save_weights_dir']}"
+            )
+
     model.load_weights(specified_path)
     logger.info(f"params loaded from {specified_path}")
 

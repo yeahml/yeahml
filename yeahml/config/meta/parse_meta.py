@@ -33,23 +33,21 @@ def format_meta_config(raw_config):
     formatted_dict["log_dir"] = os.path.join(
         ".", DEV_DIR, raw_config["name"], formatted_dict["experiment_dir"]
     )
-    formatted_dict["save_weights_path"] = os.path.join(
+    formatted_dict["save_weights_dir"] = os.path.join(
         ".",
         DEV_DIR,
         raw_config["name"],
         formatted_dict["experiment_dir"],
         save_dir,
         "params",
-        "best_params" + ".h5",  # TODO: modify
     )
-    formatted_dict["save_model_path"] = os.path.join(
+    formatted_dict["save_model_dir"] = os.path.join(
         ".",
         DEV_DIR,
         raw_config["name"],
         formatted_dict["experiment_dir"],
         save_dir,
         "model",
-        "model.h5",
     )
 
     # wipe is set to true for now

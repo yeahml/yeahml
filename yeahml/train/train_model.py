@@ -1,4 +1,6 @@
 import os
+import pathlib
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -81,6 +83,11 @@ def log_model_params(tr_writer, g_train_step, model):
             tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
 
+def get_exp_time():
+    run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+    return run_id
+
+
 def train_model(
     model,
     meta_cdict: dict,
@@ -93,6 +100,24 @@ def train_model(
 
     logger = config_logger(meta_cdict["log_dir"], log_cdict, "train")
     logger.info("-> START training graph")
+
+    # save run specific information
+    exp_time = get_exp_time()
+    # model
+    model_run_path = os.path.join(meta_cdict["save_model_dir"], exp_time)
+    pathlib.Path(model_run_path).mkdir(parents=True, exist_ok=True)
+    save_model_path = os.path.join(model_run_path, "model.h5")
+    # params
+    param_run_path = os.path.join(meta_cdict["save_weights_dir"], exp_time)
+    pathlib.Path(param_run_path).mkdir(parents=True, exist_ok=True)
+    save_best_param_path = os.path.join(param_run_path, "best_params.h5")
+    # Tensorboard
+    # TODO: eventually, this needs to be flexible enough to allow for new writes
+    # every n steps
+    tb_logdir = os.path.join(meta_cdict["tf_logs"], exp_time)
+    pathlib.Path(tb_logdir).mkdir(parents=True, exist_ok=True)
+    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
+    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
 
     # get model
     # get optimizer
@@ -139,13 +164,6 @@ def train_model(
 
     tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
     val_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
-
-    # Tensorboard
-    # TODO: eventually, this needs to be flexible enough to allow for new writes
-    # every n steps
-    tb_logdir = meta_cdict["tf_logs"]
-    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
-    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
 
     # # write graph
     # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
@@ -225,14 +243,15 @@ def train_model(
         logger.debug("-> END iterating validation dataset")
 
         # check save best metrics
+
         cur_val_loss_ = avg_val_loss.result().numpy()
         if cur_val_loss_ < best_val_loss:
             if best_val_loss == np.inf:
                 # on the first time params are saved, try to save the model
-                model.save(meta_cdict["save_model_path"])
-                logger.debug(f"model saved to: {meta_cdict['save_model_path']}")
+                model.save(save_model_path)
+                logger.debug(f"model saved to: {save_model_path}")
             best_val_loss = cur_val_loss_
-            model.save_weights(meta_cdict["save_weights_path"])
+            model.save_weights(save_best_param_path)
 
             logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
 
