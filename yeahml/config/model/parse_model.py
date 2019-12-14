@@ -48,7 +48,19 @@ def parse_layer_type_information(hl: dict, default_activation: str) -> dict:
             f"layer type {hl_type} not implemented yet. Current supported layers are: {LAYER_FUNCTIONS.keys()}"
         )
 
-    cur_func_vars = list(vars(func)["__init__"].__code__.co_varnames)
+    try:
+        cur_func_vars = list(vars(func)["__init__"].__code__.co_varnames)
+    except KeyError:
+        # some layers inherit "__init__" from a base class e.g. batchnorm
+        # the assumption here is that the 1st base class will contain the init..
+        # I doubt this is accurate, but it is currently working
+        try:
+            first_parent = func.__bases__[0]
+            cur_func_vars = list(vars(first_parent)["__init__"].__code__.co_varnames)
+        except KeyError:
+            raise NotImplementedError(
+                f"error with type:{hl_type}, func:{func}, first parent: {first_parent}, other parents ({func.__bases__}). This error may be a result of an assumption that the __init__ params are from {first_parent} and not one of ({func.__bases__})"
+            )
     if issubclass(func, tf.keras.layers.Layer):
         # replace "kwargs"
         cur_func_vars.remove("kwargs")
