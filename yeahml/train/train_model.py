@@ -227,8 +227,13 @@ def train_model(
         # check save best metrics
         cur_val_loss_ = avg_val_loss.result().numpy()
         if cur_val_loss_ < best_val_loss:
+            if best_val_loss == np.inf:
+                # on the first time params are saved, try to save the model
+                model.save(meta_cdict["save_model_path"])
+                logger.debug(f"model saved to: {meta_cdict['save_model_path']}")
             best_val_loss = cur_val_loss_
             model.save_weights(meta_cdict["save_weights_path"])
+
             logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
 
         # TODO: loop metrics

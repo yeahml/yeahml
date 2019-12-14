@@ -1,8 +1,7 @@
 meta:
   name: 'mnist'
   experiment_dir: 'trial_01'
-  saver:
-    save_params_name: "best_params_saver"
+  # TODO: information on when to save params, currently only best params saved
 logging:
   console:
     level: 'info'

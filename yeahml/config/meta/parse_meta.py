@@ -18,9 +18,6 @@ def format_meta_config(raw_config):
         pass
 
     ### architecture
-    # TODO: implement after graph can be created...
-    formatted_dict["save_params"] = raw_config["saver"]["save_params_name"]
-
     try:
         formatted_dict["load_params_path"] = raw_config["saver"]["load_params_path"]
     except KeyError:
@@ -30,9 +27,9 @@ def format_meta_config(raw_config):
     # DEV_DIR is a hardcoded value for the directory in which the examples
     # are located. for packing+, this will need to be removed.
     DEV_DIR = "examples"
-    # BEST_PARAMS_DIR is a hardcoded value that must match the created dir in
+    # save_dir is a hardcoded value that must match the created dir in
     # create_standard_dirs
-    BEST_PARAMS_DIR = "best_params"
+    save_dir = "save"
     formatted_dict["log_dir"] = os.path.join(
         ".", DEV_DIR, raw_config["name"], formatted_dict["experiment_dir"]
     )
@@ -41,12 +38,25 @@ def format_meta_config(raw_config):
         DEV_DIR,
         raw_config["name"],
         formatted_dict["experiment_dir"],
-        BEST_PARAMS_DIR,
-        formatted_dict["save_params"] + ".h5",  # TODO: modify
+        save_dir,
+        "params",
+        "best_params" + ".h5",  # TODO: modify
     )
+    formatted_dict["save_model_path"] = os.path.join(
+        ".",
+        DEV_DIR,
+        raw_config["name"],
+        formatted_dict["experiment_dir"],
+        save_dir,
+        "model",
+        "model.h5",
+    )
+
     # wipe is set to true for now
     new_dirs = create_standard_dirs(
-        formatted_dict["log_dir"], ["best_params", "tf_logs", "yf_logs"], True
+        formatted_dict["log_dir"],
+        ["save/model", "save/params", "tf_logs", "yf_logs"],
+        True,
     )
     formatted_dict = {**formatted_dict, **new_dirs}
 

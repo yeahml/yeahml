@@ -19,6 +19,9 @@ from yeahml.config.performance.parse_performance import format_performance_confi
 
 # TODO: A config logger should be generated / used
 
+# TODO: I don't like this global, but I'm not sure where it belongs yet
+CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "model"]
+
 
 def maybe_extract_from_path(cur_dict: dict) -> dict:
     try:
@@ -31,35 +34,6 @@ def maybe_extract_from_path(cur_dict: dict) -> dict:
     except KeyError:
         pass
     return cur_dict
-
-
-# def extract_model_dict_and_set_defaults(MC: dict) -> dict:
-#     # this is necessary since the YAML structure is likely to change
-#     # eventually, this may be deleted
-
-#     # TODO: do type checking here... and convert all strings to lower
-
-#     main_cdict = {}
-
-#     # https://stackoverflow.com/questions/38987/how-to-merge-two-dictionaries-in-a-single-expression
-
-#     # overall
-#     overal_dict = parse_overall(MC)
-#     main_cdict = {**main_cdict, **overal_dict}
-
-#     # data
-#     data_dict = parse_data(MC)
-#     main_cdict = {**main_cdict, **data_dict}
-
-#     # hyperparameters
-#     hyper_param_dict = parse_hyper_parameters(MC)
-#     main_cdict = {**main_cdict, **hyper_param_dict}
-
-#     return main_cdict
-
-
-# TODO: I don't like this global, but I'm not sure where it belongs yet
-CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "model"]
 
 
 def create_configs(main_path: str) -> dict:
