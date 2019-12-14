@@ -53,11 +53,3 @@ eval_dict = yml.eval_model(
     perf_cdict,  # "./examples/mnist/saved_params/best_params_saver.h5"
 )
 print(eval_dict)
-
-
-## Serving
-## TODO: implementation
-
-# TODO: Convert to js
-# TODO: tfx
-# TODO: shrink model

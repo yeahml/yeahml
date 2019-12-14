@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 from yeahml.config.data.parse_data import format_data_config
-from yeahml.config.helper import (
-    extract_dict_from_path,
-    get_raw_dict_from_string,
-    maybe_create_dir,
-)
+from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,
 )

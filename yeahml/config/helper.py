@@ -1,42 +1,23 @@
 import json
 import os
+import pathlib
 import shutil
 from io import StringIO
 
 import yaml
 
 
-# helper to create dirs if they don't already exist
-def maybe_create_dir(dir_path: str) -> None:
-    # TODO: update to pathlib
-    # TODO: convert to logger
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-        print(f"{dir_path} created")
-    else:
-        print("{dir_path} already exists")
-    return dir_path
-
-
 def create_standard_dirs(root_dir: str, dirs_to_make: list, wipe_dirs: bool):
-    # this logic is messy
-    # TODO: update to pathlib
     if wipe_dirs:
         if os.path.exists(root_dir):
             shutil.rmtree(root_dir)
-        maybe_create_dir(root_dir)
-    else:
-        maybe_create_dir(root_dir)
+    pathlib.Path(root_dir).mkdir(parents=True, exist_ok=True)
 
-    # maybe_create_dir(root_dir + "/saver")
-    # `best_params/` will hold a serialized version of the best params
-    # I like to keep this as a backup in case I run into issues with
-    # the saver files
-    # `tf_logs/` will hold the logs that will be visible in tensorboard
-    # `yf_logs/` will hold the custom logs
     new_dirs = {}
     for dir_path in dirs_to_make:
-        new_dirs[dir_path] = maybe_create_dir(os.path.join(root_dir, dir_path))
+        full_path = os.path.join(root_dir, dir_path)
+        pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
+        new_dirs[dir_path] = full_path
 
     return new_dirs
 
