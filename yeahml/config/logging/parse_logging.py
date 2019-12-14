@@ -18,7 +18,6 @@ def format_logging_config(raw_config):
                 formatted_dict["log_c_lvl"] = temp_c_lvl
     except KeyError:
         formatted_dict["log_c_lvl"] = "CRITICAL"
-        pass
 
     try:
         formatted_dict["log_c_str"] = raw_config["console"]["format_str"]
@@ -82,7 +81,6 @@ def format_logging_config(raw_config):
                 formatted_dict["log_g_lvl"] = temp_g_lvl
     except KeyError:
         formatted_dict["log_g_lvl"] = "DEBUG"
-        pass
     # hard set the graph info
     formatted_dict["log_g_str"] = "%(name)-12s: %(levelname)-8s %(message)s"
 
@@ -105,7 +103,6 @@ def format_logging_config(raw_config):
                 formatted_dict["log_p_lvl"] = temp_p_lvl
     except KeyError:
         formatted_dict["log_p_lvl"] = "DEBUG"
-        pass
     # hard set the graph info
     formatted_dict["log_p_str"] = "[%(levelname)-8s] %(message)s"
     return formatted_dict

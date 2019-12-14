@@ -1,11 +1,9 @@
-from inspect import getmembers, isfunction
-
 import tensorflow as tf
 
-from yeahml.build.layers import config
 from yeahml.build.layers.config import return_available_layers
-from yeahml.config.helper import parse_yaml_from_path
 from yeahml.config.model.config import DEFAULT_ACT
+
+# from inspect import getmembers, isfunction
 
 
 def _get_hidden_layers(raw_config: dict):

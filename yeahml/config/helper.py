@@ -106,7 +106,7 @@ def get_raw_dict_from_string(cur_string: str) -> dict:
 
 
 def extract_dict_from_path(cur_path):
-    if cur_path.endswith("yaml") or path.endswith("yml"):
+    if cur_path.endswith("yaml") or cur_path.endswith("yml"):
         main_config_raw = parse_yaml_from_path(cur_path)
     elif cur_path.endswith("json"):
         main_config_raw = parse_json_from_path(cur_path)
