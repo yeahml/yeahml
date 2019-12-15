@@ -20,6 +20,7 @@ from yeahml.config.performance.parse_performance import format_performance_confi
 # TODO: A config logger should be generated / used
 
 # TODO: I don't like this global, but I'm not sure where it belongs yet
+# NOTE: it is required that meta be created before model. this may need to change
 CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "model"]
 
 
@@ -66,7 +67,7 @@ def create_configs(main_path: str) -> dict:
         elif config_type == "hyper_parameters":
             formatted_config = format_hyper_parameters_config(raw_config)
         elif config_type == "model":
-            formatted_config = format_model_config(raw_config)
+            formatted_config = format_model_config(raw_config, config_dict["meta"])
         else:
             raise ValueError(f"config type {config_type} is not yet implemented")
         config_dict[config_type] = formatted_config

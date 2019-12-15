@@ -11,6 +11,8 @@
 # TODO: default strides = 1, padding='SAME'
 # TODO: regularization
 meta:
+  name: "model_a"
+  name_override: False
   activation:
     type: 'relu'
     max_value: 6

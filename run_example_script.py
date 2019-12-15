@@ -36,7 +36,7 @@ print(model.summary())
 
 ## train graph
 train_dict = yml.train_model(
-    model, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
+    model, model_cdict, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
 )
 print(train_dict)
 
@@ -46,6 +46,7 @@ print(train_dict)
 # # > will load a graph from the saver path (if present)
 eval_dict = yml.eval_model(
     model,
+    model_cdict,
     meta_cdict,
     log_cdict,
     data_cdict,

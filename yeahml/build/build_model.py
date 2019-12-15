@@ -28,7 +28,7 @@ def reset_graph(seed=42):
 
 def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict: dict):
 
-    logger = config_logger(meta_cdict["log_dir"], log_cdict, "build")
+    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "build")
     logger.info("-> START building graph")
 
     try:
@@ -36,7 +36,7 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     except KeyError:
         reset_graph()
 
-    g_logger = config_logger(meta_cdict["log_dir"], log_cdict, "graph")
+    g_logger = config_logger(model_cdict["model_root_dir"], log_cdict, "graph")
 
     # TODO: this method is a bit sloppy and I'm not sure it's needed anymore.
     # previously, the batch dimension [0], which was filled as (-1) was needed, but

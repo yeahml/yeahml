@@ -90,6 +90,7 @@ def get_exp_time():
 
 def train_model(
     model,
+    model_cdict: dict,
     meta_cdict: dict,
     log_cdict: dict,
     data_cdict: dict,
@@ -98,23 +99,23 @@ def train_model(
 ) -> dict:
     return_dict = {}
 
-    logger = config_logger(meta_cdict["log_dir"], log_cdict, "train")
+    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "train")
     logger.info("-> START training graph")
 
     # save run specific information
     exp_time = get_exp_time()
     # model
-    model_run_path = os.path.join(meta_cdict["save_model_dir"], exp_time)
+    model_run_path = os.path.join(model_cdict["save/model"], exp_time)
     pathlib.Path(model_run_path).mkdir(parents=True, exist_ok=True)
     save_model_path = os.path.join(model_run_path, "model.h5")
     # params
-    param_run_path = os.path.join(meta_cdict["save_weights_dir"], exp_time)
+    param_run_path = os.path.join(model_cdict["save/params"], exp_time)
     pathlib.Path(param_run_path).mkdir(parents=True, exist_ok=True)
     save_best_param_path = os.path.join(param_run_path, "best_params.h5")
     # Tensorboard
     # TODO: eventually, this needs to be flexible enough to allow for new writes
     # every n steps
-    tb_logdir = os.path.join(meta_cdict["tf_logs"], exp_time)
+    tb_logdir = os.path.join(model_cdict["tf_logs"], exp_time)
     pathlib.Path(tb_logdir).mkdir(parents=True, exist_ok=True)
     tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
     v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
