@@ -6,7 +6,7 @@ Examples are currently being worked through and can be found in the [examples di
 
 The core implementation is as follows:
 
-1. Create `.tfrecords` for a training, validation, and test set
+1. Create `.tfrecords` for a training, validation, and test set (accepting pre-made tf dataset in progress)
 2. Write configuration files (json or yaml, see below)
   - for the main implementation (meta data, hyperparameters, etc)
   - for the hidden layers
@@ -24,34 +24,19 @@ The core implementation is as follows:
 ## Main use
 
 ```python
-example = "./examples/mnist/main_config.yaml"  # softmax example
+example = "./examples/mnist/main_config.yaml"
 config_dict = yml.create_configs(example)
 
-meta_cdict = config_dict["meta"]
-log_cdict = config_dict["logging"]
-perf_cdict = config_dict["performance"]
-data_cdict = config_dict["data"]
-hp_cdict = config_dict["hyper_parameters"]
-model_cdict = config_dict["model"]
+# build graph
+model = yml.build_model(config_dict)
+
+# train graph
+train_dict = yml.train_model(model, config_dict)
+
+# evaluate graph -- will load the "best params"
+eval_dict = yml.eval_model(model, config_dict)
 
 
-## build graph
-model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
-
-## train graph
-train_dict = yml.train_model(
-    model, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
-)
-
-## evaluate graph
-eval_dict = yml.eval_model(
-    model,
-    meta_cdict,
-    log_cdict,
-    data_cdict,
-    hp_cdict,
-    perf_cdict,
-)
 ```
 
 Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_cdict.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md).
@@ -130,6 +115,8 @@ The hidden layer architecture config (where the path to this file is specified a
 
 ```yaml
 meta:
+  name: "model_a"
+  name_override: False
   activation:
     type: 'elu'
 

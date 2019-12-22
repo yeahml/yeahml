@@ -12,7 +12,7 @@
 # TODO: regularization
 meta:
   name: "model_a"
-  name_override: False
+  name_override: True
   activation:
     type: 'relu'
     max_value: 6
