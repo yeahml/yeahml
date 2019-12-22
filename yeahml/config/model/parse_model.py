@@ -1,7 +1,6 @@
 import os
 import pathlib
 import shutil
-import warnings
 
 import tensorflow as tf
 
@@ -135,7 +134,7 @@ def format_model_config(raw_config: dict, meta_dict: dict) -> dict:
             shutil.rmtree(model_root_dir)
         else:
             # TODO: convert to logging
-            warnings.warn(
+            raise ValueError(
                 f"A model currently exists with the name {model_name}. If you wish to override the current model, you can use model:meta:name_override: True"
             )
     else:
