@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Any
+from typing import Any, Dict
 
 import tensorflow as tf
 
@@ -26,15 +26,16 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
 
 
 def eval_model(
-    model: Any,
-    model_cdict,
-    meta_cdict,
-    log_cdict,
-    data_cdict,
-    hp_cdict,
-    perf_cdict,
-    weights_path: str = None,
-) -> dict:
+    model: Any, config_dict: Dict[str, Dict[str, Any]], weights_path: str = ""
+) -> Dict[str, Any]:
+
+    # unpack configuration
+    model_cdict: Dict[str, Any] = config_dict["model"]
+    meta_cdict: Dict[str, Any] = config_dict["meta"]
+    log_cdict: Dict[str, Any] = config_dict["logging"]
+    data_cdict: Dict[str, Any] = config_dict["data"]
+    hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
+    perf_cdict: Dict[str, Any] = config_dict["performance"]
 
     logger = config_logger(model_cdict["model_root_dir"], log_cdict, "eval")
 

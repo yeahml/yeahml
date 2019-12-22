@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import tensorflow as tf
 
 from yeahml.build.build_layers import build_hidden_block
@@ -7,7 +9,7 @@ from yeahml.log.yf_logging import config_logger
 
 
 # Helper to make the output "consistent"
-def reset_graph_deterministic(seed=42):
+def reset_graph_deterministic(seed: int = 42) -> None:
     # logger = logging.getLogger("build_logger")
     # logger.info("reset_graph_deterministic")
     # there is no option for deterministic behavior yet...
@@ -18,7 +20,7 @@ def reset_graph_deterministic(seed=42):
     # np.random.seed(seed)
 
 
-def reset_graph(seed=42):
+def reset_graph(seed: int = 42) -> None:
     # logger = logging.getLogger("build_logger")
     # logger.info("reset_graph")
     # tf.reset_default_graph()
@@ -26,7 +28,13 @@ def reset_graph(seed=42):
     tf.keras.backend.clear_session()
 
 
-def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict: dict):
+def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
+
+    # unpack configuration
+    model_cdict: Dict[str, Any] = config_dict["model"]
+    meta_cdict: Dict[str, Any] = config_dict["meta"]
+    log_cdict: Dict[str, Any] = config_dict["logging"]
+    data_cdict: Dict[str, Any] = config_dict["data"]
 
     logger = config_logger(model_cdict["model_root_dir"], log_cdict, "build")
     logger.info("-> START building graph")
@@ -59,7 +67,7 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     # TODO: we could check for graph things here - heads/ends, cycles, etc.
     # TODO: Not sure if BF or DF would be better here when building the graph
 
-    graph_dict = {}
+    graph_dict: Dict[str, Any] = {}
     for layer_name, layer_dict in hidden_layers.items():
         graph_dict[layer_name] = {}
         layer_fn = layer_dict["layer_fn"]

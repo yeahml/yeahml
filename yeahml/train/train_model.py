@@ -1,6 +1,7 @@
 import os
 import pathlib
 import time
+from typing import Any, Dict
 
 import numpy as np
 import tensorflow as tf
@@ -88,15 +89,16 @@ def get_exp_time():
     return run_id
 
 
-def train_model(
-    model,
-    model_cdict: dict,
-    meta_cdict: dict,
-    log_cdict: dict,
-    data_cdict: dict,
-    hp_cdict: dict,
-    perf_cdict: dict,
-) -> dict:
+def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+
+    # unpack configuration
+    model_cdict: Dict[str, Any] = config_dict["model"]
+    meta_cdict: Dict[str, Any] = config_dict["meta"]
+    log_cdict: Dict[str, Any] = config_dict["logging"]
+    data_cdict: Dict[str, Any] = config_dict["data"]
+    hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
+    perf_cdict: Dict[str, Any] = config_dict["performance"]
+
     return_dict = {}
 
     logger = config_logger(model_cdict["model_root_dir"], log_cdict, "train")
