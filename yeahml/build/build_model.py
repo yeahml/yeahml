@@ -3,6 +3,7 @@ from typing import Any, Dict
 import tensorflow as tf
 
 from yeahml.build.build_layers import build_hidden_block
+from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
 from yeahml.log.yf_logging import config_logger
@@ -112,5 +113,9 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     # TODO: right now it is assumed that the last layer defined in the config is the
     # output layer -- this may not be true. named outputs would be nice.
     model = tf.keras.Model(inputs=input_layer, outputs=cur_layer_out)
+
+    # write meta.json including model hash
+    if write_build_information(model_cdict):
+        logger.info("information json file created")
 
     return model
