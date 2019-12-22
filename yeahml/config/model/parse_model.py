@@ -6,7 +6,8 @@ import tensorflow as tf
 
 from yeahml.build.layers.config import return_available_layers
 from yeahml.config.helper import create_standard_dirs
-from yeahml.config.model.config import DEFAULT_ACT
+from yeahml.config.model.config import DEFAULT_ACT, IGNORE_HASH_KEYS
+from yeahml.config.model.util import make_hash
 
 # from inspect import getmembers, isfunction
 
@@ -173,5 +174,10 @@ def format_model_config(raw_config: dict, meta_dict: dict) -> dict:
     # formatted_dict["save_model_dir"] = os.path.join(model_root_dir, save_dir, "model")
 
     formatted_config = {**formatted_config, **new_dirs}
+
+    # add a model hash
+    # TODO: eventually, this could be used to track model architectures
+    model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
+    formatted_config["model_hash"] = model_hash
 
     return formatted_config
