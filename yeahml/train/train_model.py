@@ -168,9 +168,16 @@ def train_model(
     if not datasets:
         train_ds, val_ds = get_datasets_from_tfrs(data_cdict, hp_cdict)
     else:
+        # TODO: apply shuffle/aug/reshape from config
         assert (
             len(datasets) == 2
         ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
+        assert isinstance(
+            datasets[0], tf.data.Dataset
+        ), f"a {type(datasets[0])} was passed as a training dataset, please pass an instance of {tf.data.Dataset}"
+        assert isinstance(
+            datasets[1], tf.data.Dataset
+        ), f"a {type(datasets[1])} was passed as a validation dataset, please pass an instance of {tf.data.Dataset}"
         train_ds, val_ds = datasets
 
     # # write graph
