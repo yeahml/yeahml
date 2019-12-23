@@ -165,7 +165,7 @@ def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str,
     tfr_train_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
     train_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_train_path)
 
-    tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
+    tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_val"])
     val_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
 
     # # write graph
