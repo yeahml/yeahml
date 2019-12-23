@@ -27,3 +27,13 @@ def obtain_datasets(dataset_name="", splits=[]):
     test_set = tfds.load(dataset_name, split=test_split, as_supervised=True)
 
     return train_set, valid_set, test_set
+
+
+def dataset_info(dataset_name=""):
+    if not dataset_name:
+        raise ValueError(
+            f"no dataset specified. please select one of {tfds.list_builders()}"
+        )
+
+    ds_builder = tfds.builder(dataset_name)
+    return ds_builder.info

@@ -7,6 +7,7 @@ def config_model(model_string: str, config: dict):
 
     formatted_model_config = format_model_config(model_config_raw, config["meta"])
 
+    # keep previous config constant, but update model architecture
     new_config = config.copy()
     new_config["model"] = formatted_model_config
 

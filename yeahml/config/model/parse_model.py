@@ -134,7 +134,7 @@ def format_model_config(raw_config: dict, meta_dict: dict) -> dict:
             # wipe the directory to start fresh
             shutil.rmtree(model_root_dir)
         else:
-            # TODO: convert to logging
+            # TODO: logging
             raise ValueError(
                 f"A model currently exists with the name {model_name}. If you wish to override the current model, you can use model:meta:name_override: True"
             )

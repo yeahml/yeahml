@@ -3,17 +3,13 @@ import pathlib
 from typing import Any, Dict
 
 
-def check_if_exists(json_path: str) -> bool:
-    return pathlib.Path(json_path).exists()
-
-
 def write_build_information(model_cdict: Dict[str, Any]) -> bool:
     json_path = pathlib.Path(model_cdict["model_root_dir"]).joinpath("info.json")
 
     data_to_write = {}
     KEYS_TO_WRITE = ["model_hash"]
 
-    if check_if_exists(json_path):
+    if pathlib.Path(json_path).exists():
         with open(json_path) as json_file:
             data = json.load(json_file)
 

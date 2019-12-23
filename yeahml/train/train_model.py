@@ -12,7 +12,7 @@ from yeahml.build.components.loss import configure_loss
 # from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metrics import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
-from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yeahml.dataset.util import get_datasets_from_tfrs
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 
@@ -89,7 +89,9 @@ def get_exp_time():
     return run_id
 
 
-def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+def train_model(
+    model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
+) -> Dict[str, Any]:
 
     # unpack configuration
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -162,11 +164,14 @@ def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str,
         metric_order.append(metric)
 
     # get datasets
-    tfr_train_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
-    train_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_train_path)
-
-    tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_val"])
-    val_ds = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
+    # TODO: there needs to be some check here to ensure the same datsets are being compared.
+    if datasets:
+        train_ds, val_ds = get_datasets_from_tfrs(data_cdict, hp_cdict)
+    else:
+        assert (
+            len(datasets) == 2
+        ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
+        train_ds, val_ds = datasets
 
     # # write graph
     # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
@@ -192,6 +197,7 @@ def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str,
 
     # train loop
     apply_grad_fn = get_apply_grad_fn()
+    # TODO: remove np dependency
     best_val_loss = np.inf
     steps, train_losses, val_losses = [], [], []
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
@@ -249,6 +255,7 @@ def train_model(model: Any, config_dict: Dict[str, Dict[str, Any]]) -> Dict[str,
 
         cur_val_loss_ = avg_val_loss.result().numpy()
         if cur_val_loss_ < best_val_loss:
+            # TODO: remove np dependency
             if best_val_loss == np.inf:
                 # on the first time params are saved, try to save the model
                 model.save(save_model_path)
