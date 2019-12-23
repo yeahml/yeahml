@@ -1,7 +1,13 @@
+import os
+import pathlib
+import shutil
+
 import tensorflow as tf
 
 from yeahml.build.layers.config import return_available_layers
-from yeahml.config.model.config import DEFAULT_ACT
+from yeahml.config.helper import create_standard_dirs
+from yeahml.config.model.config import DEFAULT_ACT, IGNORE_HASH_KEYS
+from yeahml.config.model.util import make_hash
 
 # from inspect import getmembers, isfunction
 
@@ -109,7 +115,31 @@ def create_layer_config(hl: dict, default_activation: str) -> dict:
     return HLD
 
 
-def format_model_config(raw_config: dict) -> dict:
+def format_model_config(raw_config: dict, meta_dict: dict) -> dict:
+
+    try:
+        model_name = raw_config["meta"]["name"]
+    except KeyError:
+        raise KeyError(
+            "model:meta:name is not specified. Please specify a `name` in the model configuration"
+        )
+    model_root_dir = os.path.join(meta_dict["log_dir"], model_name)
+    if pathlib.Path(model_root_dir).exists():
+        try:
+            override = raw_config["meta"]["name_override"]
+        except KeyError:
+            # default is False
+            override = False
+        if override:
+            # wipe the directory to start fresh
+            shutil.rmtree(model_root_dir)
+        else:
+            # TODO: convert to logging
+            raise ValueError(
+                f"A model currently exists with the name {model_name}. If you wish to override the current model, you can use model:meta:name_override: True"
+            )
+    else:
+        pathlib.Path(model_root_dir).mkdir(parents=True, exist_ok=True)
 
     try:
         default_activation = raw_config["meta"]["activation"]
@@ -117,6 +147,7 @@ def format_model_config(raw_config: dict) -> dict:
         default_activation = DEFAULT_ACT
     # create architecture config
     formatted_config = {}
+    formatted_config["model_root_dir"] = model_root_dir
     hidden_layers = _get_hidden_layers(raw_config)
     if not hidden_layers:
         raise ValueError(
@@ -130,5 +161,23 @@ def format_model_config(raw_config: dict) -> dict:
         )
 
     formatted_config["layers"] = approved_layers_config
+
+    # model specific directories
+
+    # TODO: I really don't like this save/<xxx> naming...
+    new_dirs = create_standard_dirs(
+        model_root_dir, ["save/model", "save/params", "tf_logs", "yf_logs"], False
+    )
+    # formatted_dict["save_weights_dir"] = os.path.join(
+    #     model_root_dir, save_dir, "params"
+    # )
+    # formatted_dict["save_model_dir"] = os.path.join(model_root_dir, save_dir, "model")
+
+    formatted_config = {**formatted_config, **new_dirs}
+
+    # add a model hash
+    # TODO: eventually, this could be used to track model architectures
+    model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
+    formatted_config["model_hash"] = model_hash
 
     return formatted_config

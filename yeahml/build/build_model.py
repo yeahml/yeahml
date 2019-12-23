@@ -1,13 +1,16 @@
+from typing import Any, Dict
+
 import tensorflow as tf
 
 from yeahml.build.build_layers import build_hidden_block
+from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
 from yeahml.log.yf_logging import config_logger
 
 
 # Helper to make the output "consistent"
-def reset_graph_deterministic(seed=42):
+def reset_graph_deterministic(seed: int = 42) -> None:
     # logger = logging.getLogger("build_logger")
     # logger.info("reset_graph_deterministic")
     # there is no option for deterministic behavior yet...
@@ -18,7 +21,7 @@ def reset_graph_deterministic(seed=42):
     # np.random.seed(seed)
 
 
-def reset_graph(seed=42):
+def reset_graph(seed: int = 42) -> None:
     # logger = logging.getLogger("build_logger")
     # logger.info("reset_graph")
     # tf.reset_default_graph()
@@ -26,9 +29,15 @@ def reset_graph(seed=42):
     tf.keras.backend.clear_session()
 
 
-def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict: dict):
+def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
 
-    logger = config_logger(meta_cdict["log_dir"], log_cdict, "build")
+    # unpack configuration
+    model_cdict: Dict[str, Any] = config_dict["model"]
+    meta_cdict: Dict[str, Any] = config_dict["meta"]
+    log_cdict: Dict[str, Any] = config_dict["logging"]
+    data_cdict: Dict[str, Any] = config_dict["data"]
+
+    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "build")
     logger.info("-> START building graph")
 
     try:
@@ -36,7 +45,7 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     except KeyError:
         reset_graph()
 
-    g_logger = config_logger(meta_cdict["log_dir"], log_cdict, "graph")
+    g_logger = config_logger(model_cdict["model_root_dir"], log_cdict, "graph")
 
     # TODO: this method is a bit sloppy and I'm not sure it's needed anymore.
     # previously, the batch dimension [0], which was filled as (-1) was needed, but
@@ -59,7 +68,7 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     # TODO: we could check for graph things here - heads/ends, cycles, etc.
     # TODO: Not sure if BF or DF would be better here when building the graph
 
-    graph_dict = {}
+    graph_dict: Dict[str, Any] = {}
     for layer_name, layer_dict in hidden_layers.items():
         graph_dict[layer_name] = {}
         layer_fn = layer_dict["layer_fn"]
@@ -104,5 +113,9 @@ def build_model(meta_cdict: dict, model_cdict: dict, log_cdict: dict, data_cdict
     # TODO: right now it is assumed that the last layer defined in the config is the
     # output layer -- this may not be true. named outputs would be nice.
     model = tf.keras.Model(inputs=input_layer, outputs=cur_layer_out)
+
+    # write meta.json including model hash
+    if write_build_information(model_cdict):
+        logger.info("information json file created")
 
     return model

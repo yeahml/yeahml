@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Any
+from typing import Any, Dict
 
 import tensorflow as tf
 
@@ -26,16 +26,18 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
 
 
 def eval_model(
-    model: Any,
-    meta_cdict,
-    log_cdict,
-    data_cdict,
-    hp_cdict,
-    perf_cdict,
-    weights_path: str = None,
-) -> dict:
+    model: Any, config_dict: Dict[str, Dict[str, Any]], weights_path: str = ""
+) -> Dict[str, Any]:
 
-    logger = config_logger(meta_cdict["log_dir"], log_cdict, "eval")
+    # unpack configuration
+    model_cdict: Dict[str, Any] = config_dict["model"]
+    meta_cdict: Dict[str, Any] = config_dict["meta"]
+    log_cdict: Dict[str, Any] = config_dict["logging"]
+    data_cdict: Dict[str, Any] = config_dict["data"]
+    hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
+    perf_cdict: Dict[str, Any] = config_dict["performance"]
+
+    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "eval")
 
     # load best weights
     # TODO: load specific weights according to a param
@@ -46,10 +48,10 @@ def eval_model(
         # The issue here is that if someone alters the model (perhaps in a notebook), then
         # retrains the model (but doesn't update the config), the "old" model, not new model
         # will be evaluated.  This will need to change
-        if pathlib.Path(meta_cdict["save_weights_dir"]).is_file():
-            specified_path = meta_cdict["save_weights_dir"]
-        elif pathlib.Path(meta_cdict["save_weights_dir"]).is_dir():
-            p = pathlib.Path(meta_cdict["save_weights_dir"])
+        if pathlib.Path(model_cdict["save/params"]).is_file():
+            specified_path = model_cdict["save/params"]
+        elif pathlib.Path(model_cdict["save/params"]).is_dir():
+            p = pathlib.Path(model_cdict["save/params"])
             sub_dirs = [x for x in p.iterdir() if x.is_dir()]
             most_recent_subdir = sub_dirs[0]
             # TODO: this assumes .h5 is the filetype and that model.h5 is present

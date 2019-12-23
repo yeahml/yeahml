@@ -1,6 +1,6 @@
 import os
 
-from yeahml.config.helper import create_standard_dirs
+from yeahml.config.helper import create_exp_dir
 
 
 def format_meta_config(raw_config):
@@ -29,33 +29,10 @@ def format_meta_config(raw_config):
     DEV_DIR = "examples"
     # save_dir is a hardcoded value that must match the created dir in
     # create_standard_dirs
-    save_dir = "save"
     formatted_dict["log_dir"] = os.path.join(
         ".", DEV_DIR, raw_config["name"], formatted_dict["experiment_dir"]
     )
-    formatted_dict["save_weights_dir"] = os.path.join(
-        ".",
-        DEV_DIR,
-        raw_config["name"],
-        formatted_dict["experiment_dir"],
-        save_dir,
-        "params",
-    )
-    formatted_dict["save_model_dir"] = os.path.join(
-        ".",
-        DEV_DIR,
-        raw_config["name"],
-        formatted_dict["experiment_dir"],
-        save_dir,
-        "model",
-    )
-
-    # wipe is set to true for now
-    new_dirs = create_standard_dirs(
-        formatted_dict["log_dir"],
-        ["save/model", "save/params", "tf_logs", "yf_logs"],
-        True,
-    )
-    formatted_dict = {**formatted_dict, **new_dirs}
+    # wipe is set to True for now
+    create_exp_dir(formatted_dict["log_dir"], wipe_dirs=False)
 
     return formatted_dict

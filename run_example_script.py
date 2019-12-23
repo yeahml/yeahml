@@ -22,34 +22,18 @@ example = "./examples/mnist/main_config.yaml"  # softmax example
 # example = "./examples/sentiment_imdb/model_cdict.yaml"  # sentiment analysis example
 config_dict = yml.create_configs(example)
 
-meta_cdict = config_dict["meta"]
-log_cdict = config_dict["logging"]
-perf_cdict = config_dict["performance"]
-data_cdict = config_dict["data"]
-hp_cdict = config_dict["hyper_parameters"]
-model_cdict = config_dict["model"]
-
-
 ## build graph
-model = yml.build_model(meta_cdict, model_cdict, log_cdict, data_cdict)
+model = yml.build_model(config_dict)
 print(model.summary())
 
 ## train graph
-train_dict = yml.train_model(
-    model, meta_cdict, log_cdict, data_cdict, hp_cdict, perf_cdict
-)
+train_dict = yml.train_model(model, config_dict)
 print(train_dict)
 
 # ## evaluate graph
 # # yml.eval_graph(g, model_cdict) # not currently implemented (use eval_graph_from_saver)
 # # same as eval_graph(), but will not require manual graph creation
 # # > will load a graph from the saver path (if present)
-eval_dict = yml.eval_model(
-    model,
-    meta_cdict,
-    log_cdict,
-    data_cdict,
-    hp_cdict,
-    perf_cdict,  # "./examples/mnist/saved_params/best_params_saver.h5"
-)
+# "./examples/mnist/saved_params/best_params_saver.h5"
+eval_dict = yml.eval_model(model, config_dict)
 print(eval_dict)
