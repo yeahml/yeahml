@@ -165,7 +165,7 @@ def train_model(
 
     # get datasets
     # TODO: there needs to be some check here to ensure the same datsets are being compared.
-    if datasets:
+    if not datasets:
         train_ds, val_ds = get_datasets_from_tfrs(data_cdict, hp_cdict)
     else:
         assert (
