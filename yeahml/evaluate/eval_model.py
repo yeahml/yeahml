@@ -92,7 +92,7 @@ def eval_model(
         eval_metric_fn.reset_states()
 
     # get datasets
-    tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
+    tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_test"])
     # TODO: the hp_cdict isn't needed here
     eval_ds = return_batched_iter("eval", data_cdict, hp_cdict, tfr_eval_path)
 
