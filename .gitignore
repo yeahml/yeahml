@@ -62,7 +62,9 @@ examples/multi_segmentation/trial_01/tf_logs/*
 examples/multi_segmentation/trial_01/yf_logs/
 
 examples/mnist/saved_params/
+examples/abalone/trial_00/model_a/
 
 yeahml/*/\.mypy_cache/3\.6/
 
 \.ipynb_checkpoints/
+

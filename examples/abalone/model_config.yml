@@ -1,0 +1,17 @@
+meta:
+  name: "model_a"
+  name_override: True
+  activation:
+    type: 'elu'
+
+layers:
+  dense_1:
+    type: 'dense'
+    options:
+      units: 32
+  dense_2_output:
+    type: 'dense'
+    options:
+      units: 1
+      activation:
+        type: 'linear'
