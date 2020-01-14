@@ -7,6 +7,7 @@ import tensorflow as tf
 from yeahml.build.components.loss import configure_loss
 from yeahml.build.components.metrics import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+from yeahml.dataset.util import get_eval_dataset_from_tfrs
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 
@@ -26,7 +27,10 @@ def eval_step(model, x_batch, y_batch, loss_fn, loss_avg, metric_fns):
 
 
 def eval_model(
-    model: Any, config_dict: Dict[str, Dict[str, Any]], weights_path: str = ""
+    model: Any,
+    config_dict: Dict[str, Dict[str, Any]],
+    dataset: Any = None,
+    weights_path: str = "",
 ) -> Dict[str, Any]:
 
     # unpack configuration
@@ -92,9 +96,16 @@ def eval_model(
         eval_metric_fn.reset_states()
 
     # get datasets
-    tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
-    # TODO: the hp_cdict isn't needed here
-    eval_ds = return_batched_iter("eval", data_cdict, hp_cdict, tfr_eval_path)
+    # TODO: ensure eval dataset is the same as used previously
+    if not dataset:
+        eval_ds = get_eval_dataset_from_tfrs(data_cdict, hp_cdict)
+    else:
+        # TODO: apply shuffle/aug/reshape from config
+        # TODO: this implementation is currently failing because shape/datatype logic
+        assert isinstance(
+            dataset, tf.data.Dataset
+        ), f"a {type(dataset)} was passed as a test dataset, please pass an instance of {tf.data.Dataset}"
+        eval_ds = dataset
 
     logger.info("-> START evaluating model")
     for step, (x_batch, y_batch) in enumerate(eval_ds):

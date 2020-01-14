@@ -41,16 +41,22 @@ def format_data_config(raw_config):
         formatted_dict["label_one_hot"] = False
 
     # currently required
-    formatted_dict["TFR_dir"] = raw_config["TFR"]["dir"]
-    formatted_dict["TFR_train"] = raw_config["TFR"]["train"]
-    formatted_dict["TFR_test"] = raw_config["TFR"]["test"]
-    formatted_dict["TFR_val"] = raw_config["TFR"]["validation"]
+    try:
+        formatted_dict["TFR_dir"] = raw_config["TFR"]["dir"]
+        formatted_dict["TFR_train"] = raw_config["TFR"]["train"]
+        formatted_dict["TFR_test"] = raw_config["TFR"]["test"]
+        formatted_dict["TFR_val"] = raw_config["TFR"]["validation"]
 
-    # TODO: this is a first draft for this type of organization and will
-    # will likely be changed
-    formatted_dict["data_in_dict"] = raw_config["in"]
-    formatted_dict["data_out_dict"] = raw_config["label"]
-    formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
+        # TODO: this is a first draft for this type of organization and will
+        # will likely be changed
+        formatted_dict["data_in_dict"] = raw_config["in"]
+        formatted_dict["data_out_dict"] = raw_config["label"]
+        formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
+
+    except KeyError:
+        # TODO: this needs to be thought through. The issue is that if we are
+        # passing the datasets we do not need the tfr directories.
+        pass
 
     try:
         formatted_dict["augmentation"] = raw_config["image"]["augmentation"]

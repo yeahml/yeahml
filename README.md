@@ -6,7 +6,7 @@ Examples are currently being worked through and can be found in the [examples di
 
 The core implementation is as follows:
 
-1. Create `.tfrecords` for a training, validation, and test set (accepting pre-made tf dataset in progress)
+1. Create `.tfrecords` for a training, validation, and test set (accepting pre-made tf dataset in progress [tfd branch])
 2. Write configuration files (json or yaml, see below)
   - for the main implementation (meta data, hyperparameters, etc)
   - for the hidden layers
@@ -111,7 +111,7 @@ model:
   path: './examples/mnist/model_config.yaml'
 ```
 
-The hidden layer architecture config (where the path to this file is specified above by (`model:path`) may look similar to the following:
+The model config (where the path to this file is specified above by (`model:path`) may look similar to the following:
 
 ```yaml
 meta:
