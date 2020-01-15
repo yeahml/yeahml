@@ -106,6 +106,7 @@ def eval_model(
             dataset, tf.data.Dataset
         ), f"a {type(dataset)} was passed as a test dataset, please pass an instance of {tf.data.Dataset}"
         eval_ds = dataset
+        eval_ds = eval_ds.batch(hp_cdict["dataset"]["batch"])
 
     logger.info("-> START evaluating model")
     for step, (x_batch, y_batch) in enumerate(eval_ds):

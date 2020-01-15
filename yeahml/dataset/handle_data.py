@@ -162,15 +162,17 @@ def return_batched_iter(set_type: str, main_cdict: dict, hp_cdict: dict, tfr_f_p
             main_cdict["TFR_parse"],
         )
     )  # Parse the record into tensors.
-    if set_type == "train":
-        # TODO: try
-        # TODO: does this belong in hp_cdict?
-        dataset = dataset.shuffle(buffer_size=hp_cdict["shuffle_buffer"])
+    # if set_type == "train":
+    #     # TODO: try
+    #     # TODO: does this belong in hp_cdict?
+    #     dataset = dataset.shuffle(buffer_size=hp_cdict["shuffle_buffer"])
     # dataset = dataset.shuffle(buffer_size=1)
     # prefetch is used to ensure one batch is always ready
     # TODO: this prefetch should have some logic based on the
     # system environment, batchsize, and data size
-    dataset = dataset.batch(hp_cdict["batch_size"]).prefetch(1)
+    # TODO: a sneaky bug could appear here where the batch is applied twice
+    # due to the fact that a .batch is applied to dataset objects in memory
+    dataset = dataset.batch(hp_cdict["dataset"]["batch"]).prefetch(1)
     dataset = dataset.repeat(1)
 
     # iterator = dataset.make_initializable_iterator()

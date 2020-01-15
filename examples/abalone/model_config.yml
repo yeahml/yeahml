@@ -8,8 +8,14 @@ layers:
   dense_1:
     type: 'dense'
     options:
-      units: 32
-  dense_2_output:
+      units: 16
+  dense_2:
+    type: 'dense'
+    options:
+      units: 8
+      activation:
+        type: 'linear'
+  dense_3_output:
     type: 'dense'
     options:
       units: 1

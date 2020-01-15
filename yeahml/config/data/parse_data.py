@@ -23,6 +23,8 @@ def format_data_config(raw_config):
     else:
         formatted_dict["input_layer_dim"] = raw_config["in"]["dim"].copy()
 
+    # NOTE: this assumes supervised learning, which isn't always true.
+    # this logic will need to be rethought.
     # copy is used to prevent overwriting underlying data
     formatted_dict["output_dim"] = raw_config["label"]["dim"].copy()
     if formatted_dict["output_dim"][0]:  # as oppposed to [None, x, y, z]

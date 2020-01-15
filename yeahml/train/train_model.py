@@ -180,6 +180,10 @@ def train_model(
         ), f"a {type(datasets[1])} was passed as a validation dataset, please pass an instance of {tf.data.Dataset}"
         train_ds, val_ds = datasets
 
+        # apply batch operation
+        train_ds = train_ds.batch(hp_cdict["dataset"]["batch"])
+        val_ds = val_ds.batch(hp_cdict["dataset"]["batch"])
+
     # # write graph
     # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
     # prof_ds = train_ds.take(2)
