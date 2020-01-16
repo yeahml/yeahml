@@ -7,7 +7,7 @@ import tensorflow as tf
 from yeahml.build.components.loss import configure_loss
 from yeahml.build.components.metrics import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
-from yeahml.dataset.util import get_eval_dataset_from_tfrs
+from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 
@@ -97,16 +97,14 @@ def eval_model(
 
     # get datasets
     # TODO: ensure eval dataset is the same as used previously
+    # TODO: apply shuffle/aug/reshape from config
     if not dataset:
-        eval_ds = get_eval_dataset_from_tfrs(data_cdict, hp_cdict)
+        eval_ds = get_configured_dataset(data_cdict, hp_cdict)
     else:
-        # TODO: apply shuffle/aug/reshape from config
-        # TODO: this implementation is currently failing because shape/datatype logic
         assert isinstance(
             dataset, tf.data.Dataset
         ), f"a {type(dataset)} was passed as a test dataset, please pass an instance of {tf.data.Dataset}"
-        eval_ds = dataset
-        eval_ds = eval_ds.batch(hp_cdict["dataset"]["batch"])
+        eval_ds = get_configured_dataset(data_cdict, hp_cdict, ds=dataset)
 
     logger.info("-> START evaluating model")
     for step, (x_batch, y_batch) in enumerate(eval_ds):

@@ -1,27 +1,58 @@
-import os
-from typing import Any, Dict, Tuple
+import pathlib
+from typing import Any, Dict
 
-from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
+import tensorflow as tf
 
-# TODO: these functions could/should likely be reorganized
-
-
-def get_datasets_from_tfrs(
-    data_cdict: Dict[str, Any], hp_cdict: Dict[str, Any]
-) -> Tuple[Any, Any]:
-    tfr_train_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_train"])
-    train_ds: Any = return_batched_iter("train", data_cdict, hp_cdict, tfr_train_path)
-
-    tfr_val_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_val"])
-    val_ds: Any = return_batched_iter("train", data_cdict, hp_cdict, tfr_val_path)
-    return (train_ds, val_ds)
+from yeahml.dataset.handle_data import return_batched_iter
 
 
-def get_eval_dataset_from_tfrs(
-    data_cdict: Dict[str, Any], hp_cdict: Dict[str, Any]
+def _apply_ds_hyperparams(hp_cdict: Dict[str, Any], dataset: Any) -> Any:
+    # these are hyperparameters applied to the (already created) dataset. Right
+    # now only `batch` is supported, but an additional shuffle could be
+    # suppported in the future as well as a check as to whether a <method> has
+    # previously been applied.
+
+    try:
+        batch_size = hp_cdict["dataset"]["batch"]
+    except KeyError:
+        batch_size = 1
+    dataset = dataset.batch(batch_size)
+
+    return dataset
+
+
+def _get_dataset_from_tfrs(
+    ds_type: str, data_cdict: Dict[str, Any], hp_cdict: Dict[str, Any]
 ) -> Any:
+    try:
+        dir_path = data_cdict[f"TFR_{ds_type}"]
+    except KeyError:
+        raise KeyError(f"TFR_{ds_type} option does not exist in {data_cdict.keys()}")
 
-    tfr_eval_path = os.path.join(data_cdict["TFR_dir"], data_cdict["TFR_test"])
-    # TODO: the hp_cdict isn't needed here
-    eval_ds = return_batched_iter("eval", data_cdict, hp_cdict, tfr_eval_path)
-    return eval_ds
+    tfr_train_path: Any = pathlib.Path(data_cdict["TFR_dir"]).joinpath(dir_path)
+    dataset: Any = return_batched_iter("train", data_cdict, hp_cdict, tfr_train_path)
+
+    return dataset
+
+
+def get_configured_dataset(
+    data_cdict: Dict[str, Any],
+    hp_cdict: Dict[str, Any],
+    ds: Any = None,
+    ds_type: str = "",
+) -> Any:
+    if not ds:
+        if not ds_type:
+            raise ValueError(
+                f"please either specify the dataset type (ds_type) or provide a dataset (ds)"
+            )
+        dataset = _get_dataset_from_tfrs(ds_type, data_cdict, hp_cdict)
+    else:
+        assert isinstance(
+            ds, tf.data.Dataset
+        ), f"a {type(ds)} was passed as a training dataset, please pass an instance of {tf.data.Dataset}"
+        dataset = ds
+
+    configured_dataset = _apply_ds_hyperparams(hp_cdict, dataset)
+
+    return configured_dataset

@@ -12,7 +12,7 @@ from yeahml.build.components.loss import configure_loss
 # from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metrics import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
-from yeahml.dataset.util import get_datasets_from_tfrs
+from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
 
 
@@ -166,23 +166,18 @@ def train_model(
     # get datasets
     # TODO: there needs to be some check here to ensure the same datsets are being compared.
     if not datasets:
-        train_ds, val_ds = get_datasets_from_tfrs(data_cdict, hp_cdict)
+        train_ds = get_configured_dataset(
+            data_cdict, hp_cdict, ds=None, ds_type="train"
+        )
+        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=None, ds_type="val")
     else:
         # TODO: apply shuffle/aug/reshape from config
         assert (
             len(datasets) == 2
         ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
-        assert isinstance(
-            datasets[0], tf.data.Dataset
-        ), f"a {type(datasets[0])} was passed as a training dataset, please pass an instance of {tf.data.Dataset}"
-        assert isinstance(
-            datasets[1], tf.data.Dataset
-        ), f"a {type(datasets[1])} was passed as a validation dataset, please pass an instance of {tf.data.Dataset}"
         train_ds, val_ds = datasets
-
-        # apply batch operation
-        train_ds = train_ds.batch(hp_cdict["dataset"]["batch"])
-        val_ds = val_ds.batch(hp_cdict["dataset"]["batch"])
+        train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
+        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
 
     # # write graph
     # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
