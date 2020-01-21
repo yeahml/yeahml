@@ -68,3 +68,5 @@ src/yeahml/*/\.mypy_cache/3\.6/
 
 \.ipynb_checkpoints/
 
+
+src/yeahml\.egg-info/
