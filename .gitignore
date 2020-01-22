@@ -70,3 +70,5 @@ src/yeahml/*/\.mypy_cache/3\.6/
 
 
 src/yeahml\.egg-info/
+
+htmlcov/

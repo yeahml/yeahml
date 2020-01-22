@@ -1,13 +1,136 @@
+import pytest
+
 import yeahml as yml
+
+# print of print([a for a in tf.keras.layers.__dict__]) - 21Jan20
+# excluding:     "deserialize" "serialize","InputSpec","Input",
+tf_layers = [
+    "DenseFeatures",
+    "Layer",
+    "InputLayer",
+    "ELU",
+    "LeakyReLU",
+    "PReLU",
+    "ReLU",
+    "Softmax",
+    "ThresholdedReLU",
+    "Conv1D",
+    "Convolution1D",
+    "Conv2D",
+    "Convolution2D",
+    "Conv2DTranspose",
+    "Convolution2DTranspose",
+    "Conv3D",
+    "Convolution3D",
+    "Conv3DTranspose",
+    "Convolution3DTranspose",
+    "Cropping1D",
+    "Cropping2D",
+    "Cropping3D",
+    "DepthwiseConv2D",
+    "SeparableConv1D",
+    "SeparableConvolution1D",
+    "SeparableConv2D",
+    "SeparableConvolution2D",
+    "UpSampling1D",
+    "UpSampling2D",
+    "UpSampling3D",
+    "ZeroPadding1D",
+    "ZeroPadding2D",
+    "ZeroPadding3D",
+    "ConvLSTM2D",
+    "Activation",
+    "ActivityRegularization",
+    "Dense",
+    "Dropout",
+    "Flatten",
+    "Lambda",
+    "Masking",
+    "Permute",
+    "RepeatVector",
+    "Reshape",
+    "SpatialDropout1D",
+    "SpatialDropout2D",
+    "SpatialDropout3D",
+    "AdditiveAttention",
+    "Attention",
+    "Embedding",
+    "LocallyConnected1D",
+    "LocallyConnected2D",
+    "Add",
+    "Average",
+    "Concatenate",
+    "Dot",
+    "Maximum",
+    "Minimum",
+    "Multiply",
+    "Subtract",
+    "add",
+    "average",
+    "concatenate",
+    "dot",
+    "maximum",
+    "minimum",
+    "multiply",
+    "subtract",
+    "AlphaDropout",
+    "GaussianDropout",
+    "GaussianNoise",
+    "LayerNormalization",
+    "BatchNormalization",
+    "AveragePooling1D",
+    "AvgPool1D",
+    "AveragePooling2D",
+    "AvgPool2D",
+    "AveragePooling3D",
+    "AvgPool3D",
+    "GlobalAveragePooling1D",
+    "GlobalAvgPool1D",
+    "GlobalAveragePooling2D",
+    "GlobalAvgPool2D",
+    "GlobalAveragePooling3D",
+    "GlobalAvgPool3D",
+    "GlobalMaxPooling1D",
+    "GlobalMaxPool1D",
+    "GlobalMaxPooling2D",
+    "GlobalMaxPool2D",
+    "GlobalMaxPooling3D",
+    "GlobalMaxPool3D",
+    "MaxPooling1D",
+    "MaxPool1D",
+    "MaxPooling2D",
+    "MaxPool2D",
+    "MaxPooling3D",
+    "MaxPool3D",
+    "AbstractRNNCell",
+    "RNN",
+    "SimpleRNN",
+    "SimpleRNNCell",
+    "StackedRNNCells",
+    "GRU",
+    "GRUCell",
+    "LSTM",
+    "LSTMCell",
+    "Bidirectional",
+    "TimeDistributed",
+    "Wrapper",
+]
+
+common_layers = [layer.lower() for layer in tf_layers]
+common_layer_ids = [f"{layer}" for layer in common_layers]
 
 
 def test_return_available_layers():
     o = yml.build.layers.config.return_available_layers()
     keys = list(o.keys())
     assert len(keys) > 0
-    assert set(
-        ["conv1d", "conv2d", "dense", "conv3d", "avgpool2d", "dropout"]
-    ).issubset(set(keys))
     assert isinstance(o, dict)
     for k in keys:
         assert isinstance(k, str)
+
+
+@pytest.mark.parametrize("layer", common_layers, ids=common_layer_ids)
+def test_common_layers_available(layer):
+    o = yml.build.layers.config.return_available_layers()
+    keys = set(o.keys())
+    assert layer in keys
