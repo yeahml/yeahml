@@ -1,126 +1,23 @@
+import json
+from pathlib import Path
+
 import pytest
 
 import yeahml as yml
 
-# print of print([a for a in tf.keras.layers.__dict__]) - 21Jan20
-# excluding:     "deserialize" "serialize","InputSpec","Input",
-tf_layers = [
-    "DenseFeatures",
-    "Layer",
-    "InputLayer",
-    "ELU",
-    "LeakyReLU",
-    "PReLU",
-    "ReLU",
-    "Softmax",
-    "ThresholdedReLU",
-    "Conv1D",
-    "Convolution1D",
-    "Conv2D",
-    "Convolution2D",
-    "Conv2DTranspose",
-    "Convolution2DTranspose",
-    "Conv3D",
-    "Convolution3D",
-    "Conv3DTranspose",
-    "Convolution3DTranspose",
-    "Cropping1D",
-    "Cropping2D",
-    "Cropping3D",
-    "DepthwiseConv2D",
-    "SeparableConv1D",
-    "SeparableConvolution1D",
-    "SeparableConv2D",
-    "SeparableConvolution2D",
-    "UpSampling1D",
-    "UpSampling2D",
-    "UpSampling3D",
-    "ZeroPadding1D",
-    "ZeroPadding2D",
-    "ZeroPadding3D",
-    "ConvLSTM2D",
-    "Activation",
-    "ActivityRegularization",
-    "Dense",
-    "Dropout",
-    "Flatten",
-    "Lambda",
-    "Masking",
-    "Permute",
-    "RepeatVector",
-    "Reshape",
-    "SpatialDropout1D",
-    "SpatialDropout2D",
-    "SpatialDropout3D",
-    "AdditiveAttention",
-    "Attention",
-    "Embedding",
-    "LocallyConnected1D",
-    "LocallyConnected2D",
-    "Add",
-    "Average",
-    "Concatenate",
-    "Dot",
-    "Maximum",
-    "Minimum",
-    "Multiply",
-    "Subtract",
-    "add",
-    "average",
-    "concatenate",
-    "dot",
-    "maximum",
-    "minimum",
-    "multiply",
-    "subtract",
-    "AlphaDropout",
-    "GaussianDropout",
-    "GaussianNoise",
-    "LayerNormalization",
-    "BatchNormalization",
-    "AveragePooling1D",
-    "AvgPool1D",
-    "AveragePooling2D",
-    "AvgPool2D",
-    "AveragePooling3D",
-    "AvgPool3D",
-    "GlobalAveragePooling1D",
-    "GlobalAvgPool1D",
-    "GlobalAveragePooling2D",
-    "GlobalAvgPool2D",
-    "GlobalAveragePooling3D",
-    "GlobalAvgPool3D",
-    "GlobalMaxPooling1D",
-    "GlobalMaxPool1D",
-    "GlobalMaxPooling2D",
-    "GlobalMaxPool2D",
-    "GlobalMaxPooling3D",
-    "GlobalMaxPool3D",
-    "MaxPooling1D",
-    "MaxPool1D",
-    "MaxPooling2D",
-    "MaxPool2D",
-    "MaxPooling3D",
-    "MaxPool3D",
-    "AbstractRNNCell",
-    "RNN",
-    "SimpleRNN",
-    "SimpleRNNCell",
-    "StackedRNNCells",
-    "GRU",
-    "GRUCell",
-    "LSTM",
-    "LSTMCell",
-    "Bidirectional",
-    "TimeDistributed",
-    "Wrapper",
-]
-
-common_layers = [layer.lower() for layer in tf_layers]
-common_layer_ids = [f"{layer}" for layer in common_layers]
+# a common set of layers was written to a pickle file - load these
+# NOTE: the root of these common available names may belong in a fixture but I'm
+# unsure how to do this at this point.
+ROOT_YML_DIR = Path(yml.__file__).parent
+CUR_AVAIL = ROOT_YML_DIR.joinpath("config").joinpath("available")
+available_layers_path = CUR_AVAIL.joinpath("layers.json")
+with open(available_layers_path, "r") as fp:
+    data_dict = json.load(fp)
+    available_layers = data_dict["data"]
 
 
 def test_return_available_layers():
+    """test the return type and existance of available layers"""
     o = yml.build.layers.config.return_available_layers()
     keys = list(o.keys())
     assert len(keys) > 0
@@ -129,8 +26,9 @@ def test_return_available_layers():
         assert isinstance(k, str)
 
 
-@pytest.mark.parametrize("layer", common_layers, ids=common_layer_ids)
+@pytest.mark.parametrize("layer", available_layers, ids=available_layers)
 def test_common_layers_available(layer):
+    """test that common layers are available"""
     o = yml.build.layers.config.return_available_layers()
     keys = set(o.keys())
     assert layer in keys
