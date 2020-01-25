@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "update_time_str": "2020-01-25 10:31:30.751955",
+    "version": {
+      "tensorflow": "2.1.0"
+    }
+  },
+  "data": [
+    "elu",
+    "exponential",
+    "hard_sigmoid",
+    "linear",
+    "relu",
+    "selu",
+    "sigmoid",
+    "softmax",
+    "softplus",
+    "softsign",
+    "tanh"
+  ]
+}

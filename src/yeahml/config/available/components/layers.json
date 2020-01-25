@@ -1,6 +1,9 @@
 {
   "meta": {
-    "update_time_str": "2020-01-22 18:23:02.942852"
+    "update_time_str": "2020-01-25 10:31:30.751706",
+    "version": {
+      "tensorflow": "2.1.0"
+    }
   },
   "data": [
     "densefeatures",
