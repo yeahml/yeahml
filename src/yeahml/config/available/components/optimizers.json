@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "update_time_str": "2020-01-25 20:49:25.018200",
+    "version": {
+      "tensorflow": "2.0.0"
+    }
+  },
+  "data": [
+    "adadelta",
+    "adagrad",
+    "adam",
+    "adamax",
+    "ftrl",
+    "sgd",
+    "nadam",
+    "optimizer",
+    "rmsprop"
+  ]
+}

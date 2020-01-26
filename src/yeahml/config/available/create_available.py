@@ -34,38 +34,54 @@ def _persist_json(
         json.dump(data_dict, fp, indent=2)
 
 
-def write_available_layers(base_dir: Any) -> None:
-    def _return_available_layers() -> List[str]:
-        # logic to get all layers in a class
-        available_components = []
-        available_keras_layers = tf.keras.layers.__dict__
-        for layer_name, layer_func in available_keras_layers.items():
-            if inspect.isclass(layer_func):
-                if issubclass(layer_func, tf.keras.layers.Layer):
-                    available_components.append(layer_name.lower())
-        return available_components
+def _obtain_from_class(
+    cur_class: Any, subclass: Any = None, exclude_list: List[str] = []
+) -> List[str]:
+    available_components = []
+    available_dict = cur_class.__dict__
+    for component_name, component_func in available_dict.items():
+        component_name = component_name.lower()
+        if inspect.isclass(component_func):
+            if subclass:
+                if issubclass(component_func, subclass):
+                    if component_name not in exclude_list:
+                        available_components.append(component_name)
+            else:
+                if component_name not in exclude_list:
+                    available_components.append(component_name)
 
-    write_dict = _return_write_dict(data=_return_available_layers())
+    return available_components
+
+
+def _obtain_from_callable(cur_callable: Any, exclude_list: List[str] = []) -> List[str]:
+    available_components = []
+    available_dict = cur_callable.__dict__
+    for component_name, component_func in available_dict.items():
+        component_name = component_name.lower()
+        if callable(component_func):
+            if component_name not in exclude_list:
+                available_components.append(component_name)
+
+    return available_components
+
+
+def write_available_layers(base_dir: Any) -> None:
+    available_components = _obtain_from_class(tf.keras.layers, tf.keras.layers.Layer)
+    write_dict = _return_write_dict(data=available_components)
     _persist_json(write_dict, base_dir, "layers")
 
 
 def write_available_activations(base_dir: Any) -> None:
     EXCLUDE_LIST = ["serialize", "deserialize", "get"]
-
-    def _return_available_activations() -> List[str]:
-        # logic to get all layers in a class
-        available_components = []
-        available_keras_layers = tf.keras.activations.__dict__
-        for layer_name, layer_func in available_keras_layers.items():
-            layer_name = layer_name.lower()
-            if callable(layer_func):
-                if layer_name not in EXCLUDE_LIST:
-                    available_components.append(layer_name.lower())
-
-        return available_components
-
-    write_dict = _return_write_dict(data=_return_available_activations())
+    available_components = _obtain_from_callable(tf.keras.activations, EXCLUDE_LIST)
+    write_dict = _return_write_dict(data=available_components)
     _persist_json(write_dict, base_dir, "activations")
+
+
+def write_available_optimizers(base_dir: Any) -> None:
+    available_components = _obtain_from_class(tf.keras.optimizers)
+    write_dict = _return_write_dict(data=available_components)
+    _persist_json(write_dict, base_dir, "optimizers")
 
 
 if __name__ == "__main__":
@@ -80,3 +96,6 @@ if __name__ == "__main__":
 
     # activations
     write_available_activations(base_dir)
+
+    # optimizer
+    write_available_optimizers(base_dir)
