@@ -18,6 +18,7 @@ def _return_write_dict(data: List[str]) -> Dict[str, Any]:
     write_dict["meta"]["update_time_str"] = str(datetime.datetime.now())
     write_dict["meta"]["version"] = {}
     write_dict["meta"]["version"]["tensorflow"] = str(tf.__version__)
+    write_dict["meta"]["version"]["yeahml"] = str(yml.__version__)
 
     write_dict["data"] = data
     return write_dict
