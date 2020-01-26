@@ -46,7 +46,7 @@ def _obtain_from_class(
     # for now (initializers are a good example of this and the assumption holds,
     # but this logic may need to be improved/modified in the future.)
 
-    available_components = []
+    available_components: List[str] = []
     available_dict = comp_class.__dict__
     for component_name, component_func in available_dict.items():
         component_name = component_name.lower()
@@ -85,12 +85,12 @@ def _obtain_from_callable(cur_callable: Any, exclude_list: List[str] = []) -> Li
     # for now (initializers are a good example of this and the assumption holds,
     # but this logic may need to be improved/modified in the future.)
 
-    available_components = []
+    available_components: List[str] = []
     available_dict = cur_callable.__dict__
     for component_name, component_func in available_dict.items():
         component_name = component_name.lower()
         if not component_name.startswith("_") and not component_name.endswith("_"):
-            if callable(component_func):
+            if callable(component_func) and not inspect.isclass(component_func):
                 if component_name not in exclude_list:
                     if component_name not in available_components:
                         available_components.append(component_name)
