@@ -10,7 +10,7 @@ import tensorflow as tf
 from yeahml.build.components.loss import configure_loss
 
 # from yeahml.build.components.optimizer import get_optimizer
-from yeahml.build.components.metrics import configure_metric
+from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
 from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging

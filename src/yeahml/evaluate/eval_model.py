@@ -5,7 +5,7 @@ from typing import Any, Dict
 import tensorflow as tf
 
 from yeahml.build.components.loss import configure_loss
-from yeahml.build.components.metrics import configure_metric
+from yeahml.build.components.metric import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
