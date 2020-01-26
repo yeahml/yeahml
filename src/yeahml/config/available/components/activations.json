@@ -1,8 +1,9 @@
 {
   "meta": {
-    "update_time_str": "2020-01-25 10:31:30.751955",
+    "update_time_str": "2020-01-26 07:20:00.838032",
     "version": {
-      "tensorflow": "2.1.0"
+      "tensorflow": "2.1.0",
+      "yeahml": "0.0.1a1"
     }
   },
   "data": [

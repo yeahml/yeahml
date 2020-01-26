@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import tensorflow as tf
 
 import yeahml as yml
+from yeahml.config.available.config import COMPONENT_DICT
 
 # NOTE: I'm not sure this is the way I want to approach this.
 
@@ -36,15 +37,16 @@ def _persist_json(
 
 
 def _obtain_from_class(
-    cur_class: Any, subclass: Any = None, exclude_list: List[str] = []
+    comp_class: Any, comp_subclass: Any = None, exclude_list: List[str] = []
 ) -> List[str]:
+
     available_components = []
-    available_dict = cur_class.__dict__
+    available_dict = comp_class.__dict__
     for component_name, component_func in available_dict.items():
         component_name = component_name.lower()
         if inspect.isclass(component_func):
-            if subclass:
-                if issubclass(component_func, subclass):
+            if comp_subclass:
+                if issubclass(component_func, comp_subclass):
                     if component_name not in exclude_list:
                         available_components.append(component_name)
             else:
@@ -66,23 +68,38 @@ def _obtain_from_callable(cur_callable: Any, exclude_list: List[str] = []) -> Li
     return available_components
 
 
-def write_available_layers(base_dir: Any) -> None:
-    available_components = _obtain_from_class(tf.keras.layers, tf.keras.layers.Layer)
+def write_available_component(
+    base_dir: Any, component_name: str, component_dict: Dict[str, Any]
+) -> None:
+
+    comp_type_dict = component_dict["type"]
+    comp_type = component_dict["type"]["name"]
+    comp_options = component_dict["type"]["options"]
+
+    try:
+        exclude_list = comp_options["exclude_list"]
+    except KeyError:
+        exclude_list = []
+
+    if comp_type == "class":
+        comp_class = comp_options["class"]
+        try:
+            comp_subclass = comp_options["subclass"]
+        except KeyError:
+            comp_subclass = None
+        available_components = _obtain_from_class(
+            comp_class, comp_subclass, exclude_list
+        )
+    elif comp_type == "callable":
+        comp_callable = comp_options["callable"]
+        available_components = _obtain_from_callable(comp_callable, exclude_list)
+    else:
+        raise ValueError(
+            f"In {component_name} the :type:name {comp_type_dict['name']} is not supported, please specify one of ['class', 'callable'] (component_dict)"
+        )
+
     write_dict = _return_write_dict(data=available_components)
-    _persist_json(write_dict, base_dir, "layers")
-
-
-def write_available_activations(base_dir: Any) -> None:
-    EXCLUDE_LIST = ["serialize", "deserialize", "get"]
-    available_components = _obtain_from_callable(tf.keras.activations, EXCLUDE_LIST)
-    write_dict = _return_write_dict(data=available_components)
-    _persist_json(write_dict, base_dir, "activations")
-
-
-def write_available_optimizers(base_dir: Any) -> None:
-    available_components = _obtain_from_class(tf.keras.optimizers)
-    write_dict = _return_write_dict(data=available_components)
-    _persist_json(write_dict, base_dir, "optimizers")
+    _persist_json(write_dict, base_dir, f"{component_name}")
 
 
 if __name__ == "__main__":
@@ -92,11 +109,5 @@ if __name__ == "__main__":
     )
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    # layers
-    write_available_layers(base_dir)
-
-    # activations
-    write_available_activations(base_dir)
-
-    # optimizer
-    write_available_optimizers(base_dir)
+    for comp_name, comp_dict in COMPONENT_DICT.items():
+        write_available_component(base_dir, comp_name, comp_dict)
