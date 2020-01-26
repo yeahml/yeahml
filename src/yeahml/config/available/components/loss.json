@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "update_time_str": "2020-01-26 11:29:47.028831",
+    "version": {
+      "tensorflow": "2.1.0",
+      "yeahml": "0.0.1a1"
+    }
+  },
+  "data": [
+    "binarycrossentropy",
+    "categoricalcrossentropy",
+    "categoricalhinge",
+    "cosinesimilarity",
+    "hinge",
+    "huber",
+    "kldivergence",
+    "logcosh",
+    "meanabsoluteerror",
+    "meanabsolutepercentageerror",
+    "meansquarederror",
+    "meansquaredlogarithmicerror",
+    "poisson",
+    "sparsecategoricalcrossentropy",
+    "squaredhinge",
+    "binary_crossentropy",
+    "categorical_crossentropy",
+    "categorical_hinge",
+    "cosine_similarity",
+    "kullback_leibler_divergence",
+    "kld",
+    "mean_absolute_error",
+    "mae",
+    "mean_absolute_percentage_error",
+    "mape",
+    "mean_squared_error",
+    "mse",
+    "mean_squared_logarithmic_error",
+    "msle",
+    "sparse_categorical_crossentropy",
+    "squared_hinge",
+    "reduction"
+  ]
+}

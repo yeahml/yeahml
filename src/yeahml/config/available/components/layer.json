@@ -1,6 +1,6 @@
 {
   "meta": {
-    "update_time_str": "2020-01-26 07:20:00.837786",
+    "update_time_str": "2020-01-26 11:29:47.027822",
     "version": {
       "tensorflow": "2.1.0",
       "yeahml": "0.0.1a1"
@@ -8,7 +8,6 @@
   },
   "data": [
     "densefeatures",
-    "layer",
     "inputlayer",
     "elu",
     "leakyrelu",

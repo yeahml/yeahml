@@ -40,30 +40,60 @@ def _obtain_from_class(
     comp_class: Any, comp_subclass: Any = None, exclude_list: List[str] = []
 ) -> List[str]:
 
+    # NOTE: if two components are name Xxxx and xxxx, only one will be included
+    # as the name is converted to lower(). This assumes that the cases point to
+    # the same underlying implementation (which may not be true) -- this is ok
+    # for now (initializers are a good example of this and the assumption holds,
+    # but this logic may need to be improved/modified in the future.)
+
     available_components = []
     available_dict = comp_class.__dict__
     for component_name, component_func in available_dict.items():
         component_name = component_name.lower()
-        if inspect.isclass(component_func):
-            if comp_subclass:
-                if issubclass(component_func, comp_subclass):
+        if not component_name.startswith("_") and not component_name.endswith("_"):
+            if inspect.isclass(component_func):
+                if comp_subclass:
+                    if issubclass(component_func, comp_subclass):
+                        if component_name not in exclude_list:
+                            if component_name not in available_components:
+                                available_components.append(component_name)
+                else:
                     if component_name not in exclude_list:
-                        available_components.append(component_name)
+                        if component_name not in available_components:
+                            available_components.append(component_name)
+            elif inspect.isclass(type(component_func)):
+                if comp_subclass:
+                    if issubclass(type(component_func), comp_subclass):
+                        if component_name not in exclude_list:
+                            if component_name not in available_components:
+                                available_components.append(component_name)
+                else:
+                    if component_name not in exclude_list:
+                        if component_name not in available_components:
+                            available_components.append(component_name)
             else:
-                if component_name not in exclude_list:
-                    available_components.append(component_name)
+                pass
 
     return available_components
 
 
 def _obtain_from_callable(cur_callable: Any, exclude_list: List[str] = []) -> List[str]:
+
+    # NOTE: if two components are name Xxxx and xxxx, only one will be included
+    # as the name is converted to lower(). This assumes that the cases point to
+    # the same underlying implementation (which may not be true) -- this is ok
+    # for now (initializers are a good example of this and the assumption holds,
+    # but this logic may need to be improved/modified in the future.)
+
     available_components = []
     available_dict = cur_callable.__dict__
     for component_name, component_func in available_dict.items():
         component_name = component_name.lower()
-        if callable(component_func):
-            if component_name not in exclude_list:
-                available_components.append(component_name)
+        if not component_name.startswith("_") and not component_name.endswith("_"):
+            if callable(component_func):
+                if component_name not in exclude_list:
+                    if component_name not in available_components:
+                        available_components.append(component_name)
 
     return available_components
 
@@ -80,6 +110,8 @@ def write_available_component(
         exclude_list = comp_options["exclude_list"]
     except KeyError:
         exclude_list = []
+    # remove the generic case
+    exclude_list.append(component_name)
 
     if comp_type == "class":
         comp_class = comp_options["class"]
