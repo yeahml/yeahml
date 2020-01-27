@@ -38,5 +38,5 @@ hyper_parameters:
     batch: 16
     shuffle: 128 # this should be grouped with batchsize
 model:
-  path: './examples/abalone/model_config.yml'
+  path: './model_config.yml'
 
