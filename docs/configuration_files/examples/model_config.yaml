@@ -1,7 +1,7 @@
 overall:
   name: 'cats_v_dogs_01'
   loss_fn: 'sigmoid'
-  experiment_dir: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
+  experiment_name: 'trial_01' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   saver:
     save_params_name: "best_params_saver"
     load_params_path: "./examples/mnist/saved_params/best_params/best_params_ckpt.ckpt" # default location to load parameters from for transfer learning

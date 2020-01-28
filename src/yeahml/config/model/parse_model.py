@@ -1,6 +1,7 @@
 import os
 import pathlib
 import shutil
+from pathlib import Path
 
 import tensorflow as tf
 
@@ -123,7 +124,12 @@ def format_model_config(raw_config: dict, meta_dict: dict) -> dict:
         raise KeyError(
             "model:meta:name is not specified. Please specify a `name` in the model configuration"
         )
-    model_root_dir = os.path.join(meta_dict["log_dir"], model_name)
+    # model_root_dir = os.path.join(meta_dict["log_dir"], model_name)
+    model_root_dir = (
+        Path(meta_dict["yeahml_dir"])
+        .joinpath(meta_dict["data_name"])
+        .joinpath(meta_dict["experiment_name"])
+    )
     if pathlib.Path(model_root_dir).exists():
         try:
             override = raw_config["meta"]["name_override"]

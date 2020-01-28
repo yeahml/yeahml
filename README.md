@@ -53,7 +53,7 @@ The model config may look similar to the following:
 ```yaml
 meta:
   name: 'mnist'
-  experiment_dir: 'trial_01'
+  experiment_name: 'trial_01'
   saver:
     save_params_name: "best_params_saver"
 

@@ -10,7 +10,7 @@ TODO: Will be updated after sections have been more logical locations. As of rig
 overall:
   name: 'cats_vs_dogs'
   loss_fn: 'softmax' # REQUIRED ['softmax', 'sigmoid'] pick one
-  experiment_dir: '<str>' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
+  experiment_name: '<str>' # will make + /best_params/ and + /tf_logs/ + /yf_logs/
   trace: ['full','hardware','software'] # OPTIONAL - choose one, default behavior is None,'full' does both hardware and software
   saver:
     save_params_name: "<str>" # "best_params_saver" > location to save the best parameters (graph weights+biases)

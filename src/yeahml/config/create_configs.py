@@ -9,6 +9,7 @@ from yeahml.config.logging.parse_logging import format_logging_config
 from yeahml.config.meta.parse_meta import format_meta_config
 from yeahml.config.model.parse_model import format_model_config
 from yeahml.config.performance.parse_performance import format_performance_config
+from yeahml.config.default.create_default import META
 
 # components
 
@@ -57,7 +58,7 @@ def create_configs(main_path: str) -> dict:
         # if the main key has a "path" key, then extract from that path
         raw_config = maybe_extract_from_path(raw_config)
         if config_type == "meta":
-            formatted_config = format_meta_config(raw_config)
+            formatted_config = format_meta_config(raw_config, META["meta"])
         elif config_type == "logging":
             formatted_config = format_logging_config(raw_config)
         elif config_type == "performance":

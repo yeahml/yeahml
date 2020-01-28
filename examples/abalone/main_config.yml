@@ -1,5 +1,5 @@
 meta:
-  name: 'abalone'
+  data_name: 'abalone'
   experiment_name: 'trial_00'
   # TODO: information on when to save params, currently only best params saved
 logging:
