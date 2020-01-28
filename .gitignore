@@ -6,63 +6,7 @@ __pycache__/
 \.mypy_cache/*
 
 ######## Examples
-# mnist
-examples/mnist/data/*.tfrecords
-examples/mnist/make_records/data
-examples/mnist/trial_01/*
-examples/mnist/saved_params/best_params/
-examples/mnist/data/
-
-# cats v dogs
-examples/cats_v_dogs/make_records/\.ipynb_checkpoints/
-examples/cats_v_dogs/data/train/
-examples/cats_v_dogs/\.ipynb_checkpoints/
-examples/cats_v_dogs/data/numpy/150/
-examples/cats_v_dogs/data/train\.zip
-examples/cats_v_dogs/data/record_holder/150/
-examples/cats_v_dogs/trial_01/*
-examples/cats_v_dogs/make_records/kagglecatsanddogs_3367a\.zip
-examples/cats_v_dogs/make_records/raw_cats_vs_dogs/*
-
-# iris
-examples/iris/make_records/\.ipynb_checkpoints/
-examples/iris/make_records/raw/
-
-# cali housing
-examples/cali_housing/make_records/\.ipynb_checkpoints/
-examples/cali_housing/make_records/raw_data/*
-examples/cali_housing/data/*.tfrecords
-examples/cali_housing/trial_01/*
-examples/cali_housing/data/*
-
-# sentiment_imdb
-examples/sentiment_imdb/make_records/\.ipynb_checkpoints/
-examples/sentiment_imdb/data/*.tfrecords
-examples/sentiment_imdb/trial_01/*
-
-# segmentation
-examples/segmentation/make_records/\.ipynb_checkpoints/
-examples/segmentation/make_records/raw_isic_segmentation/ISIC-2017_Test_v2_Data/
-examples/segmentation/make_records/raw_isic_segmentation/ISIC-2017_Test_v2_Part1_GroundTruth/
-examples/segmentation/make_records/raw_isic_segmentation/ISIC2018_Task1-2_Training_Input/
-examples/segmentation/make_records/raw_isic_segmentation/ISIC2018_Task1_Training_GroundTruth/
-examples/segmentation/make_records/numpy_prep/224_224/
-examples/segmentation/make_records/numpy_final/224_224/
-examples/segmentation/data/224_224/
-examples/segmentation/trial_01/best_params/
-examples/segmentation/trial_01/tf_logs/*
-examples/segmentation/trial_01/yf_logs/
-
-# multi - segmentation
-examples/multi_segmentation/make_records/\.ipynb_checkpoints/
-examples/multi_segmentation/make_records/raw/*
-examples/multi_segmentation/data/*
-examples/multi_segmentation/trial_01/best_params/
-examples/multi_segmentation/trial_01/tf_logs/*
-examples/multi_segmentation/trial_01/yf_logs/
-
-examples/mnist/saved_params/
-examples/abalone/trial_00/model_a/
+examples/abalone/yeahml
 
 src/yeahml/*/\.mypy_cache/3\.6/
 
