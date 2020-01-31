@@ -1,16 +1,23 @@
-# directory strcuture: ./yeahml_dir/name/experiment_name
+from collections import namedtuple
+from config_types import numeric
 
-# default
-# required: True
-# -- checking
-# > numeric
-# bounds {upper: , lower: }
-# is_int: True
-# > categorical
-# issubset ["", ""]
-# description -- string
 
-META = {
+def hithere():
+    return 42
+
+
+a = numeric()
+print(a)
+b = numeric(value=22, fn=hithere)
+print(b)
+
+# loop keys
+# if type == dict recursive
+# else, fill
+# return
+
+# meta
+meta = {
     "meta": {
         # directory
         "yeahml_dir": {"default": "yeahml", "required": False},
@@ -27,9 +34,12 @@ META = {
 }
 
 
+# Data
 data = {"data": {}}
 
+dataset = {"dataset": {}}
 hyper_parameters = {"hyper_parameters": {}}
+
 
 logging = {"logging": {}}
 
@@ -39,3 +49,7 @@ model = {"model": {}}
 performance = {"performance": {}}
 
 dataset = {"dataset": {}}
+
+DEFAULT_CONFIG = {}
+DEFAULT_CONFIG["meta"] = meta
+
