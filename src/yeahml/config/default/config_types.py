@@ -158,6 +158,15 @@ class list_of_categorical(categorical):
     def __call__(self, cur_values_list=None):
         if isinstance(cur_values_list, list):
             out_list = []
+            # duplicate logic adopted from
+            # https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
+            duplicates = [
+                v
+                for i, v in enumerate(cur_values_list)
+                if v in cur_values_list[:i] and v is not None
+            ]
+            if duplicates:
+                raise ValueError(f"{duplicates} are duplicated in f{cur_values_list}")
             for val in cur_values_list:
                 o = categorical(
                     default_value=self.default_value,
