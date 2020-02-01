@@ -74,9 +74,21 @@ class numeric(default_config):
         if cur_value:
             val = cur_value
 
-        # ensure w/in bounds
-        # if init_value > self.bounds[1]:
-        #     raise ValueError(f"value {init_value} is greater than ")
+        if val:
+            # ensure w/in bounds
+            if val > self.bounds[1]:
+                raise ValueError(f"value {val} is greater than {self.bounds[1]}")
+
+            if val < self.bounds[0]:
+                raise ValueError(f"value {val} is less than {self.bounds[0]}")
+
+            # ensure value is an int if required
+            if self.is_int:
+                if not isinstance(val, int):
+                    raise ValueError(f"value {val} is not a type int type:{type(val)}")
+
+            # TODO: call function with args
+
         return val
 
 
@@ -89,7 +101,7 @@ class categorical(default_config):
         fn=None,
         fn_args=None,
         # specific
-        is_subset=None,
+        is_in_list=None,
     ):
         super().__init__(
             default_value=default_value,
@@ -99,10 +111,10 @@ class categorical(default_config):
             fn_args=fn_args,
         )
 
-        if is_subset is None:
-            self.is_subset = []
+        if is_in_list is None:
+            self.is_in_list = None
         else:
-            self.is_subset = is_subset
+            self.is_in_list = is_in_list
 
     # call fn with fn_args
     def __call__(self, cur_value=None):
@@ -112,5 +124,11 @@ class categorical(default_config):
         val = self.default_value
         if cur_value:
             val = cur_value
+
+        if val:
+            # TODO: call function with args
+            if self.is_in_list:
+                if val not in self.is_in_list:
+                    raise ValueError(f"value {val} is not in {is_in_list}")
 
         return val
