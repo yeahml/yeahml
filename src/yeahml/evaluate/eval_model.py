@@ -70,15 +70,15 @@ def eval_model(
 
     # loss
     # get loss function
-    loss_object = configure_loss(perf_cdict["loss_fn"])
+    loss_object = configure_loss(perf_cdict["loss"])
 
     # mean loss
     avg_eval_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
 
     # metrics
     eval_metric_fns, metric_order = [], []
-    met_opts = perf_cdict["met_opts_list"]
-    for i, metric in enumerate(perf_cdict["met_list"]):
+    met_opts = perf_cdict["metric"]["options"]
+    for i, metric in enumerate(perf_cdict["metric"]["type"]):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:

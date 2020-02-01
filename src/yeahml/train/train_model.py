@@ -137,7 +137,8 @@ def train_model(
     optimizer = optimizer(**temp_dict)
 
     # get loss function
-    loss_object = configure_loss(perf_cdict["loss_fn"])
+    print(perf_cdict)
+    loss_object = configure_loss(perf_cdict["loss"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
@@ -147,8 +148,8 @@ def train_model(
     train_metric_fns = []
     val_metric_fns = []
     metric_order = []
-    met_opts = perf_cdict["met_opts_list"]
-    for i, metric in enumerate(perf_cdict["met_list"]):
+    met_opts = perf_cdict["metric"]["options"]
+    for i, metric in enumerate(perf_cdict["metric"]["type"]):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:

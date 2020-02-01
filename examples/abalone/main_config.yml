@@ -12,7 +12,7 @@ logging:
   graph_spec: True
 
 performance:
-  loss_fn: 
+  loss: 
     type: 'MSE'
     #options:
   metric:

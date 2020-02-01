@@ -61,21 +61,16 @@ performance = {
             ),
             "options": list_of_categorical(default_value=None, required=False),
         },
-        "loss_fn": {
-            "type": list_of_categorical(
+        # TODO: support multiple losses -- currently only one loss is supported
+        "loss": {
+            "type": categorical(
                 default_value=None, required=True, is_in_list=return_available_losses()
             ),
             # TODO: error check that options are valid
-            "options": list_of_categorical(default_value=None, required=False),
+            "options": categorical(default_value=None, required=False),
         },
     }
 }
-# performance:
-#   loss_fn:
-#     type: 'MSE'
-#   type: ["MeanSquaredError", "MeanAbsoluteError"]
-#   options: [null,
-#             null]
 
 
 # Data
