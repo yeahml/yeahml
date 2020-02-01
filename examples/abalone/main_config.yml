@@ -14,9 +14,11 @@ logging:
 performance:
   loss_fn: 
     type: 'MSE'
-  type: ["MeanSquaredError", "MeanAbsoluteError"]
-  options: [null, 
-            null]
+    #options:
+  metric:
+    type: ["MeanSquaredError", "MeanAbsoluteError"]
+    options: [null, 
+              null]
 
 # TODO: this section needs to be redone
 data:

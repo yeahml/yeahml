@@ -1,5 +1,6 @@
-from collections import namedtuple
-from yeahml.config.default.config_types import numeric, categorical
+from yeahml.build.components.loss import return_available_losses
+from yeahml.build.components.metric import return_available_metrics
+from yeahml.config.default.config_types import categorical, list_of_categorical, numeric
 
 
 def hithere():
@@ -32,40 +33,60 @@ def hithere():
 
 # meta
 meta = {
-    # directory
-    "yeahml_dir": categorical(
-        default_value="yeahml", required=False
-    ),  # could add a check that the location exists
-    "data_name": categorical(default_value=None, required=True),
-    "experiment_name": categorical(default_value=None, required=True),
-    # random seed
-    "rand_seed": numeric(default_value=None, required=False),
-    # tracing
-    "trace_level": categorical(default_value=None, required=False),
-    # default path to load param information
-    # TODO: this should likely move to the model config
-    "default_load_params_path": categorical(
-        default_value=None, required=False
-    ),  # TODO: confirm path exists
+    "meta": {
+        # directory
+        "yeahml_dir": categorical(
+            default_value="yeahml", required=False
+        ),  # could add a check that the location exists
+        "data_name": categorical(default_value=None, required=True),
+        "experiment_name": categorical(default_value=None, required=True),
+        # random seed
+        "rand_seed": numeric(default_value=None, required=False),
+        # tracing
+        "trace_level": categorical(default_value=None, required=False),
+        # default path to load param information
+        # TODO: this should likely move to the model config
+        "default_load_params_path": categorical(
+            default_value=None, required=False
+        ),  # TODO: confirm path exists
+    }
 }
+
+# TODO: eventually, we need to support custom performance/loss metrics
+performance = {
+    "performance": {
+        "metric": {
+            "type": list_of_categorical(
+                default_value=None, required=True, is_in_list=return_available_metrics()
+            ),
+            "options": list_of_categorical(default_value=None, required=False),
+        },
+        "loss_fn": {
+            "type": list_of_categorical(
+                default_value=None, required=True, is_in_list=return_available_losses()
+            ),
+            # TODO: error check that options are valid
+            "options": list_of_categorical(default_value=None, required=False),
+        },
+    }
+}
+# performance:
+#   loss_fn:
+#     type: 'MSE'
+#   type: ["MeanSquaredError", "MeanAbsoluteError"]
+#   options: [null,
+#             null]
 
 
 # Data
 data = {"data": {}}
-
 dataset = {"dataset": {}}
 hyper_parameters = {"hyper_parameters": {}}
-
-
 logging = {"logging": {}}
-
-
 model = {"model": {}}
-
-performance = {"performance": {}}
-
 dataset = {"dataset": {}}
 
-DEFAULT_CONFIG = {}
-DEFAULT_CONFIG["meta"] = meta
 
+DEFAULT_CONFIG = {}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **performance}

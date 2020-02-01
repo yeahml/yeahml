@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from yeahml.config.data.parse_data import format_data_config
+from yeahml.config.default.create_default import DEFAULT_CONFIG
 from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,
@@ -9,7 +10,6 @@ from yeahml.config.logging.parse_logging import format_logging_config
 from yeahml.config.meta.parse_meta import format_meta_config
 from yeahml.config.model.parse_model import format_model_config
 from yeahml.config.performance.parse_performance import format_performance_config
-from yeahml.config.default.create_default import DEFAULT_CONFIG
 
 # components
 
@@ -62,7 +62,9 @@ def create_configs(main_path: str) -> dict:
         elif config_type == "logging":
             formatted_config = format_logging_config(raw_config)
         elif config_type == "performance":
-            formatted_config = format_performance_config(raw_config)
+            formatted_config = format_performance_config(
+                raw_config, DEFAULT_CONFIG["performance"]
+            )
         elif config_type == "data":
             formatted_config = format_data_config(raw_config)
         elif config_type == "hyper_parameters":

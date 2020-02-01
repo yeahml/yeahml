@@ -9,6 +9,6 @@ def parse_default(raw_config, DEFAULT):
             # raw_val defaults to None, required will be checked in spec
             out_val = spec(raw_val)
         else:
-            out_val = parse_default(raw_config, DEFAULT[k])
+            out_val = parse_default(raw_config[k], DEFAULT[k])
         formatted_dict[k] = out_val
     return formatted_dict
