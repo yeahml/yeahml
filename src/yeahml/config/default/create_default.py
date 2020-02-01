@@ -1,16 +1,30 @@
 from collections import namedtuple
-from config_types import numeric
+from yeahml.config.default.config_types import numeric, categorical
 
 
 def hithere():
     return 42
 
 
-a = numeric()
-print(a)
-b = numeric(value=22, fn=hithere)
-print(b)
-
+# numeric(
+#     required=None,
+#     description=None,
+#     fn=None,
+#     fn_args=None,
+#     # specifc
+#     value=None,
+#     bounds=None,
+#     is_int=None,
+# )
+# categorical(
+#     required=None,
+#     description=None,
+#     fn=None,
+#     fn_args=None,
+#     # specific
+#     value=None,
+#     is_subset=None,
+# )
 # loop keys
 # if type == dict recursive
 # else, fill
@@ -18,19 +32,21 @@ print(b)
 
 # meta
 meta = {
-    "meta": {
-        # directory
-        "yeahml_dir": {"default": "yeahml", "required": False},
-        "data_name": {"default": None, "required": True},
-        "experiment_name": {"default": None, "required": False},
-        # random seed
-        "rand_seed": {"default": None, "required": False},
-        # tracing
-        "trace_level": {"default": None, "required": False},
-        # default path to load param information
-        # TODO: this should likely move to the model config
-        "default_load_params_path": {"default": None, "required": False},
-    }
+    # directory
+    "yeahml_dir": categorical(
+        default_value="yeahml", required=False
+    ),  # could add a check that the location exists
+    "data_name": categorical(default_value=None, required=True),
+    "experiment_name": categorical(default_value=None, required=True),
+    # random seed
+    "rand_seed": numeric(default_value=None, required=False),
+    # tracing
+    "trace_level": categorical(default_value=None, required=False),
+    # default path to load param information
+    # TODO: this should likely move to the model config
+    "default_load_params_path": categorical(
+        default_value=None, required=False
+    ),  # TODO: confirm path exists
 }
 
 
