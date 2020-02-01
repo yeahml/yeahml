@@ -123,12 +123,61 @@ class categorical(default_config):
 
         val = self.default_value
         if cur_value:
-            val = cur_value
+            # NOTE: convert all to lowercase
+            val = cur_value.lower()
 
         if val:
             # TODO: call function with args
             if self.is_in_list:
                 if val not in self.is_in_list:
-                    raise ValueError(f"value {val} is not in {is_in_list}")
+                    raise ValueError(f"value {val} is not in {self.is_in_list}")
 
         return val
+
+
+class list_of_categorical(categorical):
+    def __init__(
+        self,
+        default_value=None,
+        required=None,
+        description=None,
+        fn=None,
+        fn_args=None,
+        is_in_list=None,
+        # specific
+    ):
+        super().__init__(
+            default_value=default_value,
+            required=required,
+            description=description,
+            fn=fn,
+            fn_args=fn_args,
+            is_in_list=is_in_list,
+        )
+
+    def __call__(self, cur_values_list=None):
+        if isinstance(cur_values_list, list):
+            out_list = []
+            for val in cur_values_list:
+                o = categorical(
+                    default_value=self.default_value,
+                    required=self.required,
+                    description=self.description,
+                    fn=self.fn,
+                    fn_args=self.fn_args,
+                    is_in_list=self.is_in_list,
+                )(val)
+                out_list.append(o)
+        else:
+            out_list = [
+                categorical(
+                    default_value=self.default_value,
+                    required=self.required,
+                    description=self.description,
+                    fn=self.fn,
+                    fn_args=self.fn_args,
+                    is_in_list=self.is_in_list,
+                )(cur_values_list)
+            ]
+
+        return out_list
