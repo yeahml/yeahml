@@ -32,13 +32,15 @@ data:
 hyper_parameters:
   optimizer: 
     type: 'adam'
-    learning_rate: 0.0001
+    options:
+      learning_rate: 0.0001
+      beta_1: 0.91
   epochs: 30
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
-    shuffle: 128 # this should be grouped with batchsize
+    shuffle_buffer: 128 # this should be grouped with batchsize
 model:
   path: './model_config.yml'
 

@@ -1,6 +1,13 @@
 from yeahml.build.components.loss import return_available_losses
 from yeahml.build.components.metric import return_available_metrics
-from yeahml.config.default.config_types import categorical, list_of_categorical, numeric
+from yeahml.build.components.optimizer import return_available_optimizers
+from yeahml.config.default.config_types import (
+    categorical,
+    list_of_categorical,
+    numeric,
+    optional_config,
+    parameter_config,
+)
 
 
 def hithere():
@@ -72,11 +79,45 @@ performance = {
     }
 }
 
+hyper_parameters = {
+    "hyper_parameters": {
+        "dataset": {
+            "batch": numeric(default_value=None, required=True, is_int=True),
+            "shuffle_buffer": numeric(default_value=None, required=False, is_int=True),
+        },
+        "epochs": numeric(default_value=None, required=True, is_int=True),
+        # TODO: need to account for optional outter keys
+        "early_stopping": optional_config(
+            conf_dict={
+                "epochs": numeric(default_value=None, required=False, is_int=True),
+                "warm_up": numeric(default_value=None, required=False, is_int=True),
+            }
+        ),
+        # TODO: Right now I'm assuming 1 loss and one optimizer.. this isn't
+        # and needs to be reconsidered
+        "optimizer": {
+            "type": categorical(
+                default_value=None,
+                required=True,
+                is_in_list=return_available_optimizers(),
+            ),
+            # TODO: this isn't really a list of categorical.... most are numeric
+            "options": parameter_config(
+                known_dict={
+                    "learning_rate": numeric(
+                        default_value=None, required=True, is_int=False
+                    )
+                }
+            ),
+        },
+    }
+}
+
 
 # Data
 data = {"data": {}}
 dataset = {"dataset": {}}
-hyper_parameters = {"hyper_parameters": {}}
+
 logging = {"logging": {}}
 model = {"model": {}}
 dataset = {"dataset": {}}
@@ -85,3 +126,4 @@ dataset = {"dataset": {}}
 DEFAULT_CONFIG = {}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **performance}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **hyper_parameters}

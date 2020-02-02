@@ -145,6 +145,7 @@ class list_of_categorical(categorical):
         fn_args=None,
         is_in_list=None,
         # specific
+        list_must_include=None,
     ):
         super().__init__(
             default_value=default_value,
@@ -154,6 +155,10 @@ class list_of_categorical(categorical):
             fn_args=fn_args,
             is_in_list=is_in_list,
         )
+        if list_must_include is None:
+            self.list_must_include = None
+        else:
+            self.list_must_include = list_must_include
 
     def __call__(self, cur_values_list=None):
         if isinstance(cur_values_list, list):
@@ -167,6 +172,16 @@ class list_of_categorical(categorical):
             ]
             if duplicates:
                 raise ValueError(f"{duplicates} are duplicated in f{cur_values_list}")
+
+            if self.list_must_include:
+                req_not_included = [
+                    x for x in self.list_must_include if x not in cur_values_list
+                ]
+                if req_not_included:
+                    raise ValueError(
+                        f"{req_not_included} are required but not included in {cur_values_list}"
+                    )
+
             for val in cur_values_list:
                 o = categorical(
                     default_value=self.default_value,
@@ -190,3 +205,38 @@ class list_of_categorical(categorical):
             ]
 
         return out_list
+
+
+class optional_config:
+    def __init__(self, conf_dict=None):
+        if conf_dict is None:
+            self.conf_dict = None
+        else:
+            self.conf_dict = conf_dict
+
+    # def __str__(self):
+    #     return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return self.conf_dict
+
+
+class parameter_config:
+    def __init__(self, known_dict=None, unknown_dict=None):
+        if known_dict is None:
+            self.known_dict = None
+        else:
+            self.known_dict = known_dict
+
+        # if unknown_dict is None:
+        #     self.unknown_dict = None
+        # else:
+        #     self.unknown_dict = unknown_dict
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        # out_dict = {**known_dict, **unknown_dict}
+        out_dict = known_dict
+        return out_dict

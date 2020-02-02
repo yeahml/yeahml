@@ -68,7 +68,9 @@ def create_configs(main_path: str) -> dict:
         elif config_type == "data":
             formatted_config = format_data_config(raw_config)
         elif config_type == "hyper_parameters":
-            formatted_config = format_hyper_parameters_config(raw_config)
+            formatted_config = format_hyper_parameters_config(
+                raw_config, DEFAULT_CONFIG["hyper_parameters"]
+            )
         elif config_type == "model":
             formatted_config = format_model_config(raw_config, config_dict["meta"])
         else:

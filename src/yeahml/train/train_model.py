@@ -261,6 +261,8 @@ def train_model(
         # check save best metrics
 
         cur_val_loss_ = avg_val_loss.result().numpy()
+
+        # TODO: use early_stopping:epochs and early_stopping:warmup
         if cur_val_loss_ < best_val_loss:
             # TODO: remove np dependency
             if best_val_loss == np.inf:
