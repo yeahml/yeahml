@@ -60,7 +60,9 @@ def create_configs(main_path: str) -> dict:
         if config_type == "meta":
             formatted_config = format_meta_config(raw_config, DEFAULT_CONFIG["meta"])
         elif config_type == "logging":
-            formatted_config = format_logging_config(raw_config)
+            formatted_config = format_logging_config(
+                raw_config, DEFAULT_CONFIG["logging"]
+            )
         elif config_type == "performance":
             formatted_config = format_performance_config(
                 raw_config, DEFAULT_CONFIG["performance"]

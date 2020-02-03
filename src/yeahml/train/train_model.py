@@ -128,16 +128,14 @@ def train_model(
     # get optimizer
 
     # TODO: config optimizer (follow template for losses)
-    optim_dict = return_optimizer(hp_cdict["optimizer_dict"]["type"])
+    optim_dict = return_optimizer(hp_cdict["optimizer"]["type"])
     optimizer = optim_dict["function"]
 
     # configure optimizer
-    temp_dict = hp_cdict["optimizer_dict"].copy()
-    temp_dict.pop("type")
-    optimizer = optimizer(**temp_dict)
+    temp_dict = hp_cdict["optimizer"].copy()
+    optimizer = optimizer(**temp_dict["options"])
 
     # get loss function
-    print(perf_cdict)
     loss_object = configure_loss(perf_cdict["loss"])
 
     # mean loss

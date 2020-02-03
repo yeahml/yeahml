@@ -25,10 +25,10 @@ def _get_level(level_str: str) -> Any:
 def config_logger(log_dir_str: str, log_cdict: dict, log_type: str) -> Any:
 
     # formatting
-    c_fmt = logging.Formatter(log_cdict["log_c_str"])
-    f_fmt = logging.Formatter(log_cdict["log_f_str"])
-    logging.Formatter(log_cdict["log_g_str"])
-    logging.Formatter(log_cdict["log_p_str"])
+    c_fmt = logging.Formatter(log_cdict["console"]["format_str"])
+    f_fmt = logging.Formatter(log_cdict["file"]["format_str"])
+    # logging.Formatter(log_cdict["log_g_str"])
+    # logging.Formatter(log_cdict["log_p_str"])
 
     ACCEPTED_LOGGERS = ["build", "train", "eval", "graph", "preds"]
     if log_type not in ACCEPTED_LOGGERS:
@@ -43,8 +43,8 @@ def config_logger(log_dir_str: str, log_cdict: dict, log_type: str) -> Any:
     file_handler = logging.FileHandler(
         os.path.join(log_dir_str, "yf_logs", f"{log_type}.log")
     )
-    stream_handler.setLevel(_get_level(log_cdict["log_c_lvl"]))
-    file_handler.setLevel(_get_level(log_cdict["log_f_lvl"]))
+    stream_handler.setLevel(_get_level(log_cdict["console"]["level"].upper()))
+    file_handler.setLevel(_get_level(log_cdict["file"]["level"].upper()))
     stream_handler.setFormatter(c_fmt)
     file_handler.setFormatter(f_fmt)
     if not len(cur_logger.handlers):

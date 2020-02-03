@@ -114,11 +114,34 @@ hyper_parameters = {
 }
 
 
+ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]]
+
+logging = {
+    "logging": {
+        "console": {
+            "level": categorical(
+                default_value="CRITICAL", required=False, is_in_list=ERR_LEVELS
+            ),
+            "format_str": categorical(
+                default_value="%(name)-12s: %(levelname)-8s %(message)s", required=False
+            ),
+        },
+        "file": {
+            "level": categorical(
+                default_value="CRITICAL", required=False, is_in_list=ERR_LEVELS
+            ),
+            "format_str": categorical(
+                default_value="%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s",
+                required=False,
+            ),
+        },
+    }
+}
+
+
 # Data
 data = {"data": {}}
 dataset = {"dataset": {}}
-
-logging = {"logging": {}}
 model = {"model": {}}
 dataset = {"dataset": {}}
 
@@ -127,3 +150,4 @@ DEFAULT_CONFIG = {}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **performance}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **hyper_parameters}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
