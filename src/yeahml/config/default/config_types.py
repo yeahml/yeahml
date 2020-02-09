@@ -85,7 +85,7 @@ class numeric(default_config):
             # ensure value is an int if required
             if self.is_int:
                 if not isinstance(val, int):
-                    raise ValueError(f"value {val} is not a type int type:{type(val)}")
+                    raise TypeError(f"value {val} is not a type int type:{type(val)}")
 
             # TODO: call function with args
 
