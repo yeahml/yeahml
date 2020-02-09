@@ -72,17 +72,25 @@ performance = {
     "performance": {
         "metric": {
             "type": list_of_categorical(
-                default_value=None, required=True, is_in_list=return_available_metrics()
+                default_value=None,
+                is_type=str,
+                required=True,
+                is_in_list=return_available_metrics(),
             ),
-            "options": list_of_categorical(default_value=None, required=False),
+            "options": list_of_categorical(
+                default_value=None, is_type=list, required=False
+            ),
         },
         # TODO: support multiple losses -- currently only one loss is supported
         "loss": {
             "type": categorical(
-                default_value=None, required=True, is_in_list=return_available_losses()
+                default_value=None,
+                required=True,
+                is_in_list=return_available_losses(),
+                is_type=str,
             ),
             # TODO: error check that options are valid
-            "options": categorical(default_value=None, required=False),
+            "options": categorical(default_value=None, required=False, is_type=str),
         },
     }
 }
