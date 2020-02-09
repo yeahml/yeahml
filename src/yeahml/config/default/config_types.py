@@ -1,14 +1,30 @@
 import math
 
+from yeahml.build.components.dtype import return_available_dtypes
+
+# TODO: I think the key that is called by this type should be included such that
+# we can more easily keep track of where the error is coming from
+
 
 class default_config:
     def __init__(
-        self, default_value, required=None, description=None, fn=None, fn_args=None
+        self,
+        default_value,
+        is_type=None,
+        required=None,
+        description=None,
+        fn=None,
+        fn_args=None,
     ):
         if default_value is None:
             self.default_value = None
         else:
             self.default_value = default_value
+
+        if is_type is None:
+            self.is_type = None
+        else:
+            self.is_type = is_type
 
         # default to True
         if required is None:
@@ -34,21 +50,29 @@ class default_config:
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
+    def __call__(self, cur_value):
+        if self.is_type:
+            if isinstance(type(cur_value), self.is_type):
+                raise TypeError(
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                )
+
 
 class numeric(default_config):
     def __init__(
         self,
         default_value=None,
+        is_type=None,
         required=None,
         description=None,
         fn=None,
         fn_args=None,
         # specific
         bounds=None,
-        is_int=None,
     ):
         super().__init__(
             default_value=default_value,
+            is_type=is_type,
             required=required,
             description=description,
             fn=fn,
@@ -60,11 +84,6 @@ class numeric(default_config):
         else:
             # check that bounds are numbers and tuple
             self.bounds = bounds
-
-        if is_int is None:
-            self.is_int = False
-        else:
-            self.is_int = is_int
 
     def __call__(self, cur_value=None):
         if self.required and not cur_value:
@@ -81,12 +100,6 @@ class numeric(default_config):
 
             if val < self.bounds[0]:
                 raise ValueError(f"value {val} is less than {self.bounds[0]}")
-
-            # ensure value is an int if required
-            if self.is_int:
-                if not isinstance(val, int):
-                    raise TypeError(f"value {val} is not a type int type:{type(val)}")
-
             # TODO: call function with args
 
         return val
@@ -96,6 +109,7 @@ class categorical(default_config):
     def __init__(
         self,
         default_value=None,
+        is_type=None,
         required=None,
         description=None,
         fn=None,
@@ -105,6 +119,7 @@ class categorical(default_config):
     ):
         super().__init__(
             default_value=default_value,
+            is_type=is_type,
             required=required,
             description=description,
             fn=fn,
@@ -139,6 +154,7 @@ class list_of_categorical(categorical):
     def __init__(
         self,
         default_value=None,
+        is_type=None,
         required=None,
         description=None,
         fn=None,
@@ -149,6 +165,7 @@ class list_of_categorical(categorical):
     ):
         super().__init__(
             default_value=default_value,
+            is_type=is_type,
             required=required,
             description=description,
             fn=fn,
@@ -185,6 +202,7 @@ class list_of_categorical(categorical):
             for val in cur_values_list:
                 o = categorical(
                     default_value=self.default_value,
+                    is_type=self.is_type,
                     required=self.required,
                     description=self.description,
                     fn=self.fn,
@@ -196,6 +214,7 @@ class list_of_categorical(categorical):
             out_list = [
                 categorical(
                     default_value=self.default_value,
+                    is_type=self.is_type,
                     required=self.required,
                     description=self.description,
                     fn=self.fn,

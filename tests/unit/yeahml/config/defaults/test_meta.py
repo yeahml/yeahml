@@ -78,6 +78,39 @@ ex_config = {
         },
         TypeError,
     ),
+    "set_rand_seed_to_float": (
+        {
+            "meta": {
+                # directory
+                "data_name": "jack",
+                "experiment_name": "trial_02",
+                "rand_seed": "some_string",
+            }
+        },
+        TypeError,
+    ),
+    "set_data_name_to_int": (
+        {
+            "meta": {
+                # directory
+                "data_name": 3,
+                "experiment_name": "trial_02",
+                "rand_seed": "some_string",
+            }
+        },
+        TypeError,
+    ),
+    "set_experiment_name_to_int": (
+        {
+            "meta": {
+                # directory
+                "data_name": "jack",
+                "experiment_name": 3,
+                "rand_seed": "some_string",
+            }
+        },
+        TypeError,
+    ),
 }
 
 
