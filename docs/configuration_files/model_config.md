@@ -1,4 +1,4 @@
-# Model Configuration
+<!-- # Model Configuration
 <!-- 
 The model configuration `.yaml` file is responsible for configuring high level training information. It is possible that this file will eventually be split into multiple configuration files.
 
@@ -64,4 +64,4 @@ TODO: Will be updated after sections have been more logical locations. As of rig
 #     aug_val: <bool> # True
 #     v_flip: <bool> # True
 #     h_flip: <bool> # True
-```
+``` -->
