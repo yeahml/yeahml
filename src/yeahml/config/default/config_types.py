@@ -50,12 +50,14 @@ class default_config:
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
-    def __call__(self, cur_value):
-        if self.is_type:
-            if isinstance(type(cur_value), self.is_type):
-                raise TypeError(
-                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
-                )
+    # I don't think this is possible, like I originally thought
+    # def __call__(self, cur_value):
+    #     print(cur_value)
+    #     if self.is_type:
+    #         if isinstance(type(cur_value), self.is_type):
+    #             raise TypeError(
+    #                 f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+    #             )
 
 
 class numeric(default_config):
@@ -86,6 +88,12 @@ class numeric(default_config):
             self.bounds = bounds
 
     def __call__(self, cur_value=None):
+        if cur_value and self.is_type:
+            if not isinstance(cur_value, self.is_type):
+                raise TypeError(
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                )
+
         if self.required and not cur_value:
             raise ValueError(f"value was not specified, but is required")
 
@@ -116,6 +124,7 @@ class categorical(default_config):
         fn_args=None,
         # specific
         is_in_list=None,
+        to_lower=None,
     ):
         super().__init__(
             default_value=default_value,
@@ -131,15 +140,31 @@ class categorical(default_config):
         else:
             self.is_in_list = is_in_list
 
+        # confirm is bool?
+        if to_lower is None:
+            self.to_lower = True
+        else:
+            self.to_lower = to_lower
+
     # call fn with fn_args
     def __call__(self, cur_value=None):
+        # print(cur_value)
+        if cur_value and self.is_type:
+            if not isinstance(cur_value, self.is_type):
+                raise TypeError(
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                )
+
         if self.required and not cur_value:
             raise ValueError(f"value was not specified, but is required")
 
         val = self.default_value
         if cur_value:
             # NOTE: convert all to lowercase
-            val = cur_value.lower()
+            val = cur_value
+
+        if self.to_lower and val:
+            val = val.lower()
 
         if val:
             # TODO: call function with args
@@ -160,6 +185,7 @@ class list_of_categorical(categorical):
         fn=None,
         fn_args=None,
         is_in_list=None,
+        to_lower=None,
         # specific
         list_must_include=None,
     ):
@@ -171,6 +197,7 @@ class list_of_categorical(categorical):
             fn=fn,
             fn_args=fn_args,
             is_in_list=is_in_list,
+            to_lower=to_lower,
         )
         if list_must_include is None:
             self.list_must_include = None
@@ -259,3 +286,105 @@ class parameter_config:
         # out_dict = {**known_dict, **unknown_dict}
         out_dict = known_dict
         return out_dict
+
+
+class data_in_spec:
+    def __init__(self, shape=None, dtype=None):
+
+        if shape is None:
+            self.shape = None
+        else:
+            self.shape = list_of_numeric(default_value=None, istype=int, required=True)(
+                shape
+            )
+
+        if dtype is None:
+            self.dtype = None
+        else:
+            self.dtype = categorical(
+                default_value=None, required=True, is_in_list=return_available_dtypes()
+            )(dtype)
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return {"shape": self.shape, "dtype": self.dtype}
+
+
+class dict_of_data_in_spec(data_in_spec):
+    def __init__(self):
+        self.data_spec_dict = None
+
+    def __call__(self, data_spec_dict):
+
+        cur_names_list = list(data_spec_dict.keys())
+        # duplicate logic adopted from
+        # https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
+        duplicates = [
+            v
+            for i, v in enumerate(cur_names_list)
+            if v in cur_names_list[:i] and v is not None
+        ]
+        if duplicates:
+            raise ValueError(f"{duplicates} are duplicated in f{cur_values_list}")
+
+        out_dict = {}
+        if isinstance(data_spec_dict, dict):
+            for k, d in data_spec_dict.items():
+                out_dict[k] = data_in_spec(shape=d["shape"], dtype=d["dtype"])()
+        else:
+            raise ValueError(
+                f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
+            )
+        return out_dict
+
+
+class list_of_numeric(numeric):
+    def __init__(
+        self,
+        default_value=None,
+        is_type=None,
+        required=None,
+        description=None,
+        fn=None,
+        fn_args=None,
+        bounds=None,
+    ):
+        super().__init__(
+            default_value=None,
+            is_type=None,
+            required=None,
+            description=None,
+            fn=None,
+            fn_args=None,
+            bounds=None,
+        )
+
+    def __call__(self, cur_values_list=None):
+        if isinstance(cur_values_list, list):
+            for val in cur_values_list:
+                o = numeric(
+                    default_value=self.default_value,
+                    is_type=self.is_type,
+                    required=self.required,
+                    description=self.description,
+                    fn=self.fn,
+                    fn_args=self.fn_args,
+                    bounds=self.bounds,
+                )(val)
+                out_list.append(o)
+        else:
+            out_list = [
+                numeric(
+                    default_value=self.default_value,
+                    is_type=self.is_type,
+                    required=self.required,
+                    description=self.description,
+                    fn=self.fn,
+                    fn_args=self.fn_args,
+                    bounds=self.bounds,
+                )(cur_values_list)
+            ]
+
+        return out_list

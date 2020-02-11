@@ -10,6 +10,14 @@ def _get_unspecified_default(DEFAULT):
     return formatted_dict
 
 
+def _get_unspecified_default_spec(DEFAULT):
+    formatted_dict = {}
+    for k, spec in DEFAULT.items():
+        # get default spec
+        formatted_dict[k] = spec
+    return formatted_dict
+
+
 def _unpack_params(raw_config, k, spec):
     ret_dict = {}
     known_params = spec.known_dict
@@ -34,7 +42,17 @@ def parse_default(raw_config, DEFAULT):
     for k, spec in DEFAULT.items():
         if isinstance(spec, optional_config):
             # call optional_config to return dict
-            out_val = _get_unspecified_default(spec())
+            try:
+                cur = raw_config[k]
+            except KeyError:
+                cur = None
+            if cur:
+                # get the spec and check the params
+                default_spec = _get_unspecified_default_spec(spec())
+                out_val = parse_default(raw_config[k], default_spec)
+            else:
+                # no user values are specified, only get the default values
+                out_val = _get_unspecified_default(spec())
         elif isinstance(spec, parameter_config):
             out_val = _unpack_params(raw_config[k], k, spec)
         elif callable(spec):

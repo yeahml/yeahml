@@ -85,7 +85,7 @@ ex_config = {
         {
             "dataset": {"batch": 3, "shuffle_buffer": 2},
             "epochs": 2,
-            "early_stopping": {"epochs": None, "warm_up": None},
+            "early_stopping": {"epochs": 3, "warm_up": 1},
             "optimizer": {"type": "adam", "options": {"learning_rate": 0.01}},
         },
     ),

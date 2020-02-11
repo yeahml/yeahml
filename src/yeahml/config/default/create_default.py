@@ -3,12 +3,12 @@ from yeahml.build.components.metric import return_available_metrics
 from yeahml.build.components.optimizer import return_available_optimizers
 from yeahml.config.default.config_types import (
     categorical,
+    data_in_spec,
+    dict_of_data_in_spec,
     list_of_categorical,
     numeric,
     optional_config,
     parameter_config,
-    data_in_spec,
-    dict_of_data_in_spec,
 )
 
 
@@ -51,10 +51,14 @@ meta = {
     "meta": {
         # directory
         "yeahml_dir": categorical(
-            default_value="yeahml", required=False, is_type=str
+            default_value="yeahml", required=False, is_type=str, to_lower=False
         ),  # could add a check that the location exists
-        "data_name": categorical(default_value=None, required=True, is_type=str),
-        "experiment_name": categorical(default_value=None, required=True, is_type=str),
+        "data_name": categorical(
+            default_value=None, required=True, is_type=str, to_lower=False
+        ),
+        "experiment_name": categorical(
+            default_value=None, required=True, is_type=str, to_lower=False
+        ),
         # random seed
         "rand_seed": numeric(default_value=None, required=False, is_type=int),
         # tracing
@@ -62,7 +66,7 @@ meta = {
         # default path to load param information
         # TODO: this should likely move to the model config
         "default_load_params_path": categorical(
-            default_value=None, required=False, is_type=str
+            default_value=None, required=False, is_type=str, to_lower=False
         ),  # TODO: confirm path exists
     }
 }
@@ -76,9 +80,10 @@ performance = {
                 is_type=str,
                 required=True,
                 is_in_list=return_available_metrics(),
+                to_lower=True,
             ),
             "options": list_of_categorical(
-                default_value=None, is_type=list, required=False
+                default_value=None, is_type=list, required=False, to_lower=True
             ),
         },
         # TODO: support multiple losses -- currently only one loss is supported
@@ -88,13 +93,17 @@ performance = {
                 required=True,
                 is_in_list=return_available_losses(),
                 is_type=str,
+                to_lower=True,
             ),
             # TODO: error check that options are valid
-            "options": categorical(default_value=None, required=False, is_type=str),
+            "options": categorical(
+                default_value=None, required=False, is_type=str, to_lower=True
+            ),
         },
     }
 }
 
+# TODO: some of these values are positive only .. may consider additional check
 hyper_parameters = {
     "hyper_parameters": {
         "dataset": {
@@ -116,6 +125,7 @@ hyper_parameters = {
                 default_value=None,
                 required=True,
                 is_in_list=return_available_optimizers(),
+                to_lower=True,
             ),
             # TODO: this isn't really a list of categorical.... most are numeric
             "options": parameter_config(
@@ -132,25 +142,41 @@ hyper_parameters = {
 
 ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]]
 
+# TODO: it should be acceptable to pass a "CRITICAL" here
 logging = {
     "logging": {
-        "console": {
-            "level": categorical(
-                default_value="CRITICAL", required=False, is_in_list=ERR_LEVELS
-            ),
-            "format_str": categorical(
-                default_value="%(name)-12s: %(levelname)-8s %(message)s", required=False
-            ),
-        },
-        "file": {
-            "level": categorical(
-                default_value="CRITICAL", required=False, is_in_list=ERR_LEVELS
-            ),
-            "format_str": categorical(
-                default_value="%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s",
-                required=False,
-            ),
-        },
+        "console": optional_config(
+            conf_dict={
+                "level": categorical(
+                    default_value="critical",
+                    required=False,
+                    is_in_list=ERR_LEVELS,
+                    is_type=str,
+                ),
+                "format_str": categorical(
+                    default_value="%(name)-12s: %(levelname)-8s %(message)s",
+                    required=False,
+                    is_type=str,
+                    to_lower=False,
+                ),
+            }
+        ),
+        "file": optional_config(
+            conf_dict={
+                "level": categorical(
+                    default_value="critical",
+                    required=False,
+                    is_in_list=ERR_LEVELS,
+                    is_type=str,
+                ),
+                "format_str": categorical(
+                    default_value="%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s",
+                    required=False,
+                    is_type=str,
+                    to_lower=False,
+                ),
+            }
+        ),
     }
 }
 
