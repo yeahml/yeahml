@@ -1,4 +1,4 @@
-# Hidden Layer Architecture Options
+<!-- # Hidden Layer Architecture Options
 
 The hidden configuration file will contain the configuration information for how the hidden layers in the model described by the main `model_config.yaml` yaml file should be constructed. An example configuration file can be found [here](./examples/architecture.yaml).
 
@@ -81,4 +81,4 @@ opt: Adam
 
 ### Other Notes
 
-Currently, only simple architectures, that follow common patterns, can be defined. When creating a CNN architecture, it is not necessary to flatten the pooling/convolutional layer before the dense layer --- this will be managed behind the scenes with a `flatten` operation.
+Currently, only simple architectures, that follow common patterns, can be defined. When creating a CNN architecture, it is not necessary to flatten the pooling/convolutional layer before the dense layer --- this will be managed behind the scenes with a `flatten` operation. -->
