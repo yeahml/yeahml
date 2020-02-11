@@ -23,9 +23,22 @@ from yeahml.config.performance.parse_performance import format_performance_confi
     }
 }"""
 
+# TODO: test options
 ex_config = {
     # ----- REQUIRED
-    # missing experiment_name
+    # missing metric
+    "missing_metric": (
+        {"performance": {"loss": {"type": "binary_crossentropy", "options": None}}},
+        ValueError,
+    ),
+    "missing_loss": (
+        {
+            "performance": {
+                "metric": {"type": ["binarycrossentropy"], "options": [None]}
+            }
+        },
+        ValueError,
+    ),
     "working_00": (
         {
             "performance": {
@@ -90,4 +103,3 @@ def test_default(config, expected):
             formatted_config = format_performance_config(
                 config["performance"], DEFAULT_CONFIG["performance"]
             )
-
