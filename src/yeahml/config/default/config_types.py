@@ -148,7 +148,6 @@ class categorical(default_config):
 
     # call fn with fn_args
     def __call__(self, cur_value=None):
-        # print(cur_value)
         if cur_value and self.is_type:
             if not isinstance(cur_value, self.is_type):
                 raise TypeError(
@@ -291,19 +290,16 @@ class parameter_config:
 class data_in_spec:
     def __init__(self, shape=None, dtype=None):
 
-        if shape is None:
-            self.shape = None
-        else:
-            self.shape = list_of_numeric(default_value=None, istype=int, required=True)(
-                shape
-            )
+        self.shape = list_of_numeric(default_value=None, is_type=int, required=True)(
+            shape
+        )
 
-        if dtype is None:
-            self.dtype = None
-        else:
-            self.dtype = categorical(
-                default_value=None, required=True, is_in_list=return_available_dtypes()
-            )(dtype)
+        self.dtype = categorical(
+            default_value=None,
+            required=True,
+            is_type=str,
+            is_in_list=return_available_dtypes(),
+        )(dtype)
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -313,21 +309,20 @@ class data_in_spec:
 
 
 class dict_of_data_in_spec(data_in_spec):
-    def __init__(self):
-        self.data_spec_dict = None
+    def __init__(self, required=None):
+
+        if required is None:
+            self.required = None
+        else:
+            self.required = required
 
     def __call__(self, data_spec_dict):
+        if self.required and not data_spec_dict:
+            raise ValueError("data_spec_dict is required but not specified")
 
         cur_names_list = list(data_spec_dict.keys())
         # duplicate logic adopted from
         # https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
-        duplicates = [
-            v
-            for i, v in enumerate(cur_names_list)
-            if v in cur_names_list[:i] and v is not None
-        ]
-        if duplicates:
-            raise ValueError(f"{duplicates} are duplicated in f{cur_values_list}")
 
         out_dict = {}
         if isinstance(data_spec_dict, dict):
@@ -363,6 +358,7 @@ class list_of_numeric(numeric):
 
     def __call__(self, cur_values_list=None):
         if isinstance(cur_values_list, list):
+            out_list = []
             for val in cur_values_list:
                 o = numeric(
                     default_value=self.default_value,
