@@ -281,10 +281,10 @@ class parameter_config:
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
-    def __call__(self):
-        # out_dict = {**known_dict, **unknown_dict}
-        out_dict = known_dict
-        return out_dict
+    # def __call__(self):
+    #     # out_dict = {**known_dict, **unknown_dict}
+    #     out_dict = self.known_dict
+    #     return out_dict
 
 
 class data_in_spec:
