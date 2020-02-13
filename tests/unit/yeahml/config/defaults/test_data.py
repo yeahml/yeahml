@@ -1,0 +1,81 @@
+import pytest
+
+from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.data.parse_data import format_data_config
+
+"""
+
+"""
+
+# TODO: test options
+# NOTE: multiple of the same name would need to be caught before here since the
+# type is a dict and the same name will overwrite the current value
+ex_config = {
+    # ----- REQUIRED
+    # missing
+    "minimal_00": (
+        {"data": {"in": {"in_a": {"shape": [64, 64], "dtype": "float64"}}}},
+        {"in": {"in_a": {"dtype": "float64", "shape": [64, 64]}}},
+    ),
+    "minimal_01": (
+        {
+            "data": {
+                "in": {
+                    "in_a": {"shape": [64, 64], "dtype": "float64"},
+                    "in_b": {"shape": [32, 32], "dtype": "int32"},
+                }
+            }
+        },
+        {
+            "in": {
+                "in_a": {"dtype": "float64", "shape": [64, 64]},
+                "in_b": {"dtype": "int32", "shape": [32, 32]},
+            }
+        },
+    ),
+    "shape_is_None": (
+        {"data": {"in": {"in_a": {"shape": [None], "dtype": "float64"}}}},
+        ValueError,
+    ),
+    "dtype_is_None": (
+        {"data": {"in": {"in_a": {"shape": [64, 64], "dtype": None}}}},
+        ValueError,
+    ),
+    "shape_incorrect_type": (
+        {"data": {"in": {"in_a": {"shape": "hello", "dtype": "float64"}}}},
+        TypeError,
+    ),
+    "dtype_incorrect_type": (
+        {"data": {"in": {"in_a": {"shape": [64, 64], "dtype": 0.33}}}},
+        TypeError,
+    ),
+    "dtype_not_exist": (
+        {"data": {"in": {"in_a": {"shape": [64, 64], "dtype": "made_up_dtype"}}}},
+        ValueError,
+    ),
+    # TODO: allow this -- where a None is present in the list
+    # "minimal_00": (
+    #     {"data": {"in": {"in_a": {"shape": [None, 64], "dtype": "float64"}}}},
+    #     {"in": {"in_a": {"dtype": "float64", "shape": [64, 64]}}},
+    # ),
+}
+
+
+@pytest.mark.parametrize(
+    "config,expected", ex_config.values(), ids=list(ex_config.keys())
+)
+def test_default(config, expected):
+    """test parsing of performance"""
+    if isinstance(expected, dict):
+        formatted_config = format_data_config(config["data"], DEFAULT_CONFIG["data"])
+        assert expected == formatted_config
+    elif isinstance(expected, ValueError):
+        with pytest.raises(ValueError):
+            formatted_config = format_data_config(
+                config["data"], DEFAULT_CONFIG["data"]
+            )
+    elif isinstance(expected, TypeError):
+        with pytest.raises(TypeError):
+            formatted_config = format_data_config(
+                config["data"], DEFAULT_CONFIG["data"]
+            )

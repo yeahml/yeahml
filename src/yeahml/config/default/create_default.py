@@ -182,11 +182,14 @@ logging = {
 
 
 # Data
-data = {"data": {"in": dict_of_data_in_spec()}}
+data = {"data": {"in": dict_of_data_in_spec(required=True)}}
 
-
+# NOTE: these two are really simliar, but I think it may be worth keeping them
+# separate.. that is I like the idea of being able to define these as separate processes
 preprocess = {"preprocess": {}}
+augment = {"augment": {}}
 
+# TODO: these need to be moved to preprocess
 # # copy is used to prevent overwriting underlying data
 # formatted_dict["input_layer_dim"] = None
 # formatted_dict["in_dim"] = raw_config["in"]["dim"].copy()
@@ -204,16 +207,22 @@ preprocess = {"preprocess": {}}
 #     formatted_dict["input_layer_dim"] = raw_config["in"]["reshape_to"]
 # else:
 #     formatted_dict["input_layer_dim"] = raw_config["in"]["dim"].copy()
+# formatted_dict["augmentation"] = raw_config["image"]["augmentation"]
+# formatted_dict["image_standardize"] = raw_config["image"]["standardize"]
 
-
+# NOTE: this doesn't matter.. unless we're doing supervised. but even still,
+# this could be specified/figured out by the var that is passed to the loss/metrics
 # formatted_dict["output_dim"] = raw_config["label"]["dim"].copy()
 # if formatted_dict["output_dim"][0]:  # as oppposed to [None, x, y, z]
 #     formatted_dict["output_dim"].insert(0, None)  # add batching
-
 # formatted_dict["label_dtype"] = raw_config["label"]["dtype"]
-
 # formatted_dict["label_one_hot"] = raw_config["label"]["one_hot"]
+# NOTE: I think the specification of final iteration shape/size should be
+# defined in the preprocess function.. because there may be preprocess functions
+# that need to happen before features/labels (if they even exist) are seperated.
 
+# NOTE: not sure how I want to do this.. this basically becomes dataduit all
+# over again..
 # formatted_dict["TFR_dir"] = raw_config["TFR"]["dir"]
 # formatted_dict["TFR_train"] = raw_config["TFR"]["train"]
 # formatted_dict["TFR_test"] = raw_config["TFR"]["test"]
@@ -225,11 +234,6 @@ preprocess = {"preprocess": {}}
 # formatted_dict["data_out_dict"] = raw_config["label"]
 # formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
 
-# formatted_dict["augmentation"] = raw_config["image"]["augmentation"]
-
-# formatted_dict["image_standardize"] = raw_config["image"]["standardize"]
-
-
 model = {"model": {}}
 
 DEFAULT_CONFIG = {}
@@ -237,3 +241,4 @@ DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **performance}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **hyper_parameters}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **data}

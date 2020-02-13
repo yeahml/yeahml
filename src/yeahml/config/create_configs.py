@@ -68,7 +68,7 @@ def create_configs(main_path: str) -> dict:
                 raw_config, DEFAULT_CONFIG["performance"]
             )
         elif config_type == "data":
-            formatted_config = format_data_config(raw_config)
+            formatted_config = format_data_config(raw_config, DEFAULT_CONFIG["data"])
         elif config_type == "hyper_parameters":
             formatted_config = format_hyper_parameters_config(
                 raw_config, DEFAULT_CONFIG["hyper_parameters"]
