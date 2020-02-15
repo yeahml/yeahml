@@ -74,7 +74,8 @@ def create_configs(main_path: str) -> dict:
                 raw_config, DEFAULT_CONFIG["hyper_parameters"]
             )
         elif config_type == "model":
-            formatted_config = format_model_config(raw_config, config_dict["meta"])
+            # formatted_config = format_model_config(raw_config, config_dict["meta"])
+            formatted_config = format_data_config(raw_config, DEFAULT_CONFIG["model"])
         else:
             raise ValueError(f"config type {config_type} is not yet implemented")
         config_dict[config_type] = formatted_config

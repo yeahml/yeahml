@@ -9,6 +9,7 @@ from yeahml.config.default.config_types import (
     numeric,
     optional_config,
     parameter_config,
+    layers_config,
 )
 
 
@@ -236,9 +237,19 @@ augment = {"augment": {}}
 
 model = {"model": {}}
 
+
+model = {
+    "model": {
+        # directory
+        "layers": layers_config()  # could add a check that the location exists
+    }
+}
+
+
 DEFAULT_CONFIG = {}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **performance}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **hyper_parameters}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **data}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **model}

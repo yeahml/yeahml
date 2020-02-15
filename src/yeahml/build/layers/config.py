@@ -22,6 +22,62 @@ def return_available_layers():
     return LAYER_FUNCTIONS
 
 
+import inspect
+
+
+# def get_default_args(func):
+#     spec = inspect.getfullargspec(func)
+#     return (spec.args, spec.defaults)
+
+
+def get_layer_options(layer_func):
+
+    # I'm assuming there is an easier way to handle this
+    # some_vars = get_default_args(layer_func)
+    # print(some_vars)
+
+    try:
+        layer_opt_spec = inspect.getfullargspec(layer_func)
+        cur_func_vars = layer_opt_spec.args
+        cur_func_defaults = list(layer_opt_spec.defaults)
+    except KeyError:
+        # some layers inherit "__init__" from a base class e.g. batchnorm
+        # the assumption here is that the 1st base class will contain the init..
+        # I doubt this is accurate, but it is currently working
+        try:
+            first_parent = layer_func.__bases__[0]
+            layer_opt_spec = inspect.getfullargspec(first_parent)
+            cur_func_vars = layer_opt_spec.args
+            cur_func_defaults = list(layer_opt_spec.defaults)
+        except KeyError:
+            raise NotImplementedError(
+                f"error with type:{layer_func}, first parent: {first_parent}, other parents ({func.__bases__}). This error may be a result of an assumption that the __init__ params are from {first_parent} and not one of ({func.__bases__})"
+            )
+    if issubclass(layer_func, tf.keras.layers.Layer):
+        # replace "kwargs"
+        # cur_func_vars.remove("kwargs")
+        # TODO: replace this with automated -- where did I get these from? # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
+        cur_func_vars.extend(["trainable", "name", "dtype", "dynamic"])
+        cur_func_defaults.extend([True, None, None, False])
+
+    return (cur_func_vars, cur_func_defaults)
+
+
+def return_layer_defaults(layer_type):
+    # logic to get all layers in a class
+    LAYER_FUNCTIONS = return_available_layers()
+    if layer_type in LAYER_FUNCTIONS.keys():
+        func = LAYER_FUNCTIONS[layer_type]["function"]
+    else:
+        raise ValueError(
+            f"layer type {layer_type} not available in {LAYER_FUNCTIONS.keys()}"
+        )
+
+    func_args, func_defaults = get_layer_options(func)
+
+    return {"func": func, "func_args": func_args, "func_defaults": func_defaults}
+
+
 # LAYER_FUNCTIONS = {}
 # # Convolutions
 # LAYER_FUNCTIONS["Conv1D".lower()] = {"function": tf.keras.layers.Conv1D}

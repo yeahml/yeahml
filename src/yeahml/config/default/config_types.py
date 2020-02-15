@@ -1,6 +1,7 @@
 import math
 
 from yeahml.build.components.dtype import return_available_dtypes
+from yeahml.build.layers.config import return_layer_defaults, return_available_layers
 
 # TODO: I think the key that is called by this type should be included such that
 # we can more easily keep track of where the error is coming from
@@ -320,10 +321,6 @@ class dict_of_data_in_spec(data_in_spec):
         if self.required and not data_spec_dict:
             raise ValueError("data_spec_dict is required but not specified")
 
-        cur_names_list = list(data_spec_dict.keys())
-        # duplicate logic adopted from
-        # https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
-
         out_dict = {}
         if isinstance(data_spec_dict, dict):
             for k, d in data_spec_dict.items():
@@ -384,3 +381,64 @@ class list_of_numeric(numeric):
             ]
 
         return out_list
+
+
+class layer_base_config:
+    def __init__(self, layer_type=None):
+        if layer_type is None:
+            raise ValueError("layer_type is not defined")
+        else:
+            self.str = categorical(
+                required=True, is_type=str, is_in_list=return_available_layers().keys()
+            )(layer_type)
+            fn_dict = return_layer_defaults(self.str)
+            # {"func": func, "func_args": func_args, "func_defaults": func_defaults}
+            self.func = fn_dict["func"]
+            self.func_args = fn_dict["func_args"]
+            self.func_defaults = fn_dict["func_defaults"]
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return self.__dict__
+
+
+class layer_config:
+    def __init__(self, layer_type=None, layer_options=None, layer_in_config=None):
+
+        self.layer_base = layer_base_config(layer_type)()
+        # self.layer_options = layer_options_config(layer_options)
+        # self.layer_input = layer_input_config(layer_in_config)
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return self.__dict__
+
+
+class layers_config:
+    def __init__(self, conf_dict=None):
+        if conf_dict is None:
+            self.conf_dict = None
+        else:
+            self.conf_dict = conf_dict
+
+    # def __str__(self):
+    #     return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self, model_spec_dict):
+        out_dict = {}
+        if isinstance(model_spec_dict, dict):
+            for k, d in model_spec_dict.items():
+                out_dict[k] = layer_config(
+                    layer_type=d["layer_type"],
+                    layer_options=d["layer_options"],
+                    layer_in_config=d["in_name"],
+                )()
+        else:
+            raise ValueError(
+                f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
+            )
+        return out_dict
