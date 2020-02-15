@@ -410,6 +410,22 @@ class layer_base_config:
 # class NOTPRESENT:
 #     def __init__(self):
 #         pass
+from yeahml.build.components.activation import _configure_activation
+from yeahml.build.components.constraint import _configure_constraint
+from yeahml.build.components.initializer import _configure_initializer
+from yeahml.build.components.regularizer import _configure_regularizer
+
+
+SPECIAL_OPTIONS = [
+    ("kernel_regularizer", _configure_regularizer),
+    ("bias_regularizer", _configure_regularizer),
+    ("activity_regularizer", _configure_regularizer),
+    ("activation", _configure_activation),
+    ("kernel_initializer", _configure_initializer),
+    ("bias_initializer", _configure_initializer),
+    ("kernel_constraint", _configure_constraint),
+    ("bias_constraint", _configure_constraint),
+]
 
 
 class layer_options_config:
@@ -417,7 +433,26 @@ class layer_options_config:
         # ensure user args is a subset of func_args
         self.user_vals = []
         if user_args:
+            special_options_names = [v[0] for v in SPECIAL_OPTIONS]
             for i, arg_name in enumerate(func_args):
+                # there are 'special' options... these are parameters that
+                # accept classes/functions
+                if arg_name in special_options_names:
+                    ind = special_options_names.index(arg_name)
+                    special_func = SPECIAL_OPTIONS[ind][1]
+                    if arg_name in user_args:
+                        arg_v = user_args[arg_name]
+                        if isinstance(arg_v, str):
+                            # make sure string is allowed type
+                            pass
+                        elif isinstance(arg_v, dict):
+                            # do the special function
+                            pass
+                        else:
+                            raise TypeError(
+                                f"unable to create {arg_name} with options {arg_v}"
+                            )
+
                 if arg_name in user_args:
                     arg_v = user_args[arg_name]
                 else:
