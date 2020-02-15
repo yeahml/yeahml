@@ -2,6 +2,12 @@ import inspect
 
 import tensorflow as tf
 
+
+class NOTPRESENT:
+    def __init__(self):
+        pass
+
+
 # standard_args = {"opts": None, "name": None, "logger": None, "g_logger": None}
 
 # TOOD: could this be automated?
@@ -22,9 +28,6 @@ def return_available_layers():
     return LAYER_FUNCTIONS
 
 
-import inspect
-
-
 # def get_default_args(func):
 #     spec = inspect.getfullargspec(func)
 #     return (spec.args, spec.defaults)
@@ -38,6 +41,7 @@ def get_layer_options(layer_func):
 
     try:
         layer_opt_spec = inspect.getfullargspec(layer_func)
+        # print(layer_opt_spec)
         cur_func_vars = layer_opt_spec.args
         cur_func_defaults = list(layer_opt_spec.defaults)
     except KeyError:
@@ -59,6 +63,20 @@ def get_layer_options(layer_func):
         # TODO: replace this with automated -- where did I get these from? # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
         cur_func_vars.extend(["trainable", "name", "dtype", "dynamic"])
         cur_func_defaults.extend([True, None, None, False])
+
+    try:
+        cur_func_vars.remove("self")
+    except KeyError:
+        pass
+
+    diff = len(cur_func_vars) - len(cur_func_defaults)
+    diff_l = [NOTPRESENT] * diff
+    cur_func_defaults = diff_l + cur_func_defaults
+
+    # sanity check
+    assert len(cur_func_vars) == len(
+        cur_func_defaults
+    ), f"different number of defaults ({len(cur_func_vars)}) than allowed variables ({len(cur_func_defaults)}) defaults:{cur_func_defaults}, vars:{cur_func_vars}"
 
     return (cur_func_vars, cur_func_defaults)
 

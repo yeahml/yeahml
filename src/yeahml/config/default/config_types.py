@@ -3,6 +3,9 @@ import math
 from yeahml.build.components.dtype import return_available_dtypes
 from yeahml.build.layers.config import return_layer_defaults, return_available_layers
 
+# TODO: this should be moved
+from yeahml.build.layers.config import NOTPRESENT
+
 # TODO: I think the key that is called by this type should be included such that
 # we can more easily keep track of where the error is coming from
 
@@ -404,11 +407,54 @@ class layer_base_config:
         return self.__dict__
 
 
+# class NOTPRESENT:
+#     def __init__(self):
+#         pass
+
+
+class layer_options_config:
+    def __init__(self, func_args=None, func_defaults=None, user_args=None):
+        # ensure user args is a subset of func_args
+        self.user_vals = []
+        if user_args:
+            for i, arg_name in enumerate(func_args):
+                if arg_name in user_args:
+                    arg_v = user_args[arg_name]
+                else:
+                    arg_v = func_defaults[i]
+                    if type(arg_v) == type(NOTPRESENT):
+                        raise ValueError(
+                            f"arg value for {arg_name} is not specified, but is required to be specified"
+                        )
+                self.user_vals.append(arg_v)
+            # sanity check
+            assert len(self.user_vals) == len(
+                func_defaults
+            ), f"user vals not set correctly"
+        else:
+            # no options are specified, but some arguments require it
+            for i, arg_default in enumerate(func_defaults):
+                if type(arg_default) == type(NOTPRESENT):
+                    raise ValueError(
+                        f"arg value for {func_args[i]} is not specified, but is required to be specified"
+                    )
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return self.__dict__
+
+
 class layer_config:
     def __init__(self, layer_type=None, layer_options=None, layer_in_config=None):
 
         self.layer_base = layer_base_config(layer_type)()
-        # self.layer_options = layer_options_config(layer_options)
+        self.layer_options = layer_options_config(
+            func_args=self.layer_base["func_args"],
+            func_defaults=self.layer_base["func_defaults"],
+            user_args=layer_options,
+        )()
         # self.layer_input = layer_input_config(layer_in_config)
 
     def __str__(self):
@@ -425,8 +471,8 @@ class layers_config:
         else:
             self.conf_dict = conf_dict
 
-    # def __str__(self):
-    #     return str(self.__class__) + ": " + str(self.__dict__)
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
 
     def __call__(self, model_spec_dict):
         out_dict = {}

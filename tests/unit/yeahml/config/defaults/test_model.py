@@ -2,6 +2,7 @@ import pytest
 
 from yeahml.config.default.create_default import DEFAULT_CONFIG
 from yeahml.config.model.parse_model import format_model_config
+from yeahml.build.layers.config import NOTPRESENT
 import tensorflow as tf
 
 """
@@ -36,7 +37,7 @@ ex_config = {
                 "layers": {
                     "dense_1": {
                         "layer_type": "dense",
-                        "layer_options": {"units": 16},
+                        "layer_options": {"units": "16"},
                         "in_name": "jack",
                     },
                     "bn_1": {
@@ -54,7 +55,6 @@ ex_config = {
                         "str": "dense",
                         "func": tf.keras.layers.Dense,
                         "func_args": [
-                            "self",
                             "units",
                             "activation",
                             "use_bias",
@@ -71,6 +71,7 @@ ex_config = {
                             "dynamic",
                         ],
                         "func_defaults": [
+                            NOTPRESENT,
                             None,
                             True,
                             "glorot_uniform",
@@ -92,7 +93,6 @@ ex_config = {
                         "str": "batchnormalization",
                         "func": tf.keras.layers.BatchNormalization,
                         "func_args": [
-                            "self",
                             "axis",
                             "momentum",
                             "epsilon",
