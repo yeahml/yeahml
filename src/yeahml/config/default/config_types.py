@@ -442,25 +442,35 @@ class layer_options_config:
                     special_func = SPECIAL_OPTIONS[ind][1]
                     if arg_name in user_args:
                         arg_v = user_args[arg_name]
-                        if isinstance(arg_v, str):
-                            # make sure string is allowed type
-                            pass
-                        elif isinstance(arg_v, dict):
-                            # do the special function
-                            pass
+                        if isinstance(arg_v, dict):
+                            # extract useful components
+                            try:
+                                func_type = arg_v["type"]
+                            except KeyError:
+                                raise ValueError(
+                                    "Function for {arg_name} is not specified as a type:[<insert_type_here>]"
+                                )
+                            try:
+                                func_opts = arg_v["options"]
+                            except KeyError:
+                                func_opts = None
+
+                            # use special functions
+                            # TODO: make sure the special_func accepts this signature
+                            arg_v = special_func(func_type, func_opts)
                         else:
                             raise TypeError(
-                                f"unable to create {arg_name} with options {arg_v}"
+                                f"unable to create {arg_name} with options {arg_v} - a dictionary (with :type) is required"
                             )
-
-                if arg_name in user_args:
-                    arg_v = user_args[arg_name]
                 else:
-                    arg_v = func_defaults[i]
-                    if type(arg_v) == type(NOTPRESENT):
-                        raise ValueError(
-                            f"arg value for {arg_name} is not specified, but is required to be specified"
-                        )
+                    if arg_name in user_args:
+                        arg_v = user_args[arg_name]
+                    else:
+                        arg_v = func_defaults[i]
+                        if type(arg_v) == type(NOTPRESENT):
+                            raise ValueError(
+                                f"arg value for {arg_name} is not specified, but is required to be specified"
+                            )
                 self.user_vals.append(arg_v)
             # sanity check
             assert len(self.user_vals) == len(
