@@ -410,21 +410,21 @@ class layer_base_config:
 # class NOTPRESENT:
 #     def __init__(self):
 #         pass
-from yeahml.build.components.activation import _configure_activation
-from yeahml.build.components.constraint import _configure_constraint
-from yeahml.build.components.initializer import _configure_initializer
-from yeahml.build.components.regularizer import _configure_regularizer
+from yeahml.build.components.activation import configure_activation
+from yeahml.build.components.constraint import configure_constraint
+from yeahml.build.components.initializer import configure_initializer
+from yeahml.build.components.regularizer import configure_regularizer
 
 
 SPECIAL_OPTIONS = [
-    ("kernel_regularizer", _configure_regularizer),
-    ("bias_regularizer", _configure_regularizer),
-    ("activity_regularizer", _configure_regularizer),
-    ("activation", _configure_activation),
-    ("kernel_initializer", _configure_initializer),
-    ("bias_initializer", _configure_initializer),
-    ("kernel_constraint", _configure_constraint),
-    ("bias_constraint", _configure_constraint),
+    ("kernel_regularizer", configure_regularizer),
+    ("bias_regularizer", configure_regularizer),
+    ("activity_regularizer", configure_regularizer),
+    ("activation", configure_activation),
+    ("kernel_initializer", configure_initializer),
+    ("bias_initializer", configure_initializer),
+    ("kernel_constraint", configure_constraint),
+    ("bias_constraint", configure_constraint),
 ]
 
 
@@ -437,40 +437,41 @@ class layer_options_config:
             for i, arg_name in enumerate(func_args):
                 # there are 'special' options... these are parameters that
                 # accept classes/functions
-                if arg_name in special_options_names:
-                    ind = special_options_names.index(arg_name)
-                    special_func = SPECIAL_OPTIONS[ind][1]
-                    if arg_name in user_args:
-                        arg_v = user_args[arg_name]
-                        if isinstance(arg_v, dict):
-                            # extract useful components
-                            try:
-                                func_type = arg_v["type"]
-                            except KeyError:
-                                raise ValueError(
-                                    "Function for {arg_name} is not specified as a type:[<insert_type_here>]"
-                                )
-                            try:
-                                func_opts = arg_v["options"]
-                            except KeyError:
-                                func_opts = None
+                if arg_name in user_args:
+                    if arg_name in special_options_names:
+                        # arg_v = None
+                        ind = special_options_names.index(arg_name)
+                        special_func = SPECIAL_OPTIONS[ind][1]
+                        if arg_name in user_args:
+                            arg_v = user_args[arg_name]
+                            if isinstance(arg_v, dict):
+                                # extract useful components
+                                try:
+                                    func_type = arg_v["type"]
+                                except KeyError:
+                                    raise ValueError(
+                                        "Function for {arg_name} is not specified as a type:[<insert_type_here>]"
+                                    )
+                                try:
+                                    func_opts = arg_v["options"]
+                                except KeyError:
+                                    func_opts = None
 
-                            # use special functions
-                            # TODO: make sure the special_func accepts this signature
-                            arg_v = special_func(func_type, func_opts)
-                        else:
-                            raise TypeError(
-                                f"unable to create {arg_name} with options {arg_v} - a dictionary (with :type) is required"
-                            )
-                else:
-                    if arg_name in user_args:
-                        arg_v = user_args[arg_name]
+                                # use special functions
+                                # TODO: make sure the special_func accepts this signature
+                                arg_v = special_func(func_type, func_opts)
+                            else:
+                                raise TypeError(
+                                    f"unable to create {arg_name} with options {arg_v} - a dictionary (with :type) is required"
+                                )
                     else:
-                        arg_v = func_defaults[i]
-                        if type(arg_v) == type(NOTPRESENT):
-                            raise ValueError(
-                                f"arg value for {arg_name} is not specified, but is required to be specified"
-                            )
+                        arg_v = user_args[arg_name]
+                else:
+                    arg_v = func_defaults[i]
+                    if type(arg_v) == type(NOTPRESENT):
+                        raise ValueError(
+                            f"arg value for {arg_name} is not specified, but is required to be specified"
+                        )
                 self.user_vals.append(arg_v)
             # sanity check
             assert len(self.user_vals) == len(
@@ -532,4 +533,5 @@ class layers_config:
             raise ValueError(
                 f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
             )
+
         return out_dict

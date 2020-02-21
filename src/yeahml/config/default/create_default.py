@@ -235,7 +235,7 @@ augment = {"augment": {}}
 # formatted_dict["data_out_dict"] = raw_config["label"]
 # formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
 
-model = {"model": {}}
+# model = {"model": {}}
 
 
 model = {

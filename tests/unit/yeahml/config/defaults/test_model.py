@@ -37,7 +37,11 @@ ex_config = {
                 "layers": {
                     "dense_1": {
                         "layer_type": "dense",
-                        "layer_options": {"units": "16"},
+                        "layer_options": {
+                            "units": "16",
+                            "kernel_initializer": {"type": "glorotnormal"},
+                            "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+                        },
                         "in_name": "jack",
                     },
                     "bn_1": {
@@ -86,7 +90,25 @@ ex_config = {
                             None,
                             False,
                         ],
-                    }
+                    },
+                    "layer_options": {
+                        "user_vals": [
+                            "16",
+                            None,
+                            True,
+                            tf.keras.initializers.GlorotNormal(),
+                            "zeros",
+                            None,
+                            tf.keras.regularizers.l2,  # TODO: this isn't checked for options
+                            None,
+                            None,
+                            None,
+                            True,
+                            None,
+                            None,
+                            False,
+                        ]
+                    },
                 },
                 "bn_1": {
                     "layer_base": {
@@ -146,7 +168,8 @@ ex_config = {
                             None,
                             False,
                         ],
-                    }
+                    },
+                    "layer_options": {"user_vals": []},
                 },
             }
         },
@@ -165,6 +188,41 @@ def test_default(config, expected):
             assert expected == formatted_config
         except AssertionError:
             for k, d in formatted_config["layers"].items():
+                for opt in ["user_vals"]:
+                    try:
+                        assert (
+                            d["layer_options"][opt]
+                            is expected["layers"][k]["layer_options"][opt]
+                        ), f"layer {k} does not have matching {opt}"
+                    except AssertionError:
+                        for i, a in enumerate(d["layer_options"][opt]):
+                            b = expected["layers"][k]["layer_options"][opt][i]
+                            try:
+                                assert (
+                                    a is b
+                                ), f"layer {k} does not have matching {opt} for {a} != {b}"
+                            except AssertionError:
+                                if issubclass(
+                                    type(b), tf.keras.regularizers.Regularizer
+                                ):
+                                    # TODO: implement more in depth check
+                                    assert issubclass(
+                                        type(a), tf.keras.regularizers.Regularizer
+                                    )
+                                    pass
+                                if issubclass(
+                                    type(b), tf.keras.initializers.Initializer
+                                ):
+                                    # TODO: implement more in depth check
+                                    assert issubclass(
+                                        type(a), tf.keras.initializers.Initializer
+                                    )
+
+                                if issubclass(type(b), tf.keras.layers.Activation):
+                                    # TODO: implement more in depth check
+                                    assert issubclass(
+                                        type(a), tf.keras.layers.Activation
+                                    )
                 for opt in ["func", "func_args", "func_defaults"]:
                     assert (
                         d["layer_base"][opt] == expected["layers"][k]["layer_base"][opt]
