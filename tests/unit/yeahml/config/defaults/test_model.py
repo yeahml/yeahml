@@ -47,7 +47,15 @@ ex_config = {
                     "bn_1": {
                         "layer_type": "batchnormalization",
                         "layer_options": None,
-                        "in_name": "jack",
+                        "in_name": "dense_1",
+                    },
+                    "dense_2": {
+                        "layer_type": "dense",
+                        "layer_options": {
+                            "units": "16",
+                            "kernel_initializer": {"type": "glorotnormal"},
+                            "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+                        },
                     },
                 }
             }
@@ -109,6 +117,7 @@ ex_config = {
                             False,
                         ]
                     },
+                    "layer_in_name": "jack",
                 },
                 "bn_1": {
                     "layer_base": {
@@ -170,6 +179,65 @@ ex_config = {
                         ],
                     },
                     "layer_options": {"user_vals": []},
+                    "layer_in_name": "dense_1",
+                },
+                "dense_2": {
+                    "layer_base": {
+                        "str": "dense",
+                        "func": tf.keras.layers.Dense,
+                        "func_args": [
+                            "units",
+                            "activation",
+                            "use_bias",
+                            "kernel_initializer",
+                            "bias_initializer",
+                            "kernel_regularizer",
+                            "bias_regularizer",
+                            "activity_regularizer",
+                            "kernel_constraint",
+                            "bias_constraint",
+                            "trainable",
+                            "name",
+                            "dtype",
+                            "dynamic",
+                        ],
+                        "func_defaults": [
+                            NOTPRESENT,
+                            None,
+                            True,
+                            "glorot_uniform",
+                            "zeros",
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            True,
+                            None,
+                            None,
+                            False,
+                        ],
+                    },
+                    "layer_options": {
+                        "user_vals": [
+                            "16",
+                            None,
+                            True,
+                            tf.keras.initializers.GlorotNormal(),
+                            "zeros",
+                            None,
+                            tf.keras.regularizers.l2,  # TODO: this isn't checked for options
+                            None,
+                            None,
+                            None,
+                            True,
+                            None,
+                            None,
+                            False,
+                        ]
+                    },
+                    # test that prev layer information is used here
+                    "layer_in_name": "bn_1",
                 },
             }
         },
@@ -226,6 +294,11 @@ def test_default(config, expected):
                 for opt in ["func", "func_args", "func_defaults"]:
                     assert (
                         d["layer_base"][opt] == expected["layers"][k]["layer_base"][opt]
+                    ), f"layer {k} does not have matching {opt}"
+                for opt in ["layer_in_name"]:
+                    # print(d[opt])
+                    assert (
+                        d[opt] == expected["layers"][k][opt]
                     ), f"layer {k} does not have matching {opt}"
 
     elif isinstance(expected, ValueError):

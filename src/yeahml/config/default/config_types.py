@@ -493,7 +493,7 @@ class layer_options_config:
 
 
 class layer_config:
-    def __init__(self, layer_type=None, layer_options=None, layer_in_config=None):
+    def __init__(self, layer_type=None, layer_options=None, layer_in_name=None):
 
         self.layer_base = layer_base_config(layer_type)()
         self.layer_options = layer_options_config(
@@ -501,7 +501,9 @@ class layer_config:
             func_defaults=self.layer_base["func_defaults"],
             user_args=layer_options,
         )()
-        # self.layer_input = layer_input_config(layer_in_config)
+        self.layer_in_name = categorical(
+            default_value=None, required=True, is_type=str
+        )(layer_in_name)
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -522,13 +524,20 @@ class layers_config:
 
     def __call__(self, model_spec_dict):
         out_dict = {}
+        prev_layer_name = None
         if isinstance(model_spec_dict, dict):
             for k, d in model_spec_dict.items():
+                try:
+                    layer_in_name = d["in_name"]
+                except KeyError:
+                    layer_in_name = prev_layer_name
                 out_dict[k] = layer_config(
                     layer_type=d["layer_type"],
                     layer_options=d["layer_options"],
-                    layer_in_config=d["in_name"],
+                    layer_in_name=layer_in_name,
                 )()
+                # increment layer
+                prev_layer_name = k
         else:
             raise ValueError(
                 f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
