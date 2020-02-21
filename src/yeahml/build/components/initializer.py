@@ -27,9 +27,32 @@ def _configure_initializer(opt_dict):
     # arg_order = vars(init_fn)["__init__"].__code__.co_varnames
     # default_values = vars(init_fn)["__init__"].__defaults__
     cur_config = init_fn().get_config()
+    # TODO: case were options are None?
     for k, v in opt_dict["options"].items():
         cur_config[k] = v
     out = init_fn().from_config(cur_config)
+
+    return out
+
+
+def configure_initializer(func_type, func_opt):
+    # NOTE: This returns init(), not init .. which is different than the regularizer
+    init_obj = return_initializer(func_type)
+
+    init_fn = init_obj["function"]
+    cur_config = init_fn().get_config()
+    if func_opt:
+        if not set(func_opt.keys()).issubset(init_obj["func_args"]):
+            raise ValueError(
+                f"options {func_opt.keys()} not in {init_obj['func_args']}"
+            )
+        for k, v in func_opt.items():
+            cur_config[k] = v
+        # TODO: I'm not sure this works
+        out = init_fn().from_config(cur_config)
+    else:
+        # TODO: is this correct?
+        out = init_fn()
 
     return out
 

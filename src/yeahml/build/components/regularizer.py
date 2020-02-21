@@ -27,6 +27,27 @@ def _configure_regularizer(opt_dict):
     return reg_fn
 
 
+def configure_regularizer(func_type, func_opt):
+    reg_fn = return_regularizer(func_type)["function"]
+
+    # configure
+    # TODO: improve this logic
+    if func_opt:
+        temp_copy = func_opt.copy()
+        var_list = list(reg_fn.__code__.co_varnames)
+        cur_defaults_list = list(reg_fn.__defaults__)
+        for ao, v in temp_copy.items():
+            try:
+                arg_index = var_list.index(ao)
+                cur_defaults_list[arg_index] = v
+            except ValueError:
+                raise ValueError(f"regularizer option {ao} not in options: {var_list}")
+            # TODO: same type assertion?
+            reg_fn.__defaults__ = tuple(cur_defaults_list)
+
+    return reg_fn
+
+
 def return_available_regularizers():
     REGULARIZER_FUNCTIONS = {}
     available_keras_regularizers = tf.keras.regularizers.__dict__

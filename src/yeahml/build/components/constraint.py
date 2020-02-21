@@ -31,6 +31,22 @@ def _configure_constraint(opt_dict):
     return out
 
 
+def configure_constraint(func_type, func_opt):
+    constraint_obj = return_constraint(func_type)
+    constraint_fn = constraint_obj["function"]
+
+    if func_opt:
+        if not set(func_opt.keys()).issubset(constraint_obj["func_args"]):
+            raise ValueError(
+                f"options {func_opt.keys()} not in {constraint_obj['func_args']}"
+            )
+        out = constraint_fn(**func_opt)
+    else:
+        out = constraint_fn()
+
+    return out
+
+
 def return_available_constraints():
 
     CONSTRAINT_FUNCTIONS = {}

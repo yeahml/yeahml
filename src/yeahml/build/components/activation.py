@@ -23,6 +23,24 @@ def _configure_activation(opt_dict):
     return act_fn
 
 
+def configure_activation(func_type, func_opt):
+    act_fn = return_activation(func_type)
+
+    if func_opt:
+        temp_copy = func_opt.copy()
+        var_list = list(act_fn.__code__.co_varnames)
+        cur_defaults_list = list(act_fn.__defaults__)
+        # TODO: try?
+        var_list.remove("x")
+        for ao, v in temp_copy.items():
+            arg_index = var_list.index(ao)
+            # TODO: same type assertion?
+            cur_defaults_list[arg_index] = v
+        act_fn.__defaults__ = tuple(cur_defaults_list)
+
+    return act_fn
+
+
 def return_available_activations():
     # logic to get all layers in a class
     ACTIVATION_FUNCTIONS = {}
