@@ -41,6 +41,7 @@ ex_config = {
                             "units": "16",
                             "kernel_initializer": {"type": "glorotnormal"},
                             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+                            "activation": {"type": "elu"},
                         },
                         "in_name": "jack",
                     },
@@ -102,7 +103,7 @@ ex_config = {
                     "layer_options": {
                         "user_vals": [
                             "16",
-                            None,
+                            tf.keras.activations.elu,
                             True,
                             tf.keras.initializers.GlorotNormal(),
                             "zeros",
@@ -278,19 +279,17 @@ def test_default(config, expected):
                                         type(a), tf.keras.regularizers.Regularizer
                                     )
                                     pass
-                                if issubclass(
+                                elif issubclass(
                                     type(b), tf.keras.initializers.Initializer
                                 ):
                                     # TODO: implement more in depth check
                                     assert issubclass(
                                         type(a), tf.keras.initializers.Initializer
                                     )
-
-                                if issubclass(type(b), tf.keras.layers.Activation):
-                                    # TODO: implement more in depth check
-                                    assert issubclass(
-                                        type(a), tf.keras.layers.Activation
-                                    )
+                                else:
+                                    assert (
+                                        a == b
+                                    ), f"{opt} in layer {k} does not match: {a} != {b}"
                 for opt in ["func", "func_args", "func_defaults"]:
                     assert (
                         d["layer_base"][opt] == expected["layers"][k]["layer_base"][opt]

@@ -24,7 +24,7 @@ def _configure_activation(opt_dict):
 
 
 def configure_activation(func_type, func_opt):
-    act_fn = return_activation(func_type)
+    act_fn = return_activation(func_type)["function"]
 
     if func_opt:
         temp_copy = func_opt.copy()
