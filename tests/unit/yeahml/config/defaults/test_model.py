@@ -1,6 +1,6 @@
 import pytest
 
-from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.model.parse_model import format_model_config
 from yeahml.build.layers.config import NOTPRESENT
 import tensorflow as tf

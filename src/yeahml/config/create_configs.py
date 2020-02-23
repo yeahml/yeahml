@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from yeahml.config.data.parse_data import format_data_config
-from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,

@@ -1,4 +1,4 @@
-from yeahml.config.default.config_types import optional_config, parameter_config
+from yeahml.config.default.types.param_types import optional_config, parameter_config
 
 
 def _get_unspecified_default(DEFAULT):

@@ -1,6 +1,6 @@
 import pytest
 
-from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.data.parse_data import format_data_config
 
 """

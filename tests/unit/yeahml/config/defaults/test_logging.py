@@ -1,6 +1,6 @@
 import pytest
 
-from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.logging.parse_logging import format_logging_config
 
 """

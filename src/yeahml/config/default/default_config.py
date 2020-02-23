@@ -1,46 +1,16 @@
 from yeahml.build.components.loss import return_available_losses
 from yeahml.build.components.metric import return_available_metrics
 from yeahml.build.components.optimizer import return_available_optimizers
-from yeahml.config.default.config_types import (
-    categorical,
-    data_in_spec,
-    dict_of_data_in_spec,
-    list_of_categorical,
+
+from yeahml.config.default.types.base_types import (
     numeric,
-    optional_config,
-    parameter_config,
-    layers_config,
+    categorical,
+    list_of_categorical,
 )
 
-
-def hithere():
-    return 42
-
-
-# numeric(
-#     required=None,
-#     is_type=None,
-#     description=None,
-#     fn=None,
-#     fn_args=None,
-#     # specifc
-#     value=None,
-#     bounds=None,
-# )
-# categorical(
-#     required=None,
-#     is_type=None,
-#     description=None,
-#     fn=None,
-#     fn_args=None,
-#     # specific
-#     value=None,
-#     is_subset=None,
-# )
-# loop keys
-# if type == dict recursive
-# else, fill
-# return
+from yeahml.config.default.types.param_types import optional_config, parameter_config
+from yeahml.config.default.types.compound.data import data_in_spec, dict_of_data_in_spec
+from yeahml.config.default.types.compound.layer import layers_config
 
 # meta
 # TODO: set accepted options for `trace_level`
@@ -234,8 +204,6 @@ augment = {"augment": {}}
 # formatted_dict["data_in_dict"] = raw_config["in"]
 # formatted_dict["data_out_dict"] = raw_config["label"]
 # formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
-
-# model = {"model": {}}
 
 
 model = {

@@ -1,6 +1,6 @@
 import pytest
 
-from yeahml.config.default.create_default import DEFAULT_CONFIG
+from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,
 )
