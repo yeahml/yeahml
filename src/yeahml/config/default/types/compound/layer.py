@@ -119,7 +119,7 @@ class layer_config:
     def __init__(self, layer_type=None, layer_options=None, layer_in_name=None):
 
         self.layer_base = layer_base_config(layer_type)()
-        self.layer_options = layer_options_config(
+        self.options = layer_options_config(
             func_args=self.layer_base["func_args"],
             func_defaults=self.layer_base["func_defaults"],
             user_args=layer_options,
@@ -137,6 +137,8 @@ class layer_config:
 
 class layers_config:
     def __init__(self, conf_dict=None):
+
+        # TODO: this should be replaced by the __call__ logic
         if conf_dict is None:
             self.conf_dict = None
         else:
@@ -146,6 +148,8 @@ class layers_config:
         return str(self.__class__) + ": " + str(self.__dict__)
 
     def __call__(self, model_spec_dict):
+
+        # TODO: this should be moved to the __init__
         out_dict = {}
         prev_layer_name = None
         if isinstance(model_spec_dict, dict):
@@ -154,13 +158,23 @@ class layers_config:
                     layer_in_name = d["in_name"]
                 except KeyError:
                     layer_in_name = prev_layer_name
-                out_dict[k] = layer_config(
-                    layer_type=d["layer_type"],
-                    layer_options=d["layer_options"],
-                    layer_in_name=layer_in_name,
-                )()
-                # increment layer
-                prev_layer_name = k
+                if not layer_in_name:
+                    raise ValueError(
+                        f"Current layer ({k}) does not have an input layer (:in_name) specified. If this is the first layer, you may consider specifying the name of data from the dataset prefixed with `data_`. i.e. in_name: data_<feature_a>"
+                    )
+
+                try:
+                    out_dict[k] = layer_config(
+                        layer_type=d["type"],
+                        layer_options=d["options"],
+                        layer_in_name=layer_in_name,
+                    )()
+                    # increment layer
+                    prev_layer_name = k
+                except KeyError:
+                    raise KeyError(
+                        f"layer_config was expecting [key={k}, dict={d}] to have k = name_string and dict to contain type and options"
+                    )
         else:
             raise ValueError(
                 f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"

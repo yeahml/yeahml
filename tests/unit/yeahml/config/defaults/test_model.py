@@ -36,8 +36,8 @@ ex_config = {
             "model": {
                 "layers": {
                     "dense_1": {
-                        "layer_type": "dense",
-                        "layer_options": {
+                        "type": "dense",
+                        "options": {
                             "units": "16",
                             "kernel_initializer": {"type": "glorotnormal"},
                             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
@@ -46,13 +46,13 @@ ex_config = {
                         "in_name": "jack",
                     },
                     "bn_1": {
-                        "layer_type": "batchnormalization",
-                        "layer_options": None,
+                        "type": "batchnormalization",
+                        "options": None,
                         "in_name": "dense_1",
                     },
                     "dense_2": {
-                        "layer_type": "dense",
-                        "layer_options": {
+                        "type": "dense",
+                        "options": {
                             "units": "16",
                             "kernel_initializer": {"type": "glorotnormal"},
                             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
@@ -100,7 +100,7 @@ ex_config = {
                             False,
                         ],
                     },
-                    "layer_options": {
+                    "options": {
                         "user_vals": [
                             "16",
                             tf.keras.activations.elu,
@@ -179,7 +179,7 @@ ex_config = {
                             False,
                         ],
                     },
-                    "layer_options": {"user_vals": []},
+                    "options": {"user_vals": []},
                     "layer_in_name": "dense_1",
                 },
                 "dense_2": {
@@ -219,7 +219,7 @@ ex_config = {
                             False,
                         ],
                     },
-                    "layer_options": {
+                    "options": {
                         "user_vals": [
                             "16",
                             None,
@@ -260,12 +260,11 @@ def test_default(config, expected):
                 for opt in ["user_vals"]:
                     try:
                         assert (
-                            d["layer_options"][opt]
-                            is expected["layers"][k]["layer_options"][opt]
+                            d["options"][opt] is expected["layers"][k]["options"][opt]
                         ), f"layer {k} does not have matching {opt}"
                     except AssertionError:
-                        for i, a in enumerate(d["layer_options"][opt]):
-                            b = expected["layers"][k]["layer_options"][opt][i]
+                        for i, a in enumerate(d["options"][opt]):
+                            b = expected["layers"][k]["options"][opt][i]
                             try:
                                 assert (
                                     a is b
