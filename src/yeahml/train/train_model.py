@@ -103,7 +103,12 @@ def train_model(
 
     return_dict = {}
 
-    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "train")
+    full_exp_path = (
+        Path(meta_cdict["yeahml_dir"])
+        .joinpath(meta_cdict["data_name"])
+        .joinpath(meta_cdict["experiment_name"])
+    )
+    logger = config_logger(full_exp_path, log_cdict, "train")
     logger.info("-> START training graph")
 
     # save run specific information

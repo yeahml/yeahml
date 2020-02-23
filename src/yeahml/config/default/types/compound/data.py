@@ -41,7 +41,12 @@ class dict_of_data_in_spec(data_in_spec):
         out_dict = {}
         if isinstance(data_spec_dict, dict):
             for k, d in data_spec_dict.items():
-                out_dict[k] = data_in_spec(shape=d["shape"], dtype=d["dtype"])()
+                try:
+                    out_dict[k] = data_in_spec(shape=d["shape"], dtype=d["dtype"])()
+                except TypeError:
+                    raise TypeError(
+                        f"item [key={k}:dict={d}] was not expected. in the key:dict, the dict is expected to have subkeys :shape and :dtype. full spec: {data_spec_dict}"
+                    )
         else:
             raise ValueError(
                 f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"

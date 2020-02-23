@@ -3,8 +3,15 @@ import pathlib
 from typing import Any, Dict
 
 
-def write_build_information(model_cdict: Dict[str, Any]) -> bool:
-    json_path = pathlib.Path(model_cdict["model_root_dir"]).joinpath("info.json")
+def write_build_information(
+    model_cdict: Dict[str, Any], meta_cdict: Dict[str, Any]
+) -> bool:
+    full_exp_path = (
+        Path(meta_cdict["yeahml_dir"])
+        .joinpath(meta_cdict["data_name"])
+        .joinpath(meta_cdict["experiment_name"])
+    )
+    json_path = pathlib.Path(full_exp_path).joinpath("info.json")
 
     data_to_write = {}
     KEYS_TO_WRITE = ["model_hash"]

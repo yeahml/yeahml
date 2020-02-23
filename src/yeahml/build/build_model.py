@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 import tensorflow as tf
+from pathlib import Path
 
 from yeahml.build.build_layers import build_hidden_block
 from yeahml.information.write_info import write_build_information
@@ -37,7 +38,12 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     log_cdict: Dict[str, Any] = config_dict["logging"]
     data_cdict: Dict[str, Any] = config_dict["data"]
 
-    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "build")
+    full_exp_path = (
+        Path(meta_cdict["yeahml_dir"])
+        .joinpath(meta_cdict["data_name"])
+        .joinpath(meta_cdict["experiment_name"])
+    )
+    logger = config_logger(full_exp_path, log_cdict, "build")
     logger.info("-> START building graph")
 
     try:
@@ -45,7 +51,14 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     except KeyError:
         reset_graph()
 
-    g_logger = config_logger(model_cdict["model_root_dir"], log_cdict, "graph")
+    full_exp_path = (
+        Path(meta_cdict["yeahml_dir"])
+        .joinpath(meta_cdict["data_name"])
+        .joinpath(meta_cdict["experiment_name"])
+    )
+    g_logger = config_logger(full_exp_path, log_cdict, "graph")
+
+    # loop through the graph to find all inputs required from the data
 
     # TODO: this method is a bit sloppy and I'm not sure it's needed anymore.
     # previously, the batch dimension [0], which was filled as (-1) was needed, but
@@ -115,7 +128,7 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     model = tf.keras.Model(inputs=input_layer, outputs=cur_layer_out)
 
     # write meta.json including model hash
-    if write_build_information(model_cdict):
+    if write_build_information(model_cdict, meta_cdict):
         logger.info("information json file created")
 
     return model

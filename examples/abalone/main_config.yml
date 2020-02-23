@@ -12,22 +12,30 @@ logging:
   graph_spec: True
 
 performance:
-  loss: 
-    type: 'MSE'
-    #options:
-  metric:
-    type: ["MeanSquaredError", "MeanAbsoluteError"]
-    options: [null, 
-              null]
+  objectives:
+    main:
+      loss: 
+        type: 'MSE'
+        #options:
+      metric:
+        type: ["MeanSquaredError", "MeanAbsoluteError"]
+        options: [null, 
+                  null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "dense_3_output"
+          target: "target_v"
 
 # TODO: this section needs to be redone
 data:
   in:
-    dim: [2,1]
-    dtype: 'float64'
-  label:
-    dim: [1]
-    dtype: 'int32'
+    features:
+      shape: [2,1]
+      dtype: 'float64'
+    target_v:
+      shape: [1]
+      dtype: 'int32'
 
 hyper_parameters:
   optimizer: 

@@ -41,7 +41,12 @@ def eval_model(
     hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
     perf_cdict: Dict[str, Any] = config_dict["performance"]
 
-    logger = config_logger(model_cdict["model_root_dir"], log_cdict, "eval")
+    full_exp_path = (
+        Path(meta_cdict["yeahml_dir"])
+        .joinpath(meta_cdict["data_name"])
+        .joinpath(meta_cdict["experiment_name"])
+    )
+    logger = config_logger(full_exp_path, log_cdict, "eval")
 
     # load best weights
     # TODO: load specific weights according to a param

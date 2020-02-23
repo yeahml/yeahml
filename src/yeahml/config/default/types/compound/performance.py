@@ -177,7 +177,7 @@ class performances_config:
                     in_dict = d["in_config"]
                 except KeyError:
                     raise KeyError(
-                        f"no :in dict was specified for the performance of {k}: {d}"
+                        f"no :in_config dict was specified for the performance of {k}: {d}"
                     )
 
                 if isinstance(d, dict):

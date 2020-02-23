@@ -9,6 +9,7 @@ layers:
     type: 'dense'
     options:
       units: 16
+    in_name: 'data_features'
   dense_2:
     type: 'dense'
     options:
@@ -21,3 +22,28 @@ layers:
       units: 1
       activation:
         type: 'linear'
+
+
+
+    # "layers": {
+    #     "dense_1": {
+    #         "type": "dense",
+    #         "options": {
+    #             "units": "16",
+    #             "kernel_initializer": {"type": "glorotnormal"},
+    #             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+    #             "activation": {"type": "elu"},
+    #         },
+    #         "in_name": "jack",
+    #     },
+    #     "bn_1": {
+    #         "type": "batchnormalization",
+    #         "options": None,
+    #         "in_name": "dense_1",
+    #     },
+    #     "dense_2": {
+    #         "type": "dense",
+    #         "options": {
+    #             "units": "16",
+    #             "kernel_initializer": {"type": "glorotnormal"},
+    #             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
