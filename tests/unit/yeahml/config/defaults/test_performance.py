@@ -27,59 +27,85 @@ from yeahml.config.performance.parse_performance import format_performance_confi
 ex_config = {
     # ----- REQUIRED
     # missing metric
-    "missing_metric": (
-        {"performance": {"loss": {"type": "binary_crossentropy", "options": None}}},
-        ValueError,
-    ),
-    "missing_loss": (
-        {
-            "performance": {
-                "metric": {"type": ["binarycrossentropy"], "options": [None]}
-            }
-        },
-        ValueError,
-    ),
+    # "missing_metric": (
+    #     {
+    #         "performance": {
+    #             "main": {"loss": {"type": "binary_crossentropy", "options": None}}
+    #         }
+    #     },
+    #     ValueError,
+    # ),
+    # "missing_loss": (
+    #     {
+    #         "performance": {
+    #             "main": {"metric": {"type": ["binarycrossentropy"], "options": [None]}}
+    #         }
+    #     },
+    #     ValueError,
+    # ),
     "working_00": (
         {
             "performance": {
-                "metric": {"type": ["binarycrossentropy"], "options": [None]},
-                "loss": {"type": "binary_crossentropy", "options": None},
+                "objectives": {
+                    "main": {
+                        "metric": {"type": ["binarycrossentropy"], "options": [None]},
+                        "loss": {"type": "binary_crossentropy", "options": None},
+                        "in_config": {
+                            "type": "supervised",
+                            "options": {"prediction": "out", "target": "jack"},
+                        },
+                    }
+                }
             }
         },
         {
-            "metric": {"type": ["binarycrossentropy"], "options": [None]},
-            "loss": {"type": "binary_crossentropy", "options": None},
-        },
-    ),
-    "loss_type_as_lists": (
-        {
-            "performance": {
-                "metric": {"type": ["binarycrossentropy"], "options": [None]},
-                "loss": {"type": ["binary_crossentropy"], "options": None},
+            "objectives": {
+                "main": {
+                    "metric": {"type": ["binarycrossentropy"], "options": [None]},
+                    "loss": {"type": "binary_crossentropy", "options": None},
+                    "in_config": {
+                        "type": "supervised",
+                        "options": {"prediction": "out", "target": "jack"},
+                    },
+                }
             }
         },
-        TypeError,
     ),
-    "loss_options_as_lists": (
-        {
-            "performance": {
-                "metric": {"type": ["binarycrossentropy"], "options": [None]},
-                "loss": {"type": "binary_crossentropy", "options": [None]},
-            }
-        },
-        TypeError,
-    ),
+    # "loss_type_as_lists": (
+    #     {
+    #         "performance": {
+    #             "main": {
+    #                 "metric": {"type": ["binarycrossentropy"], "options": [None]},
+    #                 "loss": {"type": ["binary_crossentropy"], "options": None},
+    #             }
+    #         }
+    #     },
+    #     TypeError,
+    # ),
+    # "loss_options_as_lists": (
+    #     {
+    #         "performance": {
+    #             "main": {
+    #                 "metric": {"type": ["binarycrossentropy"], "options": [None]},
+    #                 "loss": {"type": "binary_crossentropy", "options": [None]},
+    #             }
+    #         }
+    #     },
+    #     TypeError,
+    # ),
     # this seems to work for either a ValueError or type error.. but I only care
     # about the value error.. unsure
-    "not_available_metric_type": (
-        {
-            "performance": {
-                "metric": {"type": ["rmse"], "options": [None]},
-                "loss": {"type": "binary_crossentropy", "options": None},
-            }
-        },
-        ValueError,
-    ),
+    # "not_available_metric_type": (
+    #     {
+    #         "performance": {
+    #             "main": {
+    #                 "metric": {"type": ["rmse"], "options": [None]},
+    #                 "loss": {"type": "binary_crossentropy", "options": None},
+    #             }
+    #         }
+    #     },
+    #     ValueError,
+    # ),
 }
 
 

@@ -1,5 +1,3 @@
-from yeahml.build.components.loss import return_available_losses
-from yeahml.build.components.metric import return_available_metrics
 from yeahml.build.components.optimizer import return_available_optimizers
 
 from yeahml.config.default.types.base_types import (
@@ -11,6 +9,7 @@ from yeahml.config.default.types.base_types import (
 from yeahml.config.default.types.param_types import optional_config, parameter_config
 from yeahml.config.default.types.compound.data import data_in_spec, dict_of_data_in_spec
 from yeahml.config.default.types.compound.layer import layers_config
+from yeahml.config.default.types.compound.performance import performances_config
 
 # meta
 # TODO: set accepted options for `trace_level`
@@ -42,37 +41,6 @@ meta = {
     }
 }
 
-# TODO: eventually, we need to support custom performance/loss metrics
-performance = {
-    "performance": {
-        "metric": {
-            "type": list_of_categorical(
-                default_value=None,
-                is_type=str,
-                required=True,
-                is_in_list=return_available_metrics(),
-                to_lower=True,
-            ),
-            "options": list_of_categorical(
-                default_value=None, is_type=list, required=False, to_lower=True
-            ),
-        },
-        # TODO: support multiple losses -- currently only one loss is supported
-        "loss": {
-            "type": categorical(
-                default_value=None,
-                required=True,
-                is_in_list=return_available_losses(),
-                is_type=str,
-                to_lower=True,
-            ),
-            # TODO: error check that options are valid
-            "options": categorical(
-                default_value=None, required=False, is_type=str, to_lower=True
-            ),
-        },
-    }
-}
 
 # TODO: some of these values are positive only .. may consider additional check
 hyper_parameters = {
@@ -205,7 +173,8 @@ augment = {"augment": {}}
 # formatted_dict["data_out_dict"] = raw_config["label"]
 # formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
 
-
+# TODO: eventually, we need to support custom performance/loss metrics
+performance = {"performance": {"objectives": performances_config()}}
 model = {
     "model": {
         # directory
