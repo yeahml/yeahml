@@ -65,17 +65,20 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     # maybe it is no longer needed with tf2. `parse_data()` is where this originally
     # created.
     # TODO: remove this from the data_cdict
-    if data_cdict["input_layer_dim"][0] == -1:
-        input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"][1:]))
-    else:
-        input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"]))
+    # if data_cdict["input_layer_dim"][0] == -1:
+    #     input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"][1:]))
+    # else:
+    #     input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"]))
 
     # TODO: this logic needs to be rethought.. Right now, despite using the functional
     # api, the process acts as a sequential api. This could change by first building all
     # all the layers and then building connecting the graph.
 
     # create the architecture
+    print(model_cdict)
     hidden_layers = build_hidden_block(model_cdict, logger, g_logger)
+    print(hidden_layers)
+    sys.exit()
     cur_input, cur_output = input_layer, None
 
     # TODO: we could check for graph things here - heads/ends, cycles, etc.

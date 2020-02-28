@@ -15,14 +15,38 @@ layers:
     options:
       units: 8
       activation:
-        type: 'linear'
-  dense_3_output:
+        type: 'elu'
+  dense_out:
     type: 'dense'
     options:
       units: 1
       activation:
         type: 'linear'
 
+# TODO: need to support this case
+  # dense_3_a:
+  #   type: 'dense'
+  #   options:
+  #     units: 2
+  #     activation:
+  #       type: 'elu'
+  # dense_3_b:
+  #   type: 'dense'
+  #   options:
+  #     units: 2
+  #     activation:
+  #       type: 'elu'
+  # dense_4:
+  #   type: 'concatenate'
+  #   options:
+  #     axis: -1
+  #   in_name: ['dense_3_a', 'dense_3_b']
+  # dense_out:
+  #   type: 'dense'
+  #   options:
+  #     units: 1
+  #     activation:
+  #       type: 'linear'
 
 
     # "layers": {
