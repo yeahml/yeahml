@@ -95,12 +95,7 @@ class RAW:
 
 class g_node:
     def __init__(
-        self,
-        name=NOTDEFINED,
-        source=NOTDEFINED,
-        in_name=NOTDEFINED,
-        in_source=NOTDEFINED,
-        out_name=[],
+        self, name=NOTDEFINED, source=NOTDEFINED, in_name=[], in_source=[], out_name=[]
     ):
         self.name = name
         self.source = source
@@ -109,7 +104,7 @@ class g_node:
         self.out_name = out_name
 
     def __str__(self):
-        return str(self.__class__) + ": " + str(self.__dict__)
+        return str(self.__class__) + f"at {hex(id(self))}" + ": " + str(self.__dict__)
 
     def __call__(self):
         return self.conf_dict
@@ -125,9 +120,9 @@ def _extract_raw_nodes(source, cur_config):
     return cur_dict
 
 
-def _obtain_nested_dict(nested, outter_dict) -> dict:
+def _obtain_nested_dict(nested_keys, outter_dict) -> dict:
     cur_config = None
-    for i, v in enumerate(nested):
+    for i, v in enumerate(nested_keys):
         if i == 0:
             cur_config = outter_dict[v]
         else:
@@ -135,64 +130,89 @@ def _obtain_nested_dict(nested, outter_dict) -> dict:
     return cur_config
 
 
-def _build_skeleton(config_dict):
+def _build_empty_graph(config_dict):
     # build skeleton graph
 
     graph_dict = {}
-    for name, nested in LOOP_ORDER:
-        raw_node_config = _obtain_nested_dict(nested, config_dict)
+    for name, nested_keys in LOOP_ORDER:
+        raw_node_config = _obtain_nested_dict(nested_keys, config_dict)
         empty_node_dict = _extract_raw_nodes(name, raw_node_config)
         graph_dict[name] = empty_node_dict
-
-    # data
-    # data_dict = {}
-    # for k, d in config_dict["data"]["in"].items():
-    #     # k = name of data, d = config spec [shape, dtype]
-    #     data_dict[k] = g_node(name=k, in_name=RAW, in_source=RAW)
-    # graph_dict["data"] = data_dict
-
-    # preprocessing
-
-    # layers
-    # layers_dict = {}
-    # for k, d in config_dict["model"]["layers"].items():
-    #     # k = name of layer
-    #     d_in = d["layer_in_name"]
-    #     layers_dict[k] = g_node(name=k)
-    # graph_dict["layers"] = data_dict
 
     return graph_dict
 
 
-# def _validate_inputs(graph_dict: dict, config_dict: dict):
-#     for name, _ in LOOP_ORDER:
-#         cur_dict = graph_dict[name]
-#         for name, node in cur_dict:
+def _get_node_by_name(search_name, config_dict):
+    for name, nested_keys in LOOP_ORDER:
+        cur_conf_dict = _obtain_nested_dict(nested_keys, outter_dict=config_dict)
+        if search_name in cur_conf_dict.keys():
+            try:
+                cur_node = cur_conf_dict[search_name]
+            except KeyError:
+                cur_node = NOTDEFINED
+            return (cur_node, nested_keys[0])
+    raise ValueError(f"node {search_name} is not locatable")
+
+
+def get_config_node_input(node, location):
+    if location == "data":
+        cur_in = RAW
+    else:
+        try:
+            cur_in = node["layer_in_name"]
+        except KeyError:
+            raise ValueError(f"'layer_in_name' is not defined for {node} in {location}")
+    return cur_in
+
+
+def _validate_inputs(config_dict: dict, graph_dict: dict):
+
+    for name, nested_keys in LOOP_ORDER:
+
+        # loop the graph dict
+
+        cur_nodes = graph_dict[name]
+        for node_name, node in cur_nodes.items():
+            assert (
+                node_name == node.name
+            ), f"node_name ({node_name}) != node.name ({node.name})"
+
+            # NOTE: should the data spec be parsed to include information about
+            # where the data is coming from (from the raw source - e.g.
+            # col_name, ...)
+            config_node, location = _get_node_by_name(node_name, config_dict)
+
+            # TODO: convert to named tuple?
+            in_node_name = get_config_node_input(config_node, location)
+            locs = node.in_source
+            if locs:
+                new_locs = locs.append(location)
+            else:
+                new_locs = [location]
+
+            in_names = node.in_name
+            if in_names:
+                new_in_names = in_names.append(in_node_name)
+            else:
+                new_in_names = [in_node_name]
+            node.in_name = new_in_names
+
+    return True
 
 
 def static_analysis(config_dict: dict) -> dict:
     # There's a lot that could be done here.. but for now, I think just a check
-    # to ensure inputs/outputs are specified
+    # to ensure inputs are specified
 
     # build dictionary of all nodes in graph
-    graph_dict = _build_skeleton(config_dict)
+    graph_dict = _build_empty_graph(config_dict)
 
     # validate that all input layers are accounted for
-    # graph_dict = graph_dict()
+    valid_inputs = _validate_inputs(config_dict, graph_dict)
 
-    # loop layers
-    # for l_name, d in graph_dict["layers"].items():
-    #     in_name = d["in"]
+    # could loop for NOTDEFINED here
 
-    # for l_name, d in graph_dict["layers"].items():
-    #     if issubclass(d["in"], RAW):
-    #         pass
-    #     elif issubclass(d["in"], NOTDEFINED):
-    #         pass
-
-    print(graph_dict)
-
-    return {}
+    return graph_dict
 
 
 def create_configs(main_path: str) -> dict:
