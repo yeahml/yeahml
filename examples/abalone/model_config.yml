@@ -9,7 +9,7 @@ layers:
     type: 'dense'
     options:
       units: 16
-    in_name: 'data_features'
+    in_name: 'features'
   dense_2:
     type: 'dense'
     options:
@@ -22,6 +22,7 @@ layers:
       units: 1
       activation:
         type: 'linear'
+    endpoint: True
 
 # TODO: need to support this case
   # dense_3_a:

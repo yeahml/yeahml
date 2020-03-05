@@ -6,36 +6,31 @@ Examples are currently being worked through and can be found in the [examples di
 
 The core implementation is as follows:
 
-1. Create `.tfrecords` for a training, validation, and test set (accepting pre-made tf dataset in progress [tfd branch])
-2. Write configuration files (json or yaml, see below)
-  - for the main implementation (meta data, hyperparameters, etc)
-  - for the hidden layers
-3. Use python (as shown below) to train and evaluate the model
-  - There are three main functions
-    - build_model
-    - train_model
-    - eval_model (will load the "best params" from training before evaluating)
-4. Iterate on models and ideas
-  - logs are created and can be used for debugging or evaluating models
-  - tensorboard is ready to use
-    - metric scalars
-    - parameter histograms and distributions
+1. Write configuration file(s) (json or yaml, see below)
+2. Use python, as shown below, to train and evaluate the model
+3. Iterate
+  - logs/tensorboard are created
+
 
 ## Main use
 
 ```python
-example = "./examples/mnist/main_config.yaml"
-config_dict = yml.create_configs(example)
+example = "./main_config.yml"
+yml_dict = yml.create_configs(example)
 
 # build graph
-model = yml.build_model(config_dict)
+model = yml.build_model(yml_dict)
 
 # train graph
-train_dict = yml.train_model(model, config_dict)
+ds_tuple = (ds_dict["train"], ds_dict["val"])
+train_dict = yml.train_model(model, yml_dict, ds_tuple)
 
 # evaluate graph -- will load the "best params"
-eval_dict = yml.eval_model(model, config_dict)
-
+eval_dict = yml.eval_model(
+    model,
+    yml_dict,
+    dataset=ds_dict["test"]
+)
 
 ```
 
@@ -43,7 +38,7 @@ eval_dict = yml.eval_model(model, config_dict)
 
 ## [Examples](./examples)
 
-The included [notebook](./example_notebook.ipynb) shows basic functionality on mnist. There are included example configuration files on other tasks located in the [./examples](./examples) directory (however, these are still a work in progress) *Note: if you have another example you would like to see feel free to reach out to me or make a pull request.*
+Examples are a work in progress
 
 
 ### Configuration Files
@@ -52,10 +47,8 @@ The model config may look similar to the following:
 
 ```yaml
 meta:
-  name: 'mnist'
-  experiment_name: 'trial_01'
-  saver:
-    save_params_name: "best_params_saver"
+  data_name: 'abalone'
+  experiment_name: 'trial_00'
 
 logging:
   console:
@@ -67,94 +60,70 @@ logging:
   graph_spec: True
 
 performance:
-  loss_fn: 
-    type: 'categorical_crossentropy'
-  type: ["MeanSquaredError", "TopKCategoricalAccuracy", "CategoricalAccuracy"]
-  options: [null, 
-            {"k": 2}, 
-            null]
+  objectives:
+    main:
+      loss: 
+        type: 'MSE'
+      metric:
+        type: ["MeanSquaredError", "MeanAbsoluteError"]
+        options: [null, 
+                  null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "dense_out"
+          target: "target_v"
 
 data:
   in:
-    dim: [784]
-    dtype: 'float32'
-    reshape_to: [28, 28, 1]
-  label:
-    dim: [10]
-    dtype: 'float32'
-    one_hot: True # TODO: ensure this is being used
-  TFR_parse:
-    feature:
-      name: "/image"
-      dtype: "int8"
-      tftype: "fixedlenfeature"
-      in_type: "string"
-    label:
-      name: "/label"
-      dtype: "int64" # what to decode it to
-      tftype: "fixedlenfeature"
-      in_type: "int64" # what it is encoded as
-  TFR:
-    dir: './examples/mnist/data/'
-    train: 'train.tfrecords'
-    validation: 'validation.tfrecords'
-    test: 'test.tfrecords'
+    features:
+      shape: [2,1]
+      dtype: 'float64'
+    target_v:
+      shape: [1]
+      dtype: 'int32'
 
 hyper_parameters:
   optimizer: 
     type: 'adam'
-    learning_rate: 0.0001
-  batch_size: 32
-  epochs: 3
-  shuffle_buffer: 128
+    options:
+      learning_rate: 0.0001
+      beta_1: 0.91
+  epochs: 30
+  dataset:
+    # TODO: I would like to make this logic more abstract
+    # I think the only options that should be applied here are "batch" and "shuffle"
+    batch: 16
+    shuffle_buffer: 128 # this should be grouped with batchsize
 model:
-  path: './examples/mnist/model_config.yaml'
+  path: './model_config.yml'
 ```
 
-The model config (where the path to this file is specified above by (`model:path`) may look similar to the following:
+A basic model config (where the path to this file is specified above by (`model:path`) may look similar to the following:
 
 ```yaml
 meta:
   name: "model_a"
-  name_override: False
+  name_override: True
   activation:
     type: 'elu'
 
 layers:
-  conv_1:
-    type: 'conv2d'
-    options:
-      filters: 32
-      kernel_size: 3
-  conv_2:
-    type: 'conv2d'
-    options:
-      filters: 64
-      kernel_size: 3
-  dropout_1:
-    type: 'dropout'
-    options:
-      rate: 0.5
-  pool_1:
-    type: 'AveragePooling2D'
-    options:
-      pool_size: 2
-      strides: 2
-  flatten_1:
-    type: 'flatten'
   dense_1:
     type: 'dense'
     options:
       units: 16
-      kernel_regularizer:
-        type: 'L1'
-        l: 0.01
-  dense_2_output:
+    in_name: 'features'
+  dense_2:
     type: 'dense'
     options:
-      units: 10
+      units: 8
+  dense_out:
+    type: 'dense'
+    options:
+      units: 1
       activation:
-        type: 'softmax'
+        type: 'linear'
 ```
 
 ### TensorBoard

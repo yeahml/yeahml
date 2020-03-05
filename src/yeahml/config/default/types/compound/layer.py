@@ -116,7 +116,14 @@ class layer_options_config:
 
 
 class layer_config:
-    def __init__(self, layer_type=None, layer_options=None, layer_in_name=None):
+    def __init__(
+        self,
+        layer_type=None,
+        layer_options=None,
+        layer_in_name=None,
+        startpoint=False,
+        endpoint=False,
+    ):
 
         self.layer_base = layer_base_config(layer_type)()
         self.options = layer_options_config(
@@ -124,9 +131,11 @@ class layer_config:
             func_defaults=self.layer_base["func_defaults"],
             user_args=layer_options,
         )()
-        self.layer_in_name = categorical(
+        self.layer_in_name = list_of_categorical(
             default_value=None, required=True, is_type=str
         )(layer_in_name)
+        self.startpoint = startpoint
+        self.endpoint = endpoint
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -164,10 +173,22 @@ class layers_config:
                     )
 
                 try:
+                    layer_is_startpoint = d["startpoint"]
+                except KeyError:
+                    layer_is_startpoint = False
+
+                try:
+                    layer_is_endpoint = d["endpoint"]
+                except KeyError:
+                    layer_is_endpoint = False
+
+                try:
                     out_dict[k] = layer_config(
                         layer_type=d["type"],
                         layer_options=d["options"],
                         layer_in_name=layer_in_name,
+                        startpoint=layer_is_startpoint,
+                        endpoint=layer_is_endpoint,
                     )()
                     # increment layer
                     prev_layer_name = k

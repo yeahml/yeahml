@@ -24,7 +24,7 @@ performance:
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_3_output"
+          prediction: "dense_out"
           target: "target_v"
 
 # TODO: this section needs to be redone
