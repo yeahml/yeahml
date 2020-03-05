@@ -36,6 +36,7 @@ data:
     target_v:
       shape: [1]
       dtype: 'int32'
+      endpoint: True # TODO: may modify this eventually
 
 hyper_parameters:
   optimizer: 

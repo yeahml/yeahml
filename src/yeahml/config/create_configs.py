@@ -95,16 +95,27 @@ class RAW:
 
 class g_node:
     def __init__(
-        self, name=NOTDEFINED, source=NOTDEFINED, in_name=[], in_source=[], out_name=[]
+        self,
+        name=NOTDEFINED,
+        config_location=NOTDEFINED,
+        in_name=None,
+        in_source=None,
+        out_name=None,
+        out_source=None,
+        startpoint=None,
+        endpoint=None,
     ):
         self.name = name
-        self.source = source
+        self.config_location = config_location
         self.in_name = in_name
         self.in_source = in_source
         self.out_name = out_name
+        self.out_source = out_source
+        self.startpoint = startpoint
+        self.endpoint = endpoint
 
     def __str__(self):
-        return str(self.__class__) + f"at {hex(id(self))}" + ": " + str(self.__dict__)
+        return str(self.__class__) + f" @ {hex(id(self))}" + ": " + str(self.__dict__)
 
     def __call__(self):
         return self.conf_dict
@@ -113,10 +124,15 @@ class g_node:
 LOOP_ORDER = [("data", ["data", "in"]), ("model", ["model", "layers"])]
 
 
-def _extract_raw_nodes(source, cur_config):
+def _extract_raw_nodes(config_location, cur_config):
     cur_dict = {}
     for k, d in cur_config.items():
-        cur_dict[k] = g_node(name=k, source=source)
+        cur_dict[k] = g_node(
+            name=k,
+            config_location=config_location,
+            startpoint=d["startpoint"],
+            endpoint=d["endpoint"],
+        )
     return cur_dict
 
 
@@ -131,13 +147,14 @@ def _obtain_nested_dict(nested_keys, outter_dict) -> dict:
 
 
 def _build_empty_graph(config_dict):
-    # build skeleton graph
+    # build skeleton graph, all nodes are present in this graph
 
     graph_dict = {}
-    for name, nested_keys in LOOP_ORDER:
+    for outter_config_key, nested_keys in LOOP_ORDER:
         raw_node_config = _obtain_nested_dict(nested_keys, config_dict)
-        empty_node_dict = _extract_raw_nodes(name, raw_node_config)
-        graph_dict[name] = empty_node_dict
+        empty_node_dict = _extract_raw_nodes(outter_config_key, raw_node_config)
+        # TODO: ensure there aren't any name overwrites here
+        graph_dict = {**graph_dict, **empty_node_dict}
 
     return graph_dict
 
@@ -167,42 +184,89 @@ def get_config_node_input(node, location):
 
 def _validate_inputs(config_dict: dict, graph_dict: dict):
 
-    for name, nested_keys in LOOP_ORDER:
+    # loop the graph dict
+    for node_name, node in graph_dict.items():
+        assert (
+            node_name == node.name
+        ), f"node_name ({node_name}) != node.name ({node.name})"
 
-        # loop the graph dict
+        # NOTE: should the data spec be parsed to include information about
+        # where the data is coming from (from the raw source - e.g.
+        # col_name, ...)
+        config_node, location = _get_node_by_name(node_name, config_dict)
 
-        cur_nodes = graph_dict[name]
-        for node_name, node in cur_nodes.items():
-            assert (
-                node_name == node.name
-            ), f"node_name ({node_name}) != node.name ({node.name})"
+        # TODO: convert to named tuple?
+        locs = node.in_source
+        if locs:
+            new_locs = locs + location
+        else:
+            new_locs = [location]
+        node.in_source = new_locs
 
-            # NOTE: should the data spec be parsed to include information about
-            # where the data is coming from (from the raw source - e.g.
-            # col_name, ...)
-            config_node, location = _get_node_by_name(node_name, config_dict)
-
-            # TODO: convert to named tuple?
-            in_node_name = get_config_node_input(config_node, location)
-            locs = node.in_source
-            if locs:
-                new_locs = locs.append(location)
-            else:
-                new_locs = [location]
-
-            in_names = node.in_name
-            if in_names:
-                new_in_names = in_names.append(in_node_name)
+        in_node_name = get_config_node_input(config_node, location)
+        in_names = node.in_name
+        if in_names:
+            new_in_names = in_names + in_node_name
+        else:
+            if isinstance(in_node_name, list):
+                new_in_names = in_node_name
             else:
                 new_in_names = [in_node_name]
-            node.in_name = new_in_names
+        node.in_name = new_in_names
 
     return True
+
+
+def build_chain(call_chain, node, graph_dict):
+    # recursive function to build chain of input to output
+    if node.startpoint:
+        call_chain.append(node.name)
+        return call_chain
+    else:
+        parent_names = node.in_name
+        if len(parent_names) > 1:
+            # I think I could call each build_chain on each name here but will
+            # need to keep track of input names
+            raise NotImplementedError(
+                f"will need to accept split paths here (concat is a good basic example)"
+            )
+        else:
+            new_chain = build_chain(call_chain, graph_dict[parent_names[0]], graph_dict)
+            if parent_names[0] == new_chain[-1]:
+                call_chain.append(node.name)
+
+    return call_chain
+
+
+def create_subgraphs(config_dict, graph_dict):
+    # NOTE: is this right?
+    # 1. loop out nodes --> build chains from out to in
+    subgraphs = {}
+    for node_name, node in graph_dict.items():
+        if node.endpoint:
+            chain = build_chain([], node, graph_dict)
+            subgraphs[node.name] = {"sequence": chain}
+
+    return subgraphs
+
+
+def _extract_nested_values(d):
+    # https://stackoverflow.com/questions/23981553/get-all-values-from-nested-dictionaries-in-python
+    for v in d.values():
+        if isinstance(v, dict):
+            yield from _extract_nested_values(v)
+        else:
+            yield v
 
 
 def static_analysis(config_dict: dict) -> dict:
     # There's a lot that could be done here.. but for now, I think just a check
     # to ensure inputs are specified
+
+    # NOTE: this will undoubtedly need to be optimized. there is a lot of looping
+    # going on here
+
+    # TODO: use startpoint/endpoint logic
 
     # build dictionary of all nodes in graph
     graph_dict = _build_empty_graph(config_dict)
@@ -211,8 +275,26 @@ def static_analysis(config_dict: dict) -> dict:
     valid_inputs = _validate_inputs(config_dict, graph_dict)
 
     # could loop for NOTDEFINED here
+    # TODO: Analyze graph_dict to see if there are any "dead_ends"
+    subgraphs = create_subgraphs(config_dict, graph_dict)
 
-    return graph_dict
+    # ensure all values in the graph dict appear in the paths
+    path_lists = list(_extract_nested_values(subgraphs))
+    nodes_in_path = set([item for sublist in path_lists for item in sublist])
+    for n, _ in graph_dict.items():
+        if n not in nodes_in_path:
+            raise ValueError(
+                f"node {n} does not appear in any of the paths from inputs to outputs"
+            )
+
+    # could detect cycles here
+    # for k,_ in graph_dict:
+
+    # TODO: depending on the implementation, we may need to create multiple models
+    # based on the `graph_dict` components. This is also likely where we should log
+    # the graph information/structure ?
+
+    return graph_dict, subgraphs
 
 
 def create_configs(main_path: str) -> dict:
@@ -221,7 +303,8 @@ def create_configs(main_path: str) -> dict:
     config_dict = primary_config(main_path)
 
     # validate graph
-    static_dict = static_analysis(config_dict)
+    static_dict, subgraphs = static_analysis(config_dict)
     config_dict["static"] = static_dict
+    config_dict["subgraphs"] = subgraphs
 
     return config_dict

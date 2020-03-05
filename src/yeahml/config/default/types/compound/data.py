@@ -13,6 +13,7 @@ class data_in_spec:
         self.shape = list_of_numeric(default_value=None, is_type=int, required=True)(
             shape
         )
+        # TODO: include name?
 
         self.dtype = categorical(
             default_value=None,
