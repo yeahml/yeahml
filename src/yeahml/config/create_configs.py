@@ -75,7 +75,7 @@ def primary_config(main_path: str) -> dict:
             )
         elif config_type == "model":
             # formatted_config = format_model_config(raw_config, config_dict["meta"])
-            formatted_config = format_data_config(raw_config, DEFAULT_CONFIG["model"])
+            formatted_config = format_model_config(raw_config, DEFAULT_CONFIG["model"])
         else:
             raise ValueError(f"config type {config_type} is not yet implemented")
         config_dict[config_type] = formatted_config
@@ -104,6 +104,7 @@ class g_node:
         out_source=None,
         startpoint=None,
         endpoint=None,
+        label=None,
     ):
         self.name = name
         self.config_location = config_location
@@ -113,6 +114,7 @@ class g_node:
         self.out_source = out_source
         self.startpoint = startpoint
         self.endpoint = endpoint
+        self.label = label
 
     def __str__(self):
         return str(self.__class__) + f" @ {hex(id(self))}" + ": " + str(self.__dict__)
@@ -127,11 +129,19 @@ LOOP_ORDER = [("data", ["data", "in"]), ("model", ["model", "layers"])]
 def _extract_raw_nodes(config_location, cur_config):
     cur_dict = {}
     for k, d in cur_config.items():
+
+        # only data objects have label attribute
+        try:
+            is_label = d["label"]
+        except KeyError:
+            is_label = False
+
         cur_dict[k] = g_node(
             name=k,
             config_location=config_location,
             startpoint=d["startpoint"],
             endpoint=d["endpoint"],
+            label=is_label,
         )
     return cur_dict
 
@@ -244,8 +254,11 @@ def create_subgraphs(config_dict, graph_dict):
     subgraphs = {}
     for node_name, node in graph_dict.items():
         if node.endpoint:
-            chain = build_chain([], node, graph_dict)
-            subgraphs[node.name] = {"sequence": chain}
+            if not node.label:
+                # it's an endpoint, but it's not a label (labels don't need to
+                # be built)
+                chain = build_chain([], node, graph_dict)
+                subgraphs[node.name] = {"sequence": chain}
 
     return subgraphs
 
@@ -281,11 +294,13 @@ def static_analysis(config_dict: dict) -> dict:
     # ensure all values in the graph dict appear in the paths
     path_lists = list(_extract_nested_values(subgraphs))
     nodes_in_path = set([item for sublist in path_lists for item in sublist])
-    for n, _ in graph_dict.items():
-        if n not in nodes_in_path:
-            raise ValueError(
-                f"node {n} does not appear in any of the paths from inputs to outputs"
-            )
+    for n, nd in graph_dict.items():
+        if not nd.label:
+            # labels don't need to be checked since they aren't built
+            if n not in nodes_in_path:
+                raise ValueError(
+                    f"node {n} does not appear in any of the paths from inputs to outputs"
+                )
 
     # could detect cycles here
     # for k,_ in graph_dict:
@@ -301,6 +316,25 @@ def create_configs(main_path: str) -> dict:
 
     # parse individual configs
     config_dict = primary_config(main_path)
+
+    # build the order of inputs into the model. This logic will likely need to
+    # change as inputs become more complex
+    input_order = []
+    for name, config in config_dict["data"]["in"].items():
+        if config["startpoint"]:
+            if not config["label"]:
+                input_order.append(name)
+    if not input_order:
+        raise ValueError("no inputs have been specified to the model")
+
+    # loop model to ensure all outputs are accounted for
+    output_order = []
+    for name, config in config_dict["model"]["layers"].items():
+        if config["endpoint"]:
+            output_order.append(name)
+    if not output_order:
+        raise ValueError("no outputs have been specified for the model")
+    config_dict["model_io"] = {"inputs": input_order, "outputs": output_order}
 
     # validate graph
     static_dict, subgraphs = static_analysis(config_dict)

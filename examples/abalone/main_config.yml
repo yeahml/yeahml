@@ -30,13 +30,13 @@ performance:
 # TODO: this section needs to be redone
 data:
   in:
-    features:
-      shape: [2,1]
+    feature_a:
+      shape: [2] #[2,1] # TODO: include flatten
       dtype: 'float64'
     target_v:
       shape: [1]
       dtype: 'int32'
-      endpoint: True # TODO: may modify this eventually
+      label: True
 
 hyper_parameters:
   optimizer: 

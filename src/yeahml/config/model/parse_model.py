@@ -187,7 +187,7 @@ def format_model_config(raw_config: dict, DEFAULT: dict) -> dict:
 
     # # add a model hash
     # # TODO: eventually, this could be used to track model architectures
-    # model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
-    # formatted_config["model_hash"] = model_hash
+    model_hash = make_hash(formatted_dict, IGNORE_HASH_KEYS)
+    formatted_dict["model_hash"] = model_hash
 
     return formatted_dict

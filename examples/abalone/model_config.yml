@@ -4,12 +4,14 @@ meta:
   activation:
     type: 'elu'
 
+# TODO: it could be assumed that if only one layer in is defined in main, that
+# it could be the `in_name` to the first layer.
 layers:
   dense_1:
     type: 'dense'
     options:
       units: 16
-    in_name: 'features'
+    in_name: 'feature_a'
   dense_2:
     type: 'dense'
     options:

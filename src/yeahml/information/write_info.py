@@ -7,7 +7,7 @@ def write_build_information(
     model_cdict: Dict[str, Any], meta_cdict: Dict[str, Any]
 ) -> bool:
     full_exp_path = (
-        Path(meta_cdict["yeahml_dir"])
+        pathlib.Path(meta_cdict["yeahml_dir"])
         .joinpath(meta_cdict["data_name"])
         .joinpath(meta_cdict["experiment_name"])
     )
@@ -21,9 +21,10 @@ def write_build_information(
             data = json.load(json_file)
 
         for k in KEYS_TO_WRITE:
-            assert (
-                data[k] == model_cdict[k]
-            ), f"info at {json_path} already contains the same values for keys {k}, but {json_path}={data[k]} and model config = {model_cdict[k]}\n > possible solution: change the name of the current model?"
+            if not k == "model_hash" and not meta_cdict["name_overwrite"]:
+                assert (
+                    data[k] == model_cdict[k]
+                ), f"info at {json_path} already contains the same values for keys {k}, but {json_path}={data[k]} and model config = {model_cdict[k]}\n > possible solution: change the name of the current model?"
 
     for k in KEYS_TO_WRITE:
         data_to_write[k] = model_cdict[k]

@@ -8,7 +8,9 @@ from yeahml.config.default.types.base_types import categorical, list_of_numeric
 
 
 class data_in_spec:
-    def __init__(self, shape=None, dtype=None, startpoint=True, endpoint=False):
+    def __init__(
+        self, shape=None, dtype=None, startpoint=True, endpoint=False, label=False
+    ):
 
         self.shape = list_of_numeric(default_value=None, is_type=int, required=True)(
             shape
@@ -24,6 +26,7 @@ class data_in_spec:
 
         self.startpoint = startpoint
         self.endpoint = endpoint
+        self.label = label
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -59,11 +62,22 @@ class dict_of_data_in_spec(data_in_spec):
                     layer_is_endpoint = False
 
                 try:
+                    layer_is_label = d["label"]
+                except KeyError:
+                    layer_is_label = False
+
+                # if the layer is a label it is assumed (perhaps incorrectly,
+                # but we can address this as needed), that the layer is also a endpoint
+                if layer_is_label:
+                    layer_is_endpoint = True
+
+                try:
                     out_dict[k] = data_in_spec(
                         shape=d["shape"],
                         dtype=d["dtype"],
                         startpoint=layer_is_startpoint,
                         endpoint=layer_is_endpoint,
+                        label=layer_is_label,
                     )()
                 except TypeError:
                     raise TypeError(

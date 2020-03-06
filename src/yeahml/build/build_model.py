@@ -1,9 +1,10 @@
+from pathlib import Path
 from typing import Any, Dict
 
 import tensorflow as tf
-from pathlib import Path
 
 from yeahml.build.build_layers import build_hidden_block
+from yeahml.build.layers.config import NOTPRESENT
 from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
@@ -30,6 +31,61 @@ def reset_graph(seed: int = 42) -> None:
     tf.keras.backend.clear_session()
 
 
+def _configure_input(cur_name, cur_config):
+
+    # TODO: this section should be redone to match the layer API. but for now
+    # I'm going to continue on with this minimal approach
+    dtype = cur_config["dtype"]
+    shape = cur_config["shape"]
+    # print(cur_config)
+    if cur_config["startpoint"]:
+        out = tf.keras.layers.Input(shape=shape, dtype=dtype, name=cur_name)
+    else:
+        # all data layers should be a startpoint
+        raise ValueError(f"current data layer config:{cur_config} is not a startpoint")
+
+    return out
+
+
+def _configure_layer(cur_name, cur_config):
+
+    # 'layer_base', 'options', 'layer_in_name'
+    layer_base = cur_config["layer_base"]
+
+    # default layer function
+    layer_fn = layer_base["func"]
+
+    # assemble layer with user values (or default if not specified)
+    # another way to do this could be just overwrite the values the user
+    # specifies, but I want the ability to set defaults for each layer
+    # eventually (in case we would want to change them)
+    layer_args = layer_base["func_args"]
+    layer_defaults = layer_base["func_defaults"]
+    user_values = cur_config["options"]["user_vals"]
+
+    param_dict = {}
+    for i, param_name in enumerate(layer_args):
+        user_val = user_values[i]
+        if user_val:
+            param_dict[param_name] = user_val
+        else:
+            def_val = layer_defaults[i]
+            if isinstance(def_val, NOTPRESENT):
+                raise ValueError(
+                    f"param {param_name} for layer {cur_name} not specified, but is required"
+                )
+            else:
+                param_dict[param_name] = def_val
+
+                # overwrite name with layer name if not exist
+                if param_name == "name":
+                    if not def_val:
+                        param_dict[param_name] = cur_name
+    configured_layer = layer_fn(**param_dict)
+
+    return configured_layer
+
+
 def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
 
     # unpack configuration
@@ -37,6 +93,9 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     meta_cdict: Dict[str, Any] = config_dict["meta"]
     log_cdict: Dict[str, Any] = config_dict["logging"]
     data_cdict: Dict[str, Any] = config_dict["data"]
+    static_cdict: Dict[str, Any] = config_dict["static"]
+    subgraphs_cdict: Dict[str, Any] = config_dict["subgraphs"]
+    model_io_cdict: Dict[str, Any] = config_dict["model_io"]
 
     full_exp_path = (
         Path(meta_cdict["yeahml_dir"])
@@ -58,77 +117,117 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     )
     g_logger = config_logger(full_exp_path, log_cdict, "graph")
 
-    # loop through the graph to find all inputs required from the data
-
-    # TODO: this method is a bit sloppy and I'm not sure it's needed anymore.
-    # previously, the batch dimension [0], which was filled as (-1) was needed, but
-    # maybe it is no longer needed with tf2. `parse_data()` is where this originally
-    # created.
-    # TODO: remove this from the data_cdict
-    # if data_cdict["input_layer_dim"][0] == -1:
-    #     input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"][1:]))
-    # else:
-    #     input_layer = tf.keras.Input(shape=(data_cdict["input_layer_dim"]))
-
-    # TODO: this logic needs to be rethought.. Right now, despite using the functional
-    # api, the process acts as a sequential api. This could change by first building all
-    # all the layers and then building connecting the graph.
-
-    # create the architecture
-    print(model_cdict)
-    hidden_layers = build_hidden_block(model_cdict, logger, g_logger)
-    print(hidden_layers)
-    sys.exit()
-    cur_input, cur_output = input_layer, None
-
-    # TODO: we could check for graph things here - heads/ends, cycles, etc.
-    # TODO: Not sure if BF or DF would be better here when building the graph
-
-    graph_dict: Dict[str, Any] = {}
-    for layer_name, layer_dict in hidden_layers.items():
-        graph_dict[layer_name] = {}
-        layer_fn = layer_dict["layer_fn"]
-        input_str = layer_dict["input_str"]
-
-        if input_str == "data_input":
-            layer_input = input_layer
+    # configure/build all layers and save in lookup table
+    built_nodes = {}
+    for name, node in static_cdict.items():
+        if node.config_location == "model":
+            blueprint = model_cdict["layers"][node.name]
+        elif node.config_location == "data":
+            blueprint = data_cdict["in"][node.name]
         else:
+            raise ValueError(f"layer {name} can't be found in {node.config_location}")
+
+        if node.startpoint:
+            if node.label:
+                pass
+            else:
+                func = None
+                out = _configure_input(name, blueprint)
+        else:
+            func = _configure_layer(name, blueprint)
+            out = None
+
+        # TODO: this is a quick fix. the issue is that a node that is a label,
+        # does not need to be built as a layer in the graph -- it is only used
+        # as a target during training and therefore does not need to be included
+        # here
+        if not node.label:
+            built_nodes[name] = {"out": out, "func": func}
+
+    # connect the subgraphs
+    for end_name, subgraph in subgraphs_cdict.items():
+
+        prev_out = None
+        prev_out_exists = False
+        # the bool flag is needed since: "OperatorNotAllowedInGraphError: using a
+        # `tf.Tensor` as a Python `bool` is not allowed in Graph execution. Use
+        # Eager execution or decorate this function with @tf.function." meaning,
+        # we can't say if prev_out:
+        seq = subgraph["sequence"]
+        # print(f"{end_name} @ {seq}")
+        for cur_name_in_seq in seq:
+            # print(f"> {cur_name_in_seq}")
+
+            # obtain
             try:
-                # obtain previous layer output
-
-                # NOTE: by accessing the ["layer_output"] here. we are preventing a layer from
-                # specifying itself as the input. since the ["layer_output"] has not been defined yet.
-                # the error message could be improved here.
-                layer_input = graph_dict[input_str]["layer_output"]
+                cur_built_node = built_nodes[cur_name_in_seq]
             except KeyError:
-                if input_str in hidden_layers.keys():
-                    raise ValueError(
-                        f"layer {input_str} has not been created yet (so far: {graph_dict.keys()}). please move {input_str} up in the config file"
+                # TODO: this message will have to be expanded for huge graphs
+                raise KeyError(
+                    f"node ({cur_name_in_seq}) from seq {seq} not found in built nodes {built_nodes.keys()}"
+                )
+
+            if prev_out_exists:
+                try:
+                    cur_func = cur_built_node["func"]
+                except KeyError:
+                    raise KeyError(
+                        f"node ({cur_name_in_seq}) function has not been built yet"
                     )
-                else:
-                    raise ValueError(
-                        f"layer {input_str} is not defined in the config file. The defined layers are ({hidden_layers.keys()}). please check name spelling or define {input_str}"
+                # make the connection, store the connected node
+                out = cur_func(prev_out)
+                cur_built_node["out"] = out
+                prev_out = out
+            else:
+                try:
+                    prev_out = cur_built_node["out"]
+                    prev_out_exists = True
+                except KeyError:
+                    raise KeyError(
+                        f"node ({cur_name_in_seq}) does has not been created yet"
                     )
 
-        graph_dict[layer_name]["layer_input"] = layer_input
+    model_input_tensors = []
+    for name in model_io_cdict["inputs"]:
+        try:
+            node_d = built_nodes[name]
+        except KeyError:
+            raise KeyError(f"{name} not found in built nodes when creating inputs")
 
-        cur_layer_out = layer_fn(layer_input)
-        graph_dict[layer_name]["layer_output"] = cur_layer_out
-        # cur_output = layer_fn(cur_input)
-        # cur_input = cur_output
+        try:
+            out = node_d["out"]
+        except KeyError:
+            raise KeyError(
+                f"out was not created for {name} when creating tensor inputs"
+            )
+        model_input_tensors.append(out)
+    if not model_input_tensors:
+        raise ValueError(f"not model inputs are available")
 
-    # TODO: Analyze graph_dict to see if there are any "dead_ends"
+    model_output_tensors = []
+    for name in model_io_cdict["outputs"]:
+        try:
+            node_d = built_nodes[name]
+        except KeyError:
+            raise KeyError(f"{name} not found in built nodes when creating outputs")
 
-    # TODO: depending on the implementation, we may need to create multiple models
-    # based on the `graph_dict` components. This is also likely where we should log
-    # the graph information/structure
+        try:
+            out = node_d["out"]
+        except KeyError:
+            raise KeyError(
+                f"out was not created for {name} when creating tensor outputs"
+            )
+        model_output_tensors.append(out)
+    if not model_output_tensors:
+        raise ValueError(f"not model outputs are available")
 
-    # TODO: need to ensure this is the API we want
-    # TODO: inputs could be a list
+    # ---------------------------------------------
+
+    # TODO: inputs may be more complex than an ordered list
     # TODO: outputs could be a list
     # TODO: right now it is assumed that the last layer defined in the config is the
-    # output layer -- this may not be true. named outputs would be nice.
-    model = tf.keras.Model(inputs=input_layer, outputs=cur_layer_out)
+    # output layer -- this may not be true. named outputs would be better.
+    model = tf.keras.Model(inputs=model_input_tensors, outputs=model_output_tensors)
 
     # write meta.json including model hash
     if write_build_information(model_cdict, meta_cdict):
