@@ -65,8 +65,17 @@ def _configure_layer(cur_name, cur_config):
 
     param_dict = {}
     for i, param_name in enumerate(layer_args):
-        user_val = user_values[i]
-        if user_val:
+        if user_values:
+            user_val = user_values[i]
+        else:
+            # TODO: this logic will need to be rethought, since it's possible
+            # that a user argument could be `None` (I think?). I think a
+            # potential solution would be to use a custom class sentinel value
+            user_val = None
+
+        # NOTE: `if user_val`: does not work because `user_val` could be False
+        # TODO: this function will need to be tested
+        if user_val is not None:
             param_dict[param_name] = user_val
         else:
             def_val = layer_defaults[i]
