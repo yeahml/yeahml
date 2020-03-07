@@ -229,17 +229,24 @@ def _validate_inputs(config_dict: dict, graph_dict: dict):
 
 def build_chain(call_chain, node, graph_dict):
     # recursive function to build chain of input to output
+    # I think I'm doing this backwards.. maybe a better approach would be to
+    # build the chain from back to front and then reverse it?
     if node.startpoint:
         call_chain.append(node.name)
         return call_chain
     else:
         parent_names = node.in_name
         if len(parent_names) > 1:
-            # I think I could call each build_chain on each name here but will
-            # need to keep track of input names
-            raise NotImplementedError(
-                f"will need to accept split paths here (concat is a good basic example)"
-            )
+            parent_chains = []
+            for i, parent in enumerate(parent_names):
+                # recursively build chain for each parent
+                parent_chain = build_chain([], graph_dict[parent], graph_dict)
+                parent_chains.append(parent_chain)
+
+            # all parent chains are not contained in parent_chains
+            branch_tuple = ((len(parent_names), parent_chains), node.name)
+            call_chain.append(branch_tuple)
+            call_chain.append(node.name)
         else:
             new_chain = build_chain(call_chain, graph_dict[parent_names[0]], graph_dict)
             if parent_names[0] == new_chain[-1]:

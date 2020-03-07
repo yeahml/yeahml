@@ -183,9 +183,14 @@ class layers_config:
                     layer_is_endpoint = False
 
                 try:
+                    user_options = d["options"]
+                except KeyError:
+                    user_options = None
+
+                try:
                     out_dict[k] = layer_config(
                         layer_type=d["type"],
-                        layer_options=d["options"],
+                        layer_options=user_options,
                         layer_in_name=layer_in_name,
                         startpoint=layer_is_startpoint,
                         endpoint=layer_is_endpoint,
@@ -194,7 +199,7 @@ class layers_config:
                     prev_layer_name = k
                 except KeyError:
                     raise KeyError(
-                        f"layer_config was expecting [key={k}, dict={d}] to have k = name_string and dict to contain type and options"
+                        f"layer_config '[key={k}, dict={d}]' was expecting to have k = 'name_string' and dict to contain `:type`"
                     )
         else:
             raise ValueError(

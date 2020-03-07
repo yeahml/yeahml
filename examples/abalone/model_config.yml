@@ -18,6 +18,22 @@ layers:
       units: 8
       activation:
         type: 'elu'
+  dense_3a:
+    type: 'dense'
+    options:
+      units: 8
+      activation:
+        type: 'elu'
+  dense_3b:
+    type: 'dense'
+    options:
+      units: 8
+      activation:
+        type: 'elu'
+    in_name: 'dense_2'
+  concat_3:
+    type: 'concatenate'
+    in_name: ['dense_3a', 'dense_3b']
   dense_out:
     type: 'dense'
     options:
