@@ -270,13 +270,39 @@ def create_subgraphs(config_dict, graph_dict):
     return subgraphs
 
 
-def _extract_nested_values(d):
+def _extract_paths(d):
     # https://stackoverflow.com/questions/23981553/get-all-values-from-nested-dictionaries-in-python
-    for v in d.values():
-        if isinstance(v, dict):
-            yield from _extract_nested_values(v)
+    if isinstance(d, dict):
+        for v in d.values():
+            if isinstance(v, dict):
+                yield from _extract_paths(v)
+            else:
+                yield v
+
+
+def _extract_all_nodes_from_paths(path_lists):
+    """extract all nodes into a set from the list of paths"""
+    # there's likely a cleaner way to do this
+    nodes = set()
+    for v in path_lists:
+        if isinstance(v, tuple):
+            # tuple = ((number, [node_a, node_b, etc...]), out_name)
+            ex_nodes = v[0][1]
+            for n in ex_nodes:
+                if isinstance(n, list):
+                    for nn in n:
+                        nodes.add(nn)
+                elif isinstance(n, str):
+                    nodes.add(n)
+                else:
+                    raise ValueError(
+                        f"type {type(n)} was found in the path list from the tuple"
+                    )
+        elif isinstance(v, str):
+            nodes.add(v)
         else:
-            yield v
+            raise ValueError(f"type {type(v)} was found in the path list")
+    return nodes
 
 
 def static_analysis(config_dict: dict) -> dict:
@@ -298,9 +324,10 @@ def static_analysis(config_dict: dict) -> dict:
     # TODO: Analyze graph_dict to see if there are any "dead_ends"
     subgraphs = create_subgraphs(config_dict, graph_dict)
 
+    # exhaust generator and convert, extract list [[path_lists]]
+    path_lists = list(_extract_paths(subgraphs))[0]
     # ensure all values in the graph dict appear in the paths
-    path_lists = list(_extract_nested_values(subgraphs))
-    nodes_in_path = set([item for sublist in path_lists for item in sublist])
+    nodes_in_path = _extract_all_nodes_from_paths(path_lists)
     for n, nd in graph_dict.items():
         if not nd.label:
             # labels don't need to be checked since they aren't built
