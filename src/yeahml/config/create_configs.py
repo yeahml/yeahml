@@ -290,7 +290,9 @@ def _extract_all_nodes_from_paths(path_lists):
             ex_nodes = v[0][1]
             for n in ex_nodes:
                 if isinstance(n, list):
-                    for nn in n:
+                    # this list may be a tuple of a list, recurse
+                    x = _extract_all_nodes_from_paths(n)
+                    for nn in x:
                         nodes.add(nn)
                 elif isinstance(n, str):
                     nodes.add(n)

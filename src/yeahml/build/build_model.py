@@ -37,7 +37,6 @@ def _configure_input(cur_name, cur_config):
     # I'm going to continue on with this minimal approach
     dtype = cur_config["dtype"]
     shape = cur_config["shape"]
-    # print(cur_config)
     if cur_config["startpoint"]:
         out = tf.keras.layers.Input(shape=shape, dtype=dtype, name=cur_name)
     else:
@@ -112,14 +111,15 @@ def _is_tensor_or_list_of_tensors(obj):
         raise ValueError(f"prev_out is neither a tensor or list. is type: {type(obj)}")
 
 
-def _build_branch(branch_seq, built_nodes):
+def _build_branch_from_pure_node_list(branch_seq, built_nodes):
     prev_out = None
     for sub_seq in branch_seq:
         tensors = []
         if isinstance(sub_seq, str):
             sub_seq = [sub_seq]
+        elif isinstance(sub_seq, TupleOut):
+            sub_seq = sub_seq.vals
         for node_name in sub_seq:
-            # get node
             try:
                 cur_built_node = built_nodes[node_name]
             except KeyError:
@@ -135,10 +135,7 @@ def _build_branch(branch_seq, built_nodes):
             else:
                 # output does not exist (func hasn't been called), get prev_out
                 # to use as input
-                # TODO: here
-                if _is_tensor_or_list_of_tensors(
-                    prev_out
-                ):  # isinstance(prev_out, tf.Tensor):
+                if _is_tensor_or_list_of_tensors(prev_out):
                     try:
                         cur_func = cur_built_node["func"]
                     except KeyError:
@@ -152,44 +149,87 @@ def _build_branch(branch_seq, built_nodes):
                     raise ValueError(
                         f"node ({node_name}) does not have an output yet and there is not previous out to use as an input"
                     )
-                    # try:
-                    #     prev_out = cur_built_node["out"]
-                    # except KeyError:
-                    #     raise KeyError(
-                    #         f"node ({cur_name_in_seq}) does has not been created yet"
-                    #     )
             tensors.append(out)
         if len(tensors) == 1:
             tensors = tensors[0]
         prev_out = tensors
 
 
+def _unpack_and_build_tuple(tuple_seq, built_nodes):
+
+    # ((2, [[((2, [['n_a', ...], ['n_a', ...]]), 'ct_1'), 'ct_1', 'out'], ['n_a', 'd_1', ...]]), 'c3')
+    branch_tuple = tuple_seq[0]
+    num_branches = branch_tuple[0]
+    branch_seqs = branch_tuple[1]
+    name = tuple_seq[1]
+    outer_seq_to_build = TupleOut()
+
+    for branch_seq in branch_seqs:
+        if isinstance(branch_seq, tuple):
+            final_node = _unpack_and_build_tuple(branch_seq, built_nodes)
+            outer_seq_to_build.vals.append(final_node)
+        else:
+            out_seq = _build_sequence(branch_seq, built_nodes)
+            _build_sequence(out_seq, built_nodes)
+            outer_seq_to_build.vals.append(out_seq[-1])
+
+    return outer_seq_to_build
+
+
+def _is_pure_node_list(seq):
+    # a node list may be a list of strings or a list of strings with a list of
+    # strings
+    for v in seq:
+        if isinstance(v, str):
+            pass
+        elif isinstance(v, TupleOut):
+            pass
+        else:
+            return False
+    return True
+
+
+class TupleOut:
+    def __init__(self, vals=None):
+        if vals:
+            self.vals = vals
+        else:
+            self.vals = []
+
+    def __str__(self):
+        return str(self.__class__) + f" @ {hex(id(self))}" + ": " + str(self.__dict__)
+
+    def __call__(self):
+        return self.vals
+
+
 def _build_sequence(seq_info, built_nodes):
 
-    seq_to_build = []
-    for obj in seq_info:
-        tuple_outputs = []
-        if isinstance(obj, tuple):
-            # [(num_branches, [[n_a, n_b, ...],[n_c, n_d, ...]], out_name),
-            # out_name, next_Nodes...]
-            name = obj[1]
-            branch_tuple = obj[0]
-            num_branches = branch_tuple[0]
-            branch_seqs = branch_tuple[1]
-            for branch_seq in branch_seqs:
-                _build_branch(branch_seq, built_nodes)
-                tuple_outputs.append(branch_seq[-1])
-            seq_to_build.append(tuple_outputs)
-            # NOTE: this is a pretty weak assertion
-            assert (
-                len(tuple_outputs) == num_branches
-            ), f"num_branches{num_branches} != {len(tuple_outputs)}"
-            # each branch should now be built
-            # now, jump out and build the next node/sequence
-        else:
-            seq_to_build.append(obj)
+    outer_seq_to_build = []
+    if _is_pure_node_list(seq_info):
+        _build_branch_from_pure_node_list(seq_info, built_nodes)
+        outer_seq_to_build.append(seq_info[-1])
+    else:
+        # may contain sublists or tuples
+        for sub_seq in seq_info:
+            if isinstance(sub_seq, str):
+                outer_seq_to_build.append(sub_seq)
+            elif isinstance(sub_seq, TupleOut):
+                outer_seq_to_build.append(sub_seq)
+            elif _is_pure_node_list(sub_seq):
+                _build_branch_from_pure_node_list(sub_seq, built_nodes)
+                outer_seq_to_build.append(sub_seq)
+            else:
+                if isinstance(sub_seq, list):
+                    outer_seq = _build_sequence(sub_seq, built_nodes)
+                    _build_sequence(outer_seq, built_nodes)
+                    if not outer_seq:
+                        outer_seq_to_build.append(sub_seq[-1])
+                elif isinstance(sub_seq, tuple):
+                    outer_seq = _unpack_and_build_tuple(sub_seq, built_nodes)
+                    outer_seq_to_build.append(outer_seq)
 
-    _build_branch(seq_to_build, built_nodes)
+    return outer_seq_to_build
 
 
 def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
@@ -250,14 +290,13 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
         if not node.label:
             built_nodes[name] = {"out": out, "func": func}
 
-    # for end_name, subgraph in subgraphs_cdict.items():
-    #     print(f"{end_name}: {subgraph}")
-
     # connect the subgraphs
     for end_name, seq_dict in subgraphs_cdict.items():
-        # print(f"{name}: {seq_dict}")
+
         seq_info = seq_dict["sequence"]
-        _build_sequence(seq_info, built_nodes)
+        out_seq = _build_sequence(seq_info, built_nodes)
+        if out_seq:
+            _build_branch_from_pure_node_list(out_seq, built_nodes)
 
     model_input_tensors = []
     for name in model_io_cdict["inputs"]:
