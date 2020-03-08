@@ -95,6 +95,103 @@ def _configure_layer(cur_name, cur_config):
     return configured_layer
 
 
+###############################################
+
+
+def _is_tensor_or_list_of_tensors(obj):
+    if isinstance(obj, tf.Tensor):
+        return True
+    elif isinstance(obj, list):
+        for v in obj:
+            if isinstance(v, tf.Tensor):
+                pass
+            else:
+                return False
+        return True
+    else:
+        raise ValueError(f"prev_out is neither a tensor or list. is type: {type(obj)}")
+
+
+def _build_branch(branch_seq, built_nodes):
+    prev_out = None
+    for sub_seq in branch_seq:
+        tensors = []
+        if isinstance(sub_seq, str):
+            sub_seq = [sub_seq]
+        for node_name in sub_seq:
+            # get node
+            try:
+                cur_built_node = built_nodes[node_name]
+            except KeyError:
+                # TODO: this message will have to be expanded for huge graphs
+                raise KeyError(
+                    f"node ({node_name}) not found in built nodes {built_nodes.keys()}"
+                )
+
+            # get output of node
+            if isinstance(cur_built_node["out"], tf.Tensor):
+                # output already exists
+                out = cur_built_node["out"]
+            else:
+                # output does not exist (func hasn't been called), get prev_out
+                # to use as input
+                # TODO: here
+                if _is_tensor_or_list_of_tensors(
+                    prev_out
+                ):  # isinstance(prev_out, tf.Tensor):
+                    try:
+                        cur_func = cur_built_node["func"]
+                    except KeyError:
+                        raise KeyError(
+                            f"node ({node_name}) function has not been built yet"
+                        )
+
+                    out = cur_func(prev_out)
+                    cur_built_node["out"] = out
+                else:
+                    raise ValueError(
+                        f"node ({node_name}) does not have an output yet and there is not previous out to use as an input"
+                    )
+                    # try:
+                    #     prev_out = cur_built_node["out"]
+                    # except KeyError:
+                    #     raise KeyError(
+                    #         f"node ({cur_name_in_seq}) does has not been created yet"
+                    #     )
+            tensors.append(out)
+        if len(tensors) == 1:
+            tensors = tensors[0]
+        prev_out = tensors
+
+
+def _build_sequence(seq_info, built_nodes):
+
+    seq_to_build = []
+    for obj in seq_info:
+        tuple_outputs = []
+        if isinstance(obj, tuple):
+            # [(num_branches, [[n_a, n_b, ...],[n_c, n_d, ...]], out_name),
+            # out_name, next_Nodes...]
+            name = obj[1]
+            branch_tuple = obj[0]
+            num_branches = branch_tuple[0]
+            branch_seqs = branch_tuple[1]
+            for branch_seq in branch_seqs:
+                _build_branch(branch_seq, built_nodes)
+                tuple_outputs.append(branch_seq[-1])
+            seq_to_build.append(tuple_outputs)
+            # NOTE: this is a pretty weak assertion
+            assert (
+                len(tuple_outputs) == num_branches
+            ), f"num_branches{num_branches} != {len(tuple_outputs)}"
+            # each branch should now be built
+            # now, jump out and build the next node/sequence
+        else:
+            seq_to_build.append(obj)
+
+    _build_branch(seq_to_build, built_nodes)
+
+
 def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
 
     # unpack configuration
@@ -153,48 +250,14 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
         if not node.label:
             built_nodes[name] = {"out": out, "func": func}
 
+    # for end_name, subgraph in subgraphs_cdict.items():
+    #     print(f"{end_name}: {subgraph}")
+
     # connect the subgraphs
-    for end_name, subgraph in subgraphs_cdict.items():
-
-        prev_out = None
-        prev_out_exists = False
-        # the bool flag is needed since: "OperatorNotAllowedInGraphError: using a
-        # `tf.Tensor` as a Python `bool` is not allowed in Graph execution. Use
-        # Eager execution or decorate this function with @tf.function." meaning,
-        # we can't say if prev_out:
-        seq = subgraph["sequence"]
-        # print(f"{end_name} @ {seq}")
-        for cur_name_in_seq in seq:
-            # print(f"> {cur_name_in_seq}")
-
-            # obtain
-            try:
-                cur_built_node = built_nodes[cur_name_in_seq]
-            except KeyError:
-                # TODO: this message will have to be expanded for huge graphs
-                raise KeyError(
-                    f"node ({cur_name_in_seq}) from seq {seq} not found in built nodes {built_nodes.keys()}"
-                )
-
-            if prev_out_exists:
-                try:
-                    cur_func = cur_built_node["func"]
-                except KeyError:
-                    raise KeyError(
-                        f"node ({cur_name_in_seq}) function has not been built yet"
-                    )
-                # make the connection, store the connected node
-                out = cur_func(prev_out)
-                cur_built_node["out"] = out
-                prev_out = out
-            else:
-                try:
-                    prev_out = cur_built_node["out"]
-                    prev_out_exists = True
-                except KeyError:
-                    raise KeyError(
-                        f"node ({cur_name_in_seq}) does has not been created yet"
-                    )
+    for end_name, seq_dict in subgraphs_cdict.items():
+        # print(f"{name}: {seq_dict}")
+        seq_info = seq_dict["sequence"]
+        _build_sequence(seq_info, built_nodes)
 
     model_input_tensors = []
     for name in model_io_cdict["inputs"]:

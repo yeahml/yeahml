@@ -73,7 +73,7 @@ class layer_options_config:
                                     func_type = arg_v["type"]
                                 except KeyError:
                                     raise ValueError(
-                                        "Function for {arg_name} is not specified as a type:[<insert_type_here>]"
+                                        f"Function for {arg_name} is not specified as a type:[<insert_type_here>]"
                                     )
                                 try:
                                     func_opts = arg_v["options"]
