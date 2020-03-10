@@ -36,6 +36,7 @@ def return_loss(loss_str):
 
 
 def configure_loss(opt_dict):
+    """expects :type and :options"""
 
     try:
         cur_type = opt_dict["type"]

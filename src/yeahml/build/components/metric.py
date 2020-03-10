@@ -38,6 +38,7 @@ def return_metric(metric_str):
 
 def configure_metric(cur_type, met_opt_dict):
     # TODO: this needs to be tested
+    # TODO: this should mirror the `configure_loss` function
 
     metric_obj = return_metric(cur_type.lower())
     metric_fn = metric_obj["function"]

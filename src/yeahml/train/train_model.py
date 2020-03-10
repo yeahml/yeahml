@@ -104,7 +104,7 @@ def train_model(
     return_dict = {}
 
     full_exp_path = (
-        Path(meta_cdict["yeahml_dir"])
+        pathlib.Path(meta_cdict["yeahml_dir"])
         .joinpath(meta_cdict["data_name"])
         .joinpath(meta_cdict["experiment_name"])
     )
@@ -141,7 +141,39 @@ def train_model(
     optimizer = optimizer(**temp_dict["options"])
 
     # get loss function
-    loss_object = configure_loss(perf_cdict["loss"])
+    # TODO: I think this needs to be reconsidered.. the optimizer should be tied
+    # to the loss it cares about. that is, currently, a global optimizer is
+    # assumed to handle all loses
+    # TODO: We need to be able to specify whether the losses should be separately
+    # or jointly combined.
+    objs_losses = []
+    objs_metrics = []
+    obj_names = []
+    obj_opts = []
+    for objective, objective_conf in perf_cdict["objectives"].items():
+        obj_names.append(objective)
+
+        try:
+            loss_conf = objective_conf["loss"]
+        except KeyError:
+            loss_conf = None
+        loss_object = configure_loss(loss_conf)
+
+        try:
+            metric_conf = objective_conf["metric"]
+        except KeyError:
+            metric_conf = None
+        train_metric_fn = configure_metric(metric, metric_conf)
+        val_metric_fn = configure_metric(metric, metric_conf)
+
+        try:
+            in_conf = objective_conf["in_config"]
+        except KeyError:
+            in_conf = None
+
+        # handle each type of objective.. right now "supervised" is supported
+
+    loss_object = configure_loss(perf_cdict["objectives"]["loss"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
