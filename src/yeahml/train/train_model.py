@@ -113,24 +113,26 @@ def train_model(
 
     # save run specific information
     exp_time = get_exp_time()
+
     # model
-    model_run_path = os.path.join(model_cdict["save/model"], exp_time)
-    pathlib.Path(model_run_path).mkdir(parents=True, exist_ok=True)
+    train_save = full_exp_path.joinpath("save")
+    model_run_path = train_save.joinpath("model").joinpath(exp_time)
+    model_run_path.mkdir(parents=True, exist_ok=True)
+    param_run_path = train_save.joinpath("params")
+    param_run_path.mkdir(parents=True, exist_ok=True)
+
     save_model_path = os.path.join(model_run_path, "model.h5")
+
     # params
-    param_run_path = os.path.join(model_cdict["save/params"], exp_time)
-    pathlib.Path(param_run_path).mkdir(parents=True, exist_ok=True)
     save_best_param_path = os.path.join(param_run_path, "best_params.h5")
+
     # Tensorboard
     # TODO: eventually, this needs to be flexible enough to allow for new writes
     # every n steps
-    tb_logdir = os.path.join(model_cdict["tf_logs"], exp_time)
-    pathlib.Path(tb_logdir).mkdir(parents=True, exist_ok=True)
+    tb_logdir = model_run_path.joinpath("tf_logs")
+    tb_logdir.mkdir(parents=True, exist_ok=True)
     tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
     v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
-
-    # get model
-    # get optimizer
 
     # TODO: config optimizer (follow template for losses)
     optim_dict = return_optimizer(hp_cdict["optimizer"]["type"])
@@ -141,39 +143,48 @@ def train_model(
     optimizer = optimizer(**temp_dict["options"])
 
     # get loss function
+    # Right now, we're only going to add the first loss to the existing train
+    # loop
+    objective_list = list(yml_dict["performance"]["objectives"].keys())
+    if len(objective_list) > 1:
+        raise ValueError(
+            "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
+        )
+    first_and_only_obj = objective_list[0]
+
     # TODO: I think this needs to be reconsidered.. the optimizer should be tied
     # to the loss it cares about. that is, currently, a global optimizer is
     # assumed to handle all loses
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
-    objs_losses = []
-    objs_metrics = []
-    obj_names = []
-    obj_opts = []
-    for objective, objective_conf in perf_cdict["objectives"].items():
-        obj_names.append(objective)
+    # objs_losses = []
+    # objs_metrics = []
+    # obj_names = []
+    # obj_opts = []
+    # for objective, objective_conf in perf_cdict["objectives"].items():
+    #     obj_names.append(objective)
 
-        try:
-            loss_conf = objective_conf["loss"]
-        except KeyError:
-            loss_conf = None
-        loss_object = configure_loss(loss_conf)
+    #     try:
+    #         loss_conf = objective_conf["loss"]
+    #     except KeyError:
+    #         loss_conf = None
+    #     loss_object = configure_loss(loss_conf)
 
-        try:
-            metric_conf = objective_conf["metric"]
-        except KeyError:
-            metric_conf = None
-        train_metric_fn = configure_metric(metric, metric_conf)
-        val_metric_fn = configure_metric(metric, metric_conf)
+    #     try:
+    #         metric_conf = objective_conf["metric"]
+    #     except KeyError:
+    #         metric_conf = None
+    #     train_metric_fn = configure_metric(metric, metric_conf)
+    #     val_metric_fn = configure_metric(metric, metric_conf)
 
-        try:
-            in_conf = objective_conf["in_config"]
-        except KeyError:
-            in_conf = None
+    #     try:
+    #         in_conf = objective_conf["in_config"]
+    #     except KeyError:
+    #         in_conf = None
 
-        # handle each type of objective.. right now "supervised" is supported
+    # handle each type of objective.. right now "supervised" is supported
 
-    loss_object = configure_loss(perf_cdict["objectives"]["loss"])
+    loss_object = configure_loss(perf_cdict["objectives"][first_and_only_obj]["loss"])
 
     # mean loss
     avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
@@ -183,8 +194,12 @@ def train_model(
     train_metric_fns = []
     val_metric_fns = []
     metric_order = []
-    met_opts = perf_cdict["metric"]["options"]
-    for i, metric in enumerate(perf_cdict["metric"]["type"]):
+    # TODO: this is hardcoded to only the first objective
+    met_opts = perf_cdict["objectives"][first_and_only_obj]["metric"]["options"]
+    # TODO: this is hardcoded to only the first objective
+    for i, metric in enumerate(
+        perf_cdict["objectives"][first_and_only_obj]["metric"]["type"]
+    ):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:
@@ -258,7 +273,6 @@ def train_model(
         HIST_LOGGED = False
         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
             g_train_step += 1
-
             train_step(
                 model,
                 x_batch_train,

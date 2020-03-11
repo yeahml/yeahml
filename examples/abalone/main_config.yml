@@ -31,10 +31,10 @@ performance:
 data:
   in:
     feature_a:
-      shape: [2] #[2,1] # TODO: include flatten
+      shape: [2,1]
       dtype: 'float64'
     target_v:
-      shape: [1]
+      shape: [1,1]
       dtype: 'int32'
       label: True
 
