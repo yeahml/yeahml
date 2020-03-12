@@ -114,17 +114,25 @@ def train_model(
     # save run specific information
     exp_time = get_exp_time()
 
-    # model
-    train_save = full_exp_path.joinpath("save")
-    model_run_path = train_save.joinpath("model").joinpath(exp_time)
+    # experiment/model
+    model_path = full_exp_path.joinpath("model")
+
+    # model/experiment_time
+    model_run_path = model_path.joinpath(exp_time)
     model_run_path.mkdir(parents=True, exist_ok=True)
-    param_run_path = train_save.joinpath("params")
+
+    # model/exp_time/save/
+    run_save = model_run_path.joinpath("save")
+    run_save.mkdir(parents=True, exist_ok=True)
+
+    # model/exp_time/save/params
+    param_run_path = run_save.joinpath("params")
     param_run_path.mkdir(parents=True, exist_ok=True)
 
-    save_model_path = os.path.join(model_run_path, "model.h5")
-
-    # params
-    save_best_param_path = os.path.join(param_run_path, "best_params.h5")
+    # model/exp_time/save/model.h5
+    save_model_path = str(run_save.joinpath("model.h5"))
+    # model/exp_time/save/params/<specific_params>.h5
+    save_best_param_path = str(param_run_path.joinpath("best_params.h5"))
 
     # Tensorboard
     # TODO: eventually, this needs to be flexible enough to allow for new writes
@@ -145,7 +153,7 @@ def train_model(
     # get loss function
     # Right now, we're only going to add the first loss to the existing train
     # loop
-    objective_list = list(yml_dict["performance"]["objectives"].keys())
+    objective_list = list(perf_cdict["objectives"].keys())
     if len(objective_list) > 1:
         raise ValueError(
             "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"

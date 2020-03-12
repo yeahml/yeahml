@@ -1,6 +1,7 @@
 import os
 import pathlib
 from typing import Any, Dict
+from pathlib import Path
 
 import tensorflow as tf
 
@@ -33,6 +34,8 @@ def eval_model(
     weights_path: str = "",
 ) -> Dict[str, Any]:
 
+    # TODO: it also be possible to use this without passing the model?
+
     # unpack configuration
     model_cdict: Dict[str, Any] = config_dict["model"]
     meta_cdict: Dict[str, Any] = config_dict["meta"]
@@ -50,6 +53,16 @@ def eval_model(
 
     # load best weights
     # TODO: load specific weights according to a param
+
+    model_path = full_exp_path.joinpath("model")
+    if model_path.is_dir():
+        sub_dirs = [x for x in model_path.iterdir() if x.is_dir()]
+        most_recent_subdir = sub_dirs[0]
+        # TODO: this assumes .h5 is the filetype and that model.h5 is present
+        most_recent_save_path = Path(most_recent_subdir).joinpath("save")
+
+    # TODO: THis logic/specification needs to be validated. Is this what we
+    # want? what if we want to specify a specific run? Where should we get that information?
     if weights_path:
         specified_path = weights_path
     else:
@@ -57,33 +70,42 @@ def eval_model(
         # The issue here is that if someone alters the model (perhaps in a notebook), then
         # retrains the model (but doesn't update the config), the "old" model, not new model
         # will be evaluated.  This will need to change
-        if pathlib.Path(model_cdict["save/params"]).is_file():
-            specified_path = model_cdict["save/params"]
-        elif pathlib.Path(model_cdict["save/params"]).is_dir():
-            p = pathlib.Path(model_cdict["save/params"])
-            sub_dirs = [x for x in p.iterdir() if x.is_dir()]
-            most_recent_subdir = sub_dirs[0]
-            # TODO: this assumes .h5 is the filetype and that model.h5 is present
-            specified_path = os.path.join(most_recent_subdir, "best_params.h5")
-        else:
-            raise ValueError(
-                f"specified path is neither an h5 path, nor a directory containing directories of h5: {meta_cdict['save_weights_dir']}"
-            )
+        specified_path = most_recent_save_path.joinpath("params").joinpath(
+            "best_params.h5"
+        )
 
-    model.load_weights(specified_path)
+    if not specified_path.is_file():
+        raise ValueError(
+            f"specified path is neither an h5 path, nor a directory containing directories of h5: {specified_path}"
+        )
+
+    model.load_weights(str(specified_path))
     logger.info(f"params loaded from {specified_path}")
+
+    # Right now, we're only going to add the first loss to the existing train
+    # loop
+    objective_list = list(perf_cdict["objectives"].keys())
+    if len(objective_list) > 1:
+        raise ValueError(
+            "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
+        )
+    first_and_only_obj = objective_list[0]
 
     # loss
     # get loss function
-    loss_object = configure_loss(perf_cdict["loss"])
+    loss_object = configure_loss(perf_cdict["objectives"][first_and_only_obj]["loss"])
 
     # mean loss
     avg_eval_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
 
     # metrics
     eval_metric_fns, metric_order = [], []
-    met_opts = perf_cdict["metric"]["options"]
-    for i, metric in enumerate(perf_cdict["metric"]["type"]):
+    # TODO: this is hardcoded to only the first objective
+    met_opts = perf_cdict["objectives"][first_and_only_obj]["metric"]["options"]
+    # TODO: this is hardcoded to only the first objective
+    for i, metric in enumerate(
+        perf_cdict["objectives"][first_and_only_obj]["metric"]["type"]
+    ):
         try:
             met_opt_dict = met_opts[i]
         except TypeError:
