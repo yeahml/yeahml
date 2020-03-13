@@ -1,9 +1,9 @@
+import math
 import os
 import pathlib
 import time
 from typing import Any, Dict
 
-import numpy as np
 import tensorflow as tf
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
@@ -252,8 +252,7 @@ def train_model(
 
     # train loop
     apply_grad_fn = get_apply_grad_fn()
-    # TODO: remove np dependency
-    best_val_loss = np.inf
+    best_val_loss = math.inf
     steps, train_losses, val_losses = [], [], []
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
     for e in range(hp_cdict["epochs"]):
@@ -311,8 +310,7 @@ def train_model(
 
         # TODO: use early_stopping:epochs and early_stopping:warmup
         if cur_val_loss_ < best_val_loss:
-            # TODO: remove np dependency
-            if best_val_loss == np.inf:
+            if e == 0:
                 # on the first time params are saved, try to save the model
                 model.save(save_model_path)
                 logger.debug(f"model saved to: {save_model_path}")
