@@ -84,16 +84,54 @@ def log_model_params(tr_writer, g_train_step, model):
             tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
 
-def get_exp_time():
-    run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
-    return run_id
+def _model_run_path(full_exp_path):
+    # save run specific information
+    exp_time = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+
+    # experiment/model
+    model_path = full_exp_path.joinpath("model")
+
+    # model/experiment_time
+    model_run_path = model_path.joinpath(exp_time)
+    model_run_path.mkdir(parents=True, exist_ok=True)
+
+    return model_run_path
+
+
+def _create_model_training_paths(model_run_path):
+    # model/exp_time/save/
+    run_save = model_run_path.joinpath("save")
+    run_save.mkdir(parents=True, exist_ok=True)
+
+    # model/exp_time/save/params
+    param_run_path = run_save.joinpath("params")
+    param_run_path.mkdir(parents=True, exist_ok=True)
+
+    # model/exp_time/save/model.h5
+    save_model_path = str(run_save.joinpath("model.h5"))
+    # model/exp_time/save/params/<specific_params>.h5
+    save_best_param_path = str(param_run_path.joinpath("best_params.h5"))
+
+    return save_model_path, save_best_param_path
+
+
+def _get_tb_writers(model_run_path):
+    # Tensorboard
+    # TODO: eventually, this needs to be flexible enough to allow for new writes
+    # every n steps
+    tb_logdir = model_run_path.joinpath("tf_logs")
+    tb_logdir.mkdir(parents=True, exist_ok=True)
+    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
+    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
+
+    return tr_writer, v_writer
 
 
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
 ) -> Dict[str, Any]:
 
-    # unpack configuration
+    # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
     meta_cdict: Dict[str, Any] = config_dict["meta"]
     log_cdict: Dict[str, Any] = config_dict["logging"]
@@ -111,42 +149,16 @@ def train_model(
     logger = config_logger(full_exp_path, log_cdict, "train")
     logger.info("-> START training graph")
 
-    # save run specific information
-    exp_time = get_exp_time()
-
-    # experiment/model
-    model_path = full_exp_path.joinpath("model")
-
-    # model/experiment_time
-    model_run_path = model_path.joinpath(exp_time)
-    model_run_path.mkdir(parents=True, exist_ok=True)
-
-    # model/exp_time/save/
-    run_save = model_run_path.joinpath("save")
-    run_save.mkdir(parents=True, exist_ok=True)
-
-    # model/exp_time/save/params
-    param_run_path = run_save.joinpath("params")
-    param_run_path.mkdir(parents=True, exist_ok=True)
-
-    # model/exp_time/save/model.h5
-    save_model_path = str(run_save.joinpath("model.h5"))
-    # model/exp_time/save/params/<specific_params>.h5
-    save_best_param_path = str(param_run_path.joinpath("best_params.h5"))
-
-    # Tensorboard
-    # TODO: eventually, this needs to be flexible enough to allow for new writes
-    # every n steps
-    tb_logdir = model_run_path.joinpath("tf_logs")
-    tb_logdir.mkdir(parents=True, exist_ok=True)
-    tr_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "train"))
-    v_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "val"))
+    # build paths and obtain tb writers
+    model_run_path = _model_run_path(full_exp_path)
+    save_model_path, save_best_param_path = _create_model_training_paths(model_run_path)
+    tr_writer, v_writer = _get_tb_writers(model_run_path)
 
     # TODO: config optimizer (follow template for losses)
     optim_dict = return_optimizer(hp_cdict["optimizer"]["type"])
     optimizer = optim_dict["function"]
 
-    # configure optimizer
+    # configure optimizers
     temp_dict = hp_cdict["optimizer"].copy()
     optimizer = optimizer(**temp_dict["options"])
 
@@ -159,36 +171,6 @@ def train_model(
             "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
         )
     first_and_only_obj = objective_list[0]
-
-    # TODO: I think this needs to be reconsidered.. the optimizer should be tied
-    # to the loss it cares about. that is, currently, a global optimizer is
-    # assumed to handle all loses
-    # TODO: We need to be able to specify whether the losses should be separately
-    # or jointly combined.
-    # objs_losses = []
-    # objs_metrics = []
-    # obj_names = []
-    # obj_opts = []
-    # for objective, objective_conf in perf_cdict["objectives"].items():
-    #     obj_names.append(objective)
-
-    #     try:
-    #         loss_conf = objective_conf["loss"]
-    #     except KeyError:
-    #         loss_conf = None
-    #     loss_object = configure_loss(loss_conf)
-
-    #     try:
-    #         metric_conf = objective_conf["metric"]
-    #     except KeyError:
-    #         metric_conf = None
-    #     train_metric_fn = configure_metric(metric, metric_conf)
-    #     val_metric_fn = configure_metric(metric, metric_conf)
-
-    #     try:
-    #         in_conf = objective_conf["in_config"]
-    #     except KeyError:
-    #         in_conf = None
 
     # handle each type of objective.. right now "supervised" is supported
 
@@ -222,6 +204,36 @@ def train_model(
         val_metric_fns.append(val_metric_fn)
         metric_order.append(metric)
 
+    # TODO: I think this needs to be reconsidered.. the optimizer should be tied
+    # to the loss it cares about. that is, currently, a global optimizer is
+    # assumed to handle all loses
+    # TODO: We need to be able to specify whether the losses should be separately
+    # or jointly combined.
+    # objs_losses = []
+    # objs_metrics = []
+    # obj_names = []
+    # obj_opts = []
+    # for objective, objective_conf in perf_cdict["objectives"].items():
+    #     obj_names.append(objective)
+
+    #     try:
+    #         loss_conf = objective_conf["loss"]
+    #     except KeyError:
+    #         loss_conf = None
+    #     loss_object = configure_loss(loss_conf)
+
+    #     try:
+    #         metric_conf = objective_conf["metric"]
+    #     except KeyError:
+    #         metric_conf = None
+    #     train_metric_fn = configure_metric(metric, metric_conf)
+    #     val_metric_fn = configure_metric(metric, metric_conf)
+
+    #     try:
+    #         in_conf = objective_conf["in_config"]
+    #     except KeyError:
+    #         in_conf = None
+
     # get datasets
     # TODO: there needs to be some check here to ensure the same datsets are being compared.
     if not datasets:
@@ -237,28 +249,6 @@ def train_model(
         train_ds, val_ds = datasets
         train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
         val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
-
-    # # write graph
-    # g_writer = tf.summary.create_file_writer(os.path.join(tb_logdir, "graph"))
-    # prof_ds = train_ds.take(2)
-    # # tf.summary.trace_on(graph=True, profiler=True)
-    # for (x_batch, _) in prof_ds:
-    #     _ = model(x_batch, training=False)
-    #     # with g_writer.as_default():
-    #     #     tf.summary.trace_export(
-    #     #         "dataset_input",
-    #     #         step=0,
-    #     #         profiler_outdir=os.path.join(tb_logdir, "graph"),
-    #     #     )
-    #     tf.summary.trace_on(graph=True, profiler=True)
-    #     _ = model(x_batch, training=False)
-    #     with g_writer.as_default():
-    #         tf.summary.trace_export(
-    #             "model_inference",
-    #             step=0,
-    #             profiler_outdir=os.path.join(tb_logdir, "graph"),
-    #         )
-    # print("done profile")
 
     # train loop
     apply_grad_fn = get_apply_grad_fn()
