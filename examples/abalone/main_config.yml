@@ -21,6 +21,7 @@ performance:
         type: ["MeanSquaredError", "MeanAbsoluteError"]
         options: [null, 
                   null]
+      optimizer_name: "main_1"
       in_config:
         type: "supervised"
         options:
@@ -40,6 +41,7 @@ data:
 
 hyper_parameters:
   optimizer: 
+    name: "main_1"
     type: 'adam'
     options:
       learning_rate: 0.0001

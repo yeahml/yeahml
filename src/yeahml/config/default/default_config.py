@@ -74,6 +74,7 @@ hyper_parameters = {
                     )
                 }
             ),
+            "name": categorical(default_value=None, required=True, to_lower=True),
         },
     }
 }
