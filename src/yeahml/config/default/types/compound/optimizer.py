@@ -28,7 +28,7 @@ class optimizer_config:
                     default_value=None, required=True, is_type=float
                 )
             }
-        )  # (opt_options)
+        )(opt_options)
 
         # TODO: in a secondary check, we need to ensure the losses specified
         # are valid+included
@@ -83,7 +83,7 @@ class optimizers_parser:
                     opt_type=opt_type,
                     opt_options=opt_options,
                     opt_objectives=opt_objectives,
-                )
+                )()
             temp_dict[k] = conf
 
         else:
