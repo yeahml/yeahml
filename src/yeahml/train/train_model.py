@@ -30,10 +30,11 @@ def get_apply_grad_fn():
             # TODO: custom weighting for training could be applied here
             # weighted_losses = loss * weights_per_instance
             main_loss = tf.reduce_mean(loss)
-
-            # model.losses contains the kernel/bias constrains/regularizers
+            # model.losses contains the kernel/bias constraints/regularizers
             full_loss = tf.add_n([main_loss] + model.losses)
 
+        # TODO: maybe we should be able to specify which params to be optimized
+        # by specific optimizers
         grads = tape.gradient(full_loss, model.trainable_variables)
 
         # NOTE: any gradient adjustments would happen here
@@ -127,6 +128,72 @@ def _get_tb_writers(model_run_path):
     return tr_writer, v_writer
 
 
+def _get_objectives(objectives):
+    obj_conf = {}
+    for obj_name, config in objectives.items():
+        optimizer_name = config["optimizer_name"]
+        in_config = config["in_config"]
+
+        try:
+            loss_config = config["loss"]
+        except KeyError:
+            loss_config = None
+
+        try:
+            metric_config = config["metric"]
+        except KeyError:
+            metric_config = None
+
+        if not loss_config and not metric_config:
+            raise ValueError(f"Neither a loss or metric was defined for {obj_name}")
+
+        if loss_config:
+            loss_object = configure_loss(loss_config)
+
+            # mean loss
+            avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
+            avg_val_loss = tf.keras.metrics.Mean(
+                name="validation_loss", dtype=tf.float32
+            )
+
+        # if metric_config:
+        #     metric_object = configure_loss(loss_config)
+
+        print(obj_name)
+        print(config)
+        print("-")
+        obj_conf[obj_name] = {}
+
+
+def _configure_optimizer(opt_dict):
+    print(opt_dict)
+    # TODO: this should not be here. (follow template for losses)
+    optim_dict = return_optimizer(opt_dict["type"])
+    optimizer = optim_dict["function"]
+
+    print(opt_dict["options"])
+    print(opt_dict["options"])
+
+    # configure optimizers
+    temp_dict = opt_dict.copy()
+    optimizer = optimizer(**temp_dict["options"])
+
+    return optimizer
+
+
+def _get_optimizers(optim_cdict):
+
+    optimizers_dict = {}
+    for opt_name, opt_dict in optim_cdict["optimizers"].items():
+        configured_optimizer = _configure_optimizer(opt_dict)
+        optimizers_dict[opt_name] = {
+            "optimizer": configured_optimizer,
+            "objectives": opt_dict["objectives"],
+        }
+
+    return optimizers_dict
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
 ) -> Dict[str, Any]:
@@ -137,7 +204,9 @@ def train_model(
     log_cdict: Dict[str, Any] = config_dict["logging"]
     data_cdict: Dict[str, Any] = config_dict["data"]
     hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
+
     perf_cdict: Dict[str, Any] = config_dict["performance"]
+    optim_cdict: Dict[str, Any] = config_dict["optimize"]
 
     return_dict = {}
 
@@ -154,21 +223,28 @@ def train_model(
     save_model_path, save_best_param_path = _create_model_training_paths(model_run_path)
     tr_writer, v_writer = _get_tb_writers(model_run_path)
 
-    # TODO: config optimizer (follow template for losses)
-    optim_dict = return_optimizer(hp_cdict["optimizer"]["type"])
-    optimizer = optim_dict["function"]
-
-    # configure optimizers
-    temp_dict = hp_cdict["optimizer"].copy()
-    optimizer = optimizer(**temp_dict["options"])
+    optimizers_dict = _get_optimizers(optim_cdict)
+    print(optimizers_dict)
+    sys.exit()
 
     # get loss function
     # Right now, we're only going to add the first loss to the existing train
     # loop
-    objective_list = list(perf_cdict["objectives"].keys())
+    # objective_list = list(perf_cdict["objectives"].keys())
+    #         "main": {
+    #             "in_config": {
+    #                 "options": {"prediction": "dense_out", "target": "target_v"},
+    #                 "type": "supervised",
+    #             },
+    #             "loss": {"options": None, "type": "mse"},
+    #             "metric": {"options": [None], "type": ["meansquarederror"]},
+
+    objective_obj = _get_objectives(perf_cdict["objectives"])
+    sys.exit()
+
     if len(objective_list) > 1:
         raise ValueError(
-            "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
+            f"Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
         )
     first_and_only_obj = objective_list[0]
 
