@@ -10,6 +10,7 @@ from yeahml.config.default.types.param_types import optional_config, parameter_c
 from yeahml.config.default.types.compound.data import data_in_spec, dict_of_data_in_spec
 from yeahml.config.default.types.compound.layer import layers_config
 from yeahml.config.default.types.compound.performance import performances_config
+from yeahml.config.default.types.compound.optimizer import optimizers_parser
 
 # meta
 # TODO: set accepted options for `trace_level`
@@ -59,30 +60,32 @@ hyper_parameters = {
         ),
         # TODO: Right now I'm assuming 1 loss and one optimizer.. this isn't
         # and needs to be reconsidered
-        "optimizer": {
-            "type": categorical(
-                default_value=None,
-                required=True,
-                is_in_list=return_available_optimizers(),
-                to_lower=True,
-            ),
-            # TODO: this isn't really a list of categorical.... most are numeric
-            "options": parameter_config(
-                known_dict={
-                    "learning_rate": numeric(
-                        default_value=None, required=True, is_type=float
-                    )
-                }
-            ),
-            "name": categorical(default_value=None, required=True, to_lower=True),
-            # TODO: in a secondary check, we need to ensure the losses specified
-            # are valid+included
-            "objectives": list_of_categorical(
-                default_value=None, required=True, to_lower=True
-            ),
-        },
+        # "optimizer": {
+        #     "type": categorical(
+        #         default_value=None,
+        #         required=True,
+        #         is_in_list=return_available_optimizers(),
+        #         to_lower=True,
+        #     ),
+        #     # TODO: this isn't really a list of categorical.... most are numeric
+        #     "options": parameter_config(
+        #         known_dict={
+        #             "learning_rate": numeric(
+        #                 default_value=None, required=True, is_type=float
+        #             )
+        #         }
+        #     ),
+        #     "name": categorical(default_value=None, required=True, to_lower=True),
+        #     # TODO: in a secondary check, we need to ensure the losses specified
+        #     # are valid+included
+        #     "objectives": list_of_categorical(
+        #         default_value=None, required=True, to_lower=True
+        #     ),
+        # },
     }
 }
+
+optimize = {"optimize": {"optimizers": optimizers_parser()}}
 
 
 ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]]
@@ -196,3 +199,5 @@ DEFAULT_CONFIG = {**DEFAULT_CONFIG, **hyper_parameters}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **data}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **model}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **optimize}
+

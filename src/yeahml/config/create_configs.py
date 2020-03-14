@@ -22,7 +22,15 @@ from yeahml.config.performance.parse_performance import format_performance_confi
 
 # TODO: I don't like this global, but I'm not sure where it belongs yet
 # NOTE: it is required that meta be created before model. this may need to change
-CONFIG_KEYS = ["meta", "logging", "performance", "data", "hyper_parameters", "model"]
+CONFIG_KEYS = [
+    "meta",
+    "logging",
+    "performance",
+    "data",
+    "hyper_parameters",
+    "model",
+    "optimize",
+]
 
 
 def maybe_extract_from_path(cur_dict: dict) -> dict:
@@ -66,6 +74,11 @@ def primary_config(main_path: str) -> dict:
         elif config_type == "performance":
             formatted_config = format_performance_config(
                 raw_config, DEFAULT_CONFIG["performance"]
+            )
+        elif config_type == "optimize":
+            # using format_performance_config here since nothing else happens internally
+            formatted_config = format_performance_config(
+                raw_config, DEFAULT_CONFIG["optimize"]
             )
         elif config_type == "data":
             formatted_config = format_data_config(raw_config, DEFAULT_CONFIG["data"])
