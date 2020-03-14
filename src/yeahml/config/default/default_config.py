@@ -75,6 +75,11 @@ hyper_parameters = {
                 }
             ),
             "name": categorical(default_value=None, required=True, to_lower=True),
+            # TODO: in a secondary check, we need to ensure the losses specified
+            # are valid+included
+            "objectives": list_of_categorical(
+                default_value=None, required=True, to_lower=True
+            ),
         },
     }
 }
