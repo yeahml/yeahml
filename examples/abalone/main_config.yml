@@ -13,15 +13,31 @@ logging:
 
 performance:
   objectives:
-    main:
-      loss: 
+    # each objective can be a loss, a metric, or a combination of both
+    main_obj:
+      loss:
+        # each loss can only be one loss
+        # TODO: support custom losses
         type: 'MSE'
         #options:
       metric:
-        type: ["MeanSquaredError", "MeanAbsoluteError"]
-        options: [null, 
-                  null]
-      optimizer_name: "main_1"
+        # there can be many metrics
+        # TODO: support custom metrics
+        type: ["MeanSquaredError"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "dense_out"
+          target: "target_v"
+    second_obj:
+      loss: 
+        type: 'MAE'
+        #options:
+      metric:
+        type: ["meanabsoluteerror"]
+        options: [null]
+      optimizer_name: "main_2"
       in_config:
         type: "supervised"
         options:
@@ -41,17 +57,32 @@ data:
 
 hyper_parameters:
   optimizer: 
-    name: "main_1"
+    name: "main_opt"
     type: 'adam'
     options:
       learning_rate: 0.0001
-      beta_1: 0.91
+      beta_1: 0.91 
+    objectives: ["main_obj"]
+  # optimizer_definition:
+  #   seq: "(((a|b)&c),d)"
+  # optimizer: # TODO: support multiple optimizers
+  #   name: "main_2"
+  #   type: 'adam'
+  #   options:
+  #     learning_rate: 0.001
+  #     beta_1: 0.92
+    
   epochs: 30
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
     shuffle_buffer: 128 # this should be grouped with batchsize
+  # other:
+  #   earlystopping:
+  #     type: 'earlystopping'
+  #     options:
+
 model:
   path: './model_config.yml'
 

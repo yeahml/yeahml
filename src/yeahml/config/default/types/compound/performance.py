@@ -100,14 +100,9 @@ class performance_config:
         metric_type=None,
         metric_options=None,
         in_dict=None,
-        optimizer_name=None,
     ):
-        if optimizer_name:
-            # TODO: there are consistency issues here with the names of classes
-            # and where the types are being created/checked
-            self.optimizer_name = optimizer_name
-        else:
-            raise ValueError(f"optimizer name was not defined")
+        # TODO: there are consistency issues here with the names of classes
+        # and where the types are being created/checked
 
         if loss_type:
             self.loss = loss_config(loss_type=loss_type, loss_options=loss_options)()
@@ -174,16 +169,6 @@ class performances_config:
                 )(k)
 
                 try:
-                    optimizer_name_raw = d["optimizer_name"]
-                except KeyError:
-                    raise KeyError(
-                        f"no :optimizer_name was specified for the performance of {k}: {d}"
-                    )
-                optimizer_name = categorical(
-                    default_value=None, required=True, is_type=str, to_lower=True
-                )(optimizer_name_raw)
-
-                try:
                     loss_dict = d["loss"]
                 except KeyError:
                     loss_dict = None
@@ -225,7 +210,6 @@ class performances_config:
                         metric_type=metric_type,
                         metric_options=metric_options,
                         in_dict=in_dict,
-                        optimizer_name=optimizer_name,
                     )()
                     temp_dict[performance_name] = val
                 else:
