@@ -128,10 +128,45 @@ def _get_tb_writers(model_run_path):
     return tr_writer, v_writer
 
 
+def _get_metrics(metric_config):
+    train_metric_fns = []
+    val_metric_fns = []
+    metric_order = []
+
+    assert len(metric_config["options"]) == len(
+        metric_config["type"]
+    ), f"len of options does not len of metrics: {len(metric_config['options'])} != {len(metric_config['type'])}"
+
+    # loop operations and options
+    try:
+        met_opts = metric_config["options"]
+    except KeyError:
+        met_opts = None
+    for i, metric in enumerate(metric_config["type"]):
+        if met_opts:
+            met_opt_dict = met_opts[i]
+        else:
+            met_opt_dict = None
+
+        # train
+        train_metric_fn = configure_metric(metric, met_opt_dict)
+        train_metric_fns.append(train_metric_fn)
+
+        # validation
+        val_metric_fn = configure_metric(metric, met_opt_dict)
+        val_metric_fns.append(val_metric_fn)
+
+        # order
+        metric_order.append(metric)
+
+    return (metric_order, train_metric_fns, val_metric_fns)
+
+
 def _get_objectives(objectives):
+    # TODO: should these be grouped based on their inputs?
+
     obj_conf = {}
     for obj_name, config in objectives.items():
-        optimizer_name = config["optimizer_name"]
         in_config = config["in_config"]
 
         try:
@@ -150,38 +185,47 @@ def _get_objectives(objectives):
         if loss_config:
             loss_object = configure_loss(loss_config)
 
-            # mean loss
+            # mean loss for both training and validation
             avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
             avg_val_loss = tf.keras.metrics.Mean(
                 name="validation_loss", dtype=tf.float32
             )
+        else:
+            loss_object, avg_train_loss, avg_val_loss = None, None, None
 
-        # if metric_config:
-        #     metric_object = configure_loss(loss_config)
+        if metric_config:
+            metric_order, train_metric_fns, val_metric_fns = _get_metrics(metric_config)
+        else:
+            metric_order, train_metric_fns, val_metric_fns = None, None, None
 
-        print(obj_name)
-        print(config)
-        print("-")
-        obj_conf[obj_name] = {}
+        obj_conf[obj_name] = {
+            "in_config": in_config,
+            "loss": {
+                "object": loss_object,
+                "train_mean": avg_train_loss,
+                "val_mean": avg_val_loss,
+            },
+            "metrics": {
+                "metric_order": metric_order,
+                "train_metrics": train_metric_fns,
+                "val_metrics": val_metric_fns,
+            },
+        }
 
-
-def _configure_optimizer(opt_dict):
-    print(opt_dict)
-    # TODO: this should not be here. (follow template for losses)
-    optim_dict = return_optimizer(opt_dict["type"])
-    optimizer = optim_dict["function"]
-
-    print(opt_dict["options"])
-    print(opt_dict["options"])
-
-    # configure optimizers
-    temp_dict = opt_dict.copy()
-    optimizer = optimizer(**temp_dict["options"])
-
-    return optimizer
+        return obj_conf
 
 
 def _get_optimizers(optim_cdict):
+    def _configure_optimizer(opt_dict):
+        # TODO: this should not be here. (follow template for losses)
+        optim_dict = return_optimizer(opt_dict["type"])
+        optimizer = optim_dict["function"]
+
+        # configure optimizers
+        temp_dict = opt_dict.copy()
+        optimizer = optimizer(**temp_dict["options"])
+
+        return optimizer
 
     optimizers_dict = {}
     for opt_name, opt_dict in optim_cdict["optimizers"].items():
@@ -225,90 +269,16 @@ def train_model(
 
     optimizers_dict = _get_optimizers(optim_cdict)
     print(optimizers_dict)
-    sys.exit()
-
-    # get loss function
-    # Right now, we're only going to add the first loss to the existing train
-    # loop
-    # objective_list = list(perf_cdict["objectives"].keys())
-    #         "main": {
-    #             "in_config": {
-    #                 "options": {"prediction": "dense_out", "target": "target_v"},
-    #                 "type": "supervised",
-    #             },
-    #             "loss": {"options": None, "type": "mse"},
-    #             "metric": {"options": [None], "type": ["meansquarederror"]},
-
+    print("-----")
     objective_obj = _get_objectives(perf_cdict["objectives"])
+    print(objective_obj)
     sys.exit()
-
-    if len(objective_list) > 1:
-        raise ValueError(
-            f"Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
-        )
-    first_and_only_obj = objective_list[0]
-
-    # handle each type of objective.. right now "supervised" is supported
-
-    loss_object = configure_loss(perf_cdict["objectives"][first_and_only_obj]["loss"])
-
-    # mean loss
-    avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
-    avg_val_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
-
-    # get metrics
-    train_metric_fns = []
-    val_metric_fns = []
-    metric_order = []
-    # TODO: this is hardcoded to only the first objective
-    met_opts = perf_cdict["objectives"][first_and_only_obj]["metric"]["options"]
-    # TODO: this is hardcoded to only the first objective
-    for i, metric in enumerate(
-        perf_cdict["objectives"][first_and_only_obj]["metric"]["type"]
-    ):
-        try:
-            met_opt_dict = met_opts[i]
-        except TypeError:
-            # no options
-            met_opt_dict = None
-        except IndexError:
-            # No options for particular metric
-            met_opt_dict = None
-        train_metric_fn = configure_metric(metric, met_opt_dict)
-        train_metric_fns.append(train_metric_fn)
-        val_metric_fn = configure_metric(metric, met_opt_dict)
-        val_metric_fns.append(val_metric_fn)
-        metric_order.append(metric)
 
     # TODO: I think this needs to be reconsidered.. the optimizer should be tied
     # to the loss it cares about. that is, currently, a global optimizer is
     # assumed to handle all loses
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
-    # objs_losses = []
-    # objs_metrics = []
-    # obj_names = []
-    # obj_opts = []
-    # for objective, objective_conf in perf_cdict["objectives"].items():
-    #     obj_names.append(objective)
-
-    #     try:
-    #         loss_conf = objective_conf["loss"]
-    #     except KeyError:
-    #         loss_conf = None
-    #     loss_object = configure_loss(loss_conf)
-
-    #     try:
-    #         metric_conf = objective_conf["metric"]
-    #     except KeyError:
-    #         metric_conf = None
-    #     train_metric_fn = configure_metric(metric, metric_conf)
-    #     val_metric_fn = configure_metric(metric, metric_conf)
-
-    #     try:
-    #         in_conf = objective_conf["in_config"]
-    #     except KeyError:
-    #         in_conf = None
 
     # get datasets
     # TODO: there needs to be some check here to ensure the same datsets are being compared.

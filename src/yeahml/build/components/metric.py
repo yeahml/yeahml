@@ -36,13 +36,12 @@ def return_metric(metric_str):
     return metric
 
 
-def configure_metric(cur_type, met_opt_dict):
+def configure_metric(cur_type, options):
     # TODO: this needs to be tested
     # TODO: this should mirror the `configure_loss` function
 
     metric_obj = return_metric(cur_type.lower())
     metric_fn = metric_obj["function"]
-    options = met_opt_dict
 
     if options:
         if not set(options.keys()).issubset(metric_obj["func_args"]):
