@@ -30,19 +30,18 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
-    # second_obj:
-    #   loss: 
-    #     type: 'MAE'
-    #     #options:
-    #   metric:
-    #     type: ["meanabsoluteerror"]
-    #     options: [null]
-    #   optimizer_name: "main_2"
-    #   in_config:
-    #     type: "supervised"
-    #     options:
-    #       prediction: "dense_out"
-    #       target: "target_v"
+    second_obj:
+      loss: 
+        type: 'MAE'
+        #options:
+      metric:
+        type: ["meanabsoluteerror"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "dense_out"
+          target: "target_v"
 
 # TODO: this section needs to be redone
 data:
@@ -62,7 +61,7 @@ optimize:
       options:
         learning_rate: 0.0001
         beta_1: 0.91 
-      objectives: ["main_obj"]
+      objectives: ["main_obj", "second_obj"]
 
 hyper_parameters:
   # optimizer_definition:

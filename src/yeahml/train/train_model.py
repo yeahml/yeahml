@@ -212,7 +212,7 @@ def _get_objectives(objectives):
             },
         }
 
-        return obj_conf
+    return obj_conf
 
 
 def _get_optimizers(optim_cdict):
@@ -268,15 +268,8 @@ def train_model(
     tr_writer, v_writer = _get_tb_writers(model_run_path)
 
     optimizers_dict = _get_optimizers(optim_cdict)
-    print(optimizers_dict)
-    print("-----")
     objective_obj = _get_objectives(perf_cdict["objectives"])
-    print(objective_obj)
-    sys.exit()
 
-    # TODO: I think this needs to be reconsidered.. the optimizer should be tied
-    # to the loss it cares about. that is, currently, a global optimizer is
-    # assumed to handle all loses
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
 
@@ -295,6 +288,10 @@ def train_model(
         train_ds, val_ds = datasets
         train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
         val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
+
+    print(optimizers_dict)
+    print("-----")
+    print(objective_obj)
 
     # train loop
     apply_grad_fn = get_apply_grad_fn()
