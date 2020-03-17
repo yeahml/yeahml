@@ -14,6 +14,7 @@ from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
 from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
+import sys
 
 
 def get_apply_grad_fn():
@@ -236,6 +237,13 @@ def _get_objectives(objectives):
             },
         }
 
+    # Currently, only supervised is accepted
+    for obj_name, obj_dict in obj_conf.items():
+        if obj_dict["in_config"]["type"] != "supervised":
+            raise NotImplementedError(
+                f"only 'supervised' is accepted as the type for the in_config of {obj_name}, not {obj_conf['in_config']['type']} yet..."
+            )
+
     return obj_conf
 
 
@@ -260,6 +268,92 @@ def _get_optimizers(optim_cdict):
         }
 
     return optimizers_dict
+
+
+def _get_datasets(datasets, data_cdict, hp_cdict):
+    # TODO: there needs to be some check here to ensure the same datsets are being compared.
+    if not datasets:
+        train_ds = get_configured_dataset(
+            data_cdict, hp_cdict, ds=None, ds_type="train"
+        )
+        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=None, ds_type="val")
+    else:
+        # TODO: apply shuffle/aug/reshape from config
+        assert (
+            len(datasets) == 2
+        ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
+        train_ds, val_ds = datasets
+        train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
+        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
+
+    return train_ds, val_ds
+
+
+def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
+    # NOTE: multiple losses by the same optimizer, are currently only modeled
+    # jointly, if we wish to model the losses seperately (sequentially or
+    # alternating), then we would want to use a second optimizer
+    objectives_used = set()
+    optimizer_loss_name_map = {}
+    for optimizer_name, optimizer_dict in optimizers_dict.items():
+        losses_to_optimize = []
+
+        try:
+            objectives_to_opt = optimizer_dict["objectives"]
+        except KeyError:
+            raise KeyError(f"no objectives found for {optimizer_name}")
+
+        in_to_optimizer = None
+        for o in objectives_to_opt:
+            # add to set of all objectives used - for tracking purposes
+            objectives_used.add(o)
+
+            print(objectives_dict[o])
+            print("--")
+
+            # sanity check ensure loss object from targeted objective exists
+            try:
+                _ = objectives_dict[o]["loss"]["object"]
+            except KeyError:
+                raise KeyError(f"no loss object is present in objective {o}")
+
+            try:
+                in_conf = objectives_dict[o]["in_config"]["options"]
+            except NotImplementedError:
+                raise NotImplementedError(
+                    f"no options present in {objectives_dict[o]['in_config']}"
+                )
+
+            if in_to_optimizer:
+                if not in_to_optimizer == in_conf:
+                    raise ValueError(
+                        f"The in to optimizer is {in_to_optimizer} but the in_conf for {o} is {in_conf}, they should be the same"
+                    )
+            else:
+                in_to_optimizer = in_conf
+
+            # add loss object to a list for grouping
+            losses_to_optimize.append(o)
+
+        optimizer_loss_name_map[optimizer_name] = {
+            "losses_to_optimize": losses_to_optimize,
+            "in_conf": in_to_optimizer,
+        }
+
+    # ensure all losses are mapped to an optimizer
+    obj_not_used = []
+    for obj_name, obj_dict in objectives_dict.items():
+        # only add objective if it contains a loss
+        try:
+            l = obj_dict["loss"]
+            if obj_name not in objectives_used:
+                obj_not_used.append(obj_name)
+        except KeyError:
+            pass
+    if obj_not_used:
+        raise ValueError(f"objectives {obj_not_used} are not mapped to an optimizer")
+
+    return optimizer_loss_name_map
 
 
 def train_model(
@@ -293,82 +387,19 @@ def train_model(
 
     optimizers_dict = _get_optimizers(optim_cdict)
     objectives_dict = _get_objectives(perf_cdict["objectives"])
-    # print(optimizers_dict)
-    # print("-")
-    # print(objectives_dict)
-    # print("-----")
 
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
 
     # get datasets
-    # TODO: there needs to be some check here to ensure the same datsets are being compared.
-    if not datasets:
-        train_ds = get_configured_dataset(
-            data_cdict, hp_cdict, ds=None, ds_type="train"
-        )
-        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=None, ds_type="val")
-    else:
-        # TODO: apply shuffle/aug/reshape from config
-        assert (
-            len(datasets) == 2
-        ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
-        train_ds, val_ds = datasets
-        train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
-        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
+    train_ds, val_ds = _get_datasets(datasets, data_cdict, hp_cdict)
 
-    # Currently, only supervised is accepted
-    for obj_name, obj_dict in objectives_dict.items():
-        if obj_dict["in_config"]["type"] != "supervised":
-            raise NotImplementedError(
-                f"only 'supervised' is accepted as the type for the in_config of {obj_name}, not {obj_dict['in_config']['type']} yet..."
-            )
+    # create mapping of optimizers to their losses
+    optimizer_loss_name_map = _obtain_optimizer_loss_mapping(
+        optimizers_dict, objectives_dict
+    )
 
-    # NOTE: multiple losses by the same optimizer, are currently only modeled
-    # jointly, if we wish to model the losses seperately (sequentially or
-    # alternating), then we would want to use a second optimizer
-    objectives_used = set()
-    joint_losses, joint_losses_names = [], []
-    optimizer_loss_name_map = {}
-    for optimizer_name, optimizer_dict in optimizers_dict.items():
-        losses_to_optimize = []
-
-        try:
-            objectives_to_opt = optimizer_dict["objectives"]
-        except KeyError:
-            raise KeyError(f"no objectives found for {optimizer_name}")
-
-        for o in objectives_to_opt:
-            # add to set of all objectives used - for tracking purposes
-            objectives_used.add(o)
-
-            # sanity check ensure loss object from targeted objective exists
-            try:
-                _ = objectives_dict[o]["loss"]["object"]
-            except KeyError:
-                raise KeyError(f"no loss object is present in objective {o}")
-
-            # add loss object to a list for grouping
-            losses_to_optimize.append(o)
-
-        optimizer_loss_name_map[optimizer_name] = losses_to_optimize
-
-    # print(optimizer_loss_name_map)
-
-    # loop and group all metrics
-
-    # ensure all losses are mapped to an optimizer
-    obj_not_used = []
-    for obj_name, obj_dict in objectives_dict.items():
-        # only add objective if it contains a loss
-        try:
-            l = obj_dict["loss"]
-            if obj_name not in objectives_used:
-                obj_not_used.append(obj_name)
-        except KeyError:
-            pass
-    if obj_not_used:
-        raise ValueError(f"objectives {obj_not_used} are not mapped to an optimizer")
+    # TODO: loop and group all metrics
 
     # TODO: group objectives by the in/
 
@@ -396,11 +427,13 @@ def train_model(
             # TODO: sequential vs alternate
 
             for (
-                optimizer_name,
-                objectives_to_optimize,
+                cur_optimizer_name,
+                cur_optimizer_dict,
             ) in optimizer_loss_name_map.items():
 
-                cur_optimizer = optimizers_dict[optimizer_name]["optimizer"]
+                objectives_to_optimize = cur_optimizer_dict["losses_to_optimize"]
+
+                cur_optimizer = optimizers_dict[cur_optimizer_name]["optimizer"]
 
                 # TODO: these need to be grouped before hand
                 metric_names_during_optimization = []
