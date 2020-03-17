@@ -1,8 +1,16 @@
 # YeahML
 
-YeahML is a prototype framework for creating ML models ([D|R|C]NNs, primarily) using only, easy to understand, with sane defaults, configuration files (yaml or json).
+YeahML is a prototype framework for creating ML models using configuration files (yaml or json).
 
-Examples are currently being worked through and can be found in the [examples directory](./examples)
+The api currently changes frequently, but I will be trying to include examples+documentation in the [examples directory](./examples) in the coming weeks/months.
+
+## Development
+
+This project and documentation is ongoing+work in progress. Please reach out if you have questions, thoughts, or general interest.
+
+I could use help working+thinking through this project. If you would like to help, please feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)
+
+## Overview
 
 The core implementation is as follows:
 
@@ -12,20 +20,21 @@ The core implementation is as follows:
   - logs/tensorboard are created
 
 
-## Main use
+## Example Use
 
 ```python
-example = "./main_config.yml"
-yml_dict = yml.create_configs(example)
+example_config_path = "./main_config.yml"
+yml_dict = yml.create_configs(example_config_path)
 
-# build graph
+# build model
 model = yml.build_model(yml_dict)
 
-# train graph
+# train the model with a training and validation dataset (or .tfrecords directory)
 ds_tuple = (ds_dict["train"], ds_dict["val"])
 train_dict = yml.train_model(model, yml_dict, ds_tuple)
 
-# evaluate graph -- will load the "best params"
+# evaluate graph -- can specify parameters to use, or will load the 
+# "best params" (as defined by the user) created during training
 eval_dict = yml.eval_model(
     model,
     yml_dict,
@@ -83,18 +92,26 @@ data:
       shape: [1]
       dtype: 'int32'
 
+optimize:
+  # NOTE: multiple losses by the same optimizer, are currently only modeled
+  # jointly, if we wish to model the losses separately (sequentially or
+  # alternating), then we would want to use a second optimizer
+  optimizers:
+    "main_opt":
+      type: 'adam'
+      options:
+        learning_rate: 0.0001
+        beta_1: 0.91 
+      objectives: ["main"]
+
 hyper_parameters:
-  optimizer: 
-    type: 'adam'
-    options:
-      learning_rate: 0.0001
-      beta_1: 0.91
   epochs: 30
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
     shuffle_buffer: 128 # this should be grouped with batchsize
+  
 model:
   path: './model_config.yml'
 ```
@@ -145,11 +162,6 @@ Logging, if enabled, will produce the following log files:
 - `train.log`
   - Contains information about training the graph [Information + Example](./docs/logs/train.md)
 
-## Development
-
-This project and documentation is ongoing+work in progress. Please reach out if you have questions or concerns.
-
-**If anyone would like to attempt to use or modify this project, feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)**
 
 ## Motivation
 
