@@ -55,6 +55,9 @@ data:
       label: True
 
 optimize:
+  # NOTE: multiple losses by the same optimizer, are currently only modeled
+  # jointly, if we wish to model the losses seperately (sequentially or
+  # alternating), then we would want to use a second optimizer
   optimizers:
     "main_opt":
       type: 'adam'
