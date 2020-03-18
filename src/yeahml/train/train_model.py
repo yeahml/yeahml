@@ -3,6 +3,7 @@ import os
 import pathlib
 import time
 from typing import Any, Dict
+from yeahml.config.model.util import make_hash
 
 import tensorflow as tf
 
@@ -308,9 +309,6 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
             # add to set of all objectives used - for tracking purposes
             objectives_used.add(o)
 
-            print(objectives_dict[o])
-            print("--")
-
             # sanity check ensure loss object from targeted objective exists
             try:
                 _ = objectives_dict[o]["loss"]["object"]
@@ -318,7 +316,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
                 raise KeyError(f"no loss object is present in objective {o}")
 
             try:
-                in_conf = objectives_dict[o]["in_config"]["options"]
+                in_conf = objectives_dict[o]["in_config"]
             except NotImplementedError:
                 raise NotImplementedError(
                     f"no options present in {objectives_dict[o]['in_config']}"
@@ -337,7 +335,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
 
         optimizer_loss_name_map[optimizer_name] = {
             "losses_to_optimize": losses_to_optimize,
-            "in_conf": in_to_optimizer,
+            "in_conf": in_conf,
         }
 
     # ensure all losses are mapped to an optimizer
@@ -354,6 +352,49 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
         raise ValueError(f"objectives {obj_not_used} are not mapped to an optimizer")
 
     return optimizer_loss_name_map
+
+
+def _map_in_config_to_objective(objectives_dict):
+    in_hash_to_conf = {}
+    for o, d in objectives_dict.items():
+        in_conf = d["in_config"]
+        in_conf_hash = make_hash(in_conf)
+        try:
+            stored_conf = in_hash_to_conf[in_conf_hash]["in_config"]
+            if not stored_conf == in_conf:
+                raise ValueError(
+                    f"the hash is the same, but the in config is different..."
+                )
+        except KeyError:
+            in_hash_to_conf[in_conf_hash] = {"in_config": in_conf}
+
+        # ? is there a case where there is no objective?
+        try:
+            stored_objectives = in_hash_to_conf[in_conf_hash]["objectives"]
+            stored_objectives.append(o)
+        except KeyError:
+            in_hash_to_conf[in_conf_hash]["objectives"] = [o]
+
+    return in_hash_to_conf
+
+
+# def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
+#     # TODO: rethink this...
+#     grouped_metrics = {}
+#     obtained_hashes = set()
+#     for o, d in objectives_dict.items():
+#         in_hash = make_hash(d["in_config"])
+#         if in_hash not in obtained_hashes:
+#             objs = in_hash_to_conf[in_hash]["objectives"]
+#             print(objs)
+#             print("*")
+#             if objs:
+#                 for obj in objs:
+#                     print(obj)
+#             else:
+#                 raise ValueError(f"no objectives for {o}")
+#             obtained_hashes.add(in_hash)
+#     return grouped_metrics
 
 
 def train_model(
@@ -385,21 +426,37 @@ def train_model(
     save_model_path, save_best_param_path = _create_model_training_paths(model_run_path)
     tr_writer, v_writer = _get_tb_writers(model_run_path)
 
+    # get datasets
+    train_ds, val_ds = _get_datasets(datasets, data_cdict, hp_cdict)
+
     optimizers_dict = _get_optimizers(optim_cdict)
     objectives_dict = _get_objectives(perf_cdict["objectives"])
 
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
 
-    # get datasets
-    train_ds, val_ds = _get_datasets(datasets, data_cdict, hp_cdict)
-
     # create mapping of optimizers to their losses
     optimizer_loss_name_map = _obtain_optimizer_loss_mapping(
         optimizers_dict, objectives_dict
     )
 
-    # TODO: loop and group all metrics
+    # create mapping of in_config (same inputs/outputs) to objectives
+    in_hash_to_conf = _map_in_config_to_objective(objectives_dict)
+
+    # TODO: loop and group all metrics -- create groups of metrics to compute
+    # at the same time
+
+    print(optimizer_loss_name_map)
+    print("-----")
+    print(in_hash_to_conf)
+    print("------")
+    print(objectives_dict)
+    print("========" * 10)
+
+    # grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
+    # print(grouped_metrics)
+
+    sys.exit("done")
 
     # TODO: group objectives by the in/
 
