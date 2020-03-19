@@ -212,6 +212,8 @@ def _get_objectives(objectives):
             loss_object = configure_loss(loss_config)
 
             # mean loss for both training and validation
+            # NOTE: maybe it doesn't make sense to add this here... this could
+            # instead be created when grouping the metrics.
             avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
             avg_val_loss = tf.keras.metrics.Mean(
                 name="validation_loss", dtype=tf.float32
@@ -378,23 +380,21 @@ def _map_in_config_to_objective(objectives_dict):
     return in_hash_to_conf
 
 
-# def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
-#     # TODO: rethink this...
-#     grouped_metrics = {}
-#     obtained_hashes = set()
-#     for o, d in objectives_dict.items():
-#         in_hash = make_hash(d["in_config"])
-#         if in_hash not in obtained_hashes:
-#             objs = in_hash_to_conf[in_hash]["objectives"]
-#             print(objs)
-#             print("*")
-#             if objs:
-#                 for obj in objs:
-#                     print(obj)
-#             else:
-#                 raise ValueError(f"no objectives for {o}")
-#             obtained_hashes.add(in_hash)
-#     return grouped_metrics
+def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
+    grouped_metrics = {}
+
+    # loop the different in/out combinations and build metrics for each
+    # this dict may become a bit messy because there is the train+val to keep
+    # track of
+    for k, v in in_hash_to_conf.items():
+        grouped_metrics[k] = {"in_config": v["in_config"]}
+        for objective in v["objectives"]:
+            obj_dict = objectives_dict[objective]
+            grouped_metrics[k]["jack"] = {}
+            print(obj_dict)
+            print("-----")
+
+    return grouped_metrics
 
 
 def train_model(
@@ -448,13 +448,15 @@ def train_model(
 
     print(optimizer_loss_name_map)
     print("-----")
-    print(in_hash_to_conf)
-    print("------")
     print(objectives_dict)
+    print("------")
+    print(in_hash_to_conf)
+
     print("========" * 10)
 
-    # grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
-    # print(grouped_metrics)
+    grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
+    print("========" * 10)
+    print(grouped_metrics)
 
     sys.exit("done")
 
