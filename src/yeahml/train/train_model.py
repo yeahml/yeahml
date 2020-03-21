@@ -50,26 +50,58 @@ def get_apply_grad_fn():
         # NOTE: any gradient adjustments would happen here
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-        return prediction, final_loss
+        return prediction, final_loss, full_losses
 
     return apply_grad
 
 
+# @tf.function
+# def train_step(
+#     model,
+#     x_batch,
+#     y_batch,
+#     loss_fns,
+#     optimizer,
+#     loss_avg,
+#     metrics,
+#     model_apply_grads_fn,
+# ):
+
+#     # for i,loss_fn in enumerate(loss_fns):
+#     prediction, loss = model_apply_grads_fn(
+#         model, x_batch, y_batch, loss_fns, optimizer
+#     )
+
+#     # from HOML2: NOTE: I'm not sure this belongs here anymore...
+#     for variable in model.variables:
+#         if variable.constraint is not None:
+#             variable.assign(variable.constraint(variable))
+
+#     # TODO: only track the mean of the grouped loss
+#     loss_avg[0](loss)
+#     # print(loss_avg[0].result())
+
+#     # TODO: ensure pred, gt order
+#     for train_metric in metrics:
+#         train_metric(y_batch, prediction)
+
+
 @tf.function
-def train_step(
+def train_step_v2(
     model,
-    x_batch,
-    y_batch,
-    loss_fns,
-    optimizer,
-    loss_avg,
-    metrics,
+    x_batch_train,
+    y_batch_train,
+    cur_optimizer,
+    l2o_objects,
+    l2o_loss_record_train,
+    joint_loss_record_train,
+    metric_objs_train,
     model_apply_grads_fn,
 ):
 
     # for i,loss_fn in enumerate(loss_fns):
-    prediction, loss = model_apply_grads_fn(
-        model, x_batch, y_batch, loss_fns, optimizer
+    prediction, final_loss, full_losses = model_apply_grads_fn(
+        model, x_batch_train, y_batch_train, l2o_objects, cur_optimizer
     )
 
     # from HOML2: NOTE: I'm not sure this belongs here anymore...
@@ -78,12 +110,17 @@ def train_step(
             variable.assign(variable.constraint(variable))
 
     # TODO: only track the mean of the grouped loss
-    loss_avg[0](loss)
-    # print(loss_avg[0].result())
+    for loss_rec_name, loss_rec_objects in l2o_loss_record_train.items():
+        for i, o in enumerate(loss_rec_objects):
+            o.update_state(full_losses[i])
+
+    # NOTE: this could support min/max/mean etc.
+    for joint_rec_name, join_rec_obj in joint_loss_record_train.items():
+        join_rec_obj.update_state(final_loss)
 
     # TODO: ensure pred, gt order
-    for train_metric in metrics:
-        train_metric(y_batch, prediction)
+    for train_metric in metric_objs_train:
+        train_metric.update_state(y_batch_train, prediction)
 
 
 @tf.function
@@ -301,6 +338,8 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
     for optimizer_name, optimizer_dict in optimizers_dict.items():
         loss_names_to_optimize = []
         loss_objs_to_optimize = []
+        train_means = []
+        val_means = []
 
         try:
             objectives_to_opt = optimizer_dict["objectives"]
@@ -317,6 +356,16 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
                 loss_object = objectives_dict[o]["loss"]["object"]
             except KeyError:
                 raise KeyError(f"no loss object is present in objective {o}")
+
+            try:
+                train_mean = objectives_dict[o]["loss"]["train_mean"]
+            except KeyError:
+                raise KeyError(f"no train_mean is present in objective {o}")
+
+            try:
+                val_mean = objectives_dict[o]["loss"]["val_mean"]
+            except KeyError:
+                raise KeyError(f"no val_mean is present in objective {o}")
 
             try:
                 in_conf = objectives_dict[o]["in_config"]
@@ -336,11 +385,24 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
             # add loss object to a list for grouping
             loss_names_to_optimize.append(o)
             loss_objs_to_optimize.append(loss_object)
+            train_means.append(train_mean)
+            val_means.append(val_mean)
+        # create and include joint metric
+        joint_name = "__".join(loss_names_to_optimize) + "__joint"
+        train_name = joint_name + "_train"
+        val_name = joint_name + "_val"
+        joint_object_train = tf.keras.metrics.Mean(name=train_name, dtype=tf.float32)
+        joint_object_val = tf.keras.metrics.Mean(name=val_name, dtype=tf.float32)
 
         optimizer_loss_name_map[optimizer_name] = {
             "losses_to_optimize": {
                 "names": loss_names_to_optimize,
                 "objects": loss_objs_to_optimize,
+                "record": {"train": {"mean": train_means}, "val": {"mean": val_means}},
+                "joint": {
+                    "train": {"mean": joint_object_train},
+                    "val": {"mean": joint_object_val},
+                },
             },
             "in_conf": in_conf,
         }
@@ -417,6 +479,27 @@ def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
     return grouped_metrics
 
 
+def _reset_metric_collection(metric_objects):
+    # NOTE: I'm not 100% this is always a list
+    if isinstance(metric_objects, list):
+        for metric_object in metric_objects:
+            metric_object.reset_states()
+    else:
+        metric_objects.reset_states()
+
+
+# def _full_pass_on_ds():
+
+
+def _reset_loss_records(loss_dict):
+    for name, mets in loss_dict.items():
+        if isinstance(mets, list):
+            for metric_object in mets:
+                metric_object.reset_states()
+        else:
+            mets.reset_states()
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
 ) -> Dict[str, Any]:
@@ -474,43 +557,88 @@ def train_model(
     # meaning, if a metric does not have a matching in_config, it will not be
     # evaluated.
 
-    print(">>>>>>>> optimizer_loss_name_map")
-    print(optimizer_loss_name_map)
-    print("-----")
-    # print(">>>>>>>> objectives_dict")
-    # print(objectives_dict)
-    # print("------")
-    # print(">>>>>>>> in_hash_to_conf")
-    # print(in_hash_to_conf)
-    # print("------")
-    print(">>>>>>>> optimizers_dict")
-    print(optimizers_dict)
-    print(">>>>>>>> grouped_metrics")
-    print(grouped_metrics)
+    # TODO: build best loss dict
+    loss_dict_tracker = {}
+    for _, temp_dict in optimizer_loss_name_map.items():
+        for name in temp_dict["losses_to_optimize"]["names"]:
+            loss_dict_tracker[name] = {"best": None, "steps": None, "values": None}
 
-    # for optimizer_name, optimizer_info in optimizer_loss_name_map.items():
-    #     # optimizer_name = name of optimizer
-    #     # optimizer_info = {
-    #     #     losses_to_optimize: {
-    #     #         "names": ["a", "b"],
-    #     #         "objects": ["tf_fnA", "tf_fnB"],
-    #     #         "in_conf": {
-    #     #             "type": "supervised",
-    #     #             "options": {"prediction": "dense_out", "target": "target_v"},
-    #     #         },
-    #     #     }
-    #     # }
+    # TODO: ASSUMPTION: using optimizers sequentially. this may be:
+    # - jointly, ordered: sequentially, or unordered: alternate/random
+    apply_grad_fn = get_apply_grad_fn()
+
+    # NOTE: I'm not sure looping on epochs makes sense as an outter layer
+    # anymore.
+    logger.debug("START - iterating epochs dataset")
+    for e in range(1):  # hp_cdict["epochs"]
+        logger.debug(f"epoch: {e}")
+        for optimizer_name, opt_bucket in optimizers_dict.items():
+            logger.debug(f"START - optimizing {optimizer_name}")
+            # opt_bucket = {"optimizer": tf_obj, "objectives": []}
+            # NOTE: if there are multiple objectives, they will be trained *jointly*
+
+            # get optimizer
+            cur_optimizer = opt_bucket["optimizer"]
+
+            # get losses
+            opt_instructs = optimizer_loss_name_map[optimizer_name]
+            # opt_instructs = {'ls_to_opt': {'names':[], 'objects': [], in_conf:{}}}
+            inhash = make_hash(opt_instructs["in_conf"])
+            losses_to_optimize_d = opt_instructs["losses_to_optimize"]
+            l2o_names = losses_to_optimize_d["names"]
+            l2o_objects = losses_to_optimize_d["objects"]
+            l2o_loss_record_train = losses_to_optimize_d["record"]["train"]
+            l2o_loss_record_val = losses_to_optimize_d["record"]["val"]
+            joint_loss_record_train = losses_to_optimize_d["joint"]["train"]
+            joint_loss_record_val = losses_to_optimize_d["joint"]["val"]
+
+            # get metrics
+            metric_collection = grouped_metrics[inhash]
+            metric_objs_train = metric_collection["train_metrics"]
+            metric_objs_val = metric_collection["val_metrics"]
+
+            _reset_metric_collection(metric_objs_train)
+            _reset_metric_collection(metric_objs_val)
+
+            # reset states of loss records
+            _reset_loss_records(l2o_loss_record_train)
+            _reset_loss_records(l2o_loss_record_val)
+            _reset_loss_records(joint_loss_record_train)
+            _reset_loss_records(joint_loss_record_val)
+
+            print("hi")
+            # run full loop on dataset
+            for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
+
+                # track values
+                train_step_v2(
+                    model,
+                    x_batch_train,
+                    y_batch_train,
+                    cur_optimizer,
+                    l2o_objects,
+                    l2o_loss_record_train,
+                    joint_loss_record_train,
+                    metric_objs_train,
+                    apply_grad_fn,
+                )
+
+            # _report_metrics()
+            # TODO: ASSUMPTION: running a full loop over the dataset
+            # TODO: random -- check nans
+
+            # TODO: ASSUMPTION: full pass on dataset
 
     sys.exit("done")
 
     # TODO: group objectives by the in/
 
     # train loop
-    apply_grad_fn = get_apply_grad_fn()
-    best_val_loss = math.inf
-    # TODO: hardcoded
-    steps = []  # train_losses, val_losses = [], ([], []), ([], [])
-    template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
+
+    # # best_val_loss = math.inf
+    # # # TODO: hardcoded
+    # # steps = []  # train_losses, val_losses = [], ([], []), ([], [])
+    # # template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
 
     # NOTE: I'm not sure looping on epochs makes sense as an outter layer anymore.
     for e in range(hp_cdict["epochs"]):
