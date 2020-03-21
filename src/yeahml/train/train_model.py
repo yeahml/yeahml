@@ -251,9 +251,12 @@ def _get_objectives(objectives):
             # mean loss for both training and validation
             # NOTE: maybe it doesn't make sense to add this here... this could
             # instead be created when grouping the metrics.
-            avg_train_loss = tf.keras.metrics.Mean(name="train_loss", dtype=tf.float32)
+            loss_type = loss_config["type"]
+            avg_train_loss = tf.keras.metrics.Mean(
+                name=f"loss_mean_{obj_name}_{loss_type}_train", dtype=tf.float32
+            )
             avg_val_loss = tf.keras.metrics.Mean(
-                name="validation_loss", dtype=tf.float32
+                name=f"loss_mean_{obj_name}_{loss_type}_validation", dtype=tf.float32
             )
         else:
             loss_object, avg_train_loss, avg_val_loss = None, None, None
@@ -500,6 +503,71 @@ def _reset_loss_records(loss_dict):
             mets.reset_states()
 
 
+def _report_metrics(metric_objs):
+    print("_report_metrics")
+    if isinstance(metric_objs, list):
+        for metric_object in metric_objs:
+            print(metric_object.name)
+            print(metric_object.result().numpy())
+    else:
+        print(metric_objs.name)
+        print(metric_objs.result().numpy())
+
+
+def _record_losses(step_name, step_val, loss_dict_tracker, l2o_names, l2o_loss_record):
+    best_update = {}
+
+    for name, mets in l2o_loss_record.items():
+        # name is the name of {description?} of the metric (mean, etc.)
+        if not isinstance(mets, list):
+            mets = [mets]
+        for i, metric_object in enumerate(mets):
+
+            if not loss_dict_tracker[l2o_names[i]][step_name][name]["steps"]:
+                loss_dict_tracker[l2o_names[i]][step_name][name]["steps"] = [step_val]
+            else:
+                loss_dict_tracker[l2o_names[i]][step_name][name]["steps"].append(
+                    step_val
+                )
+
+            cur_val = metric_object.result().numpy()
+            if not loss_dict_tracker[l2o_names[i]][step_name][name]["values"]:
+                loss_dict_tracker[l2o_names[i]][step_name][name]["values"] = [cur_val]
+            else:
+                loss_dict_tracker[l2o_names[i]][step_name][name]["values"].append(
+                    cur_val
+                )
+
+            prev_best = loss_dict_tracker[l2o_names[i]][step_name][name]["best"]
+            if not prev_best:
+                loss_dict_tracker[l2o_names[i]][step_name][name]["best"] = cur_val
+                update = True
+                best_update[l2o_names[i]] = {name: True}
+            else:
+                # NOTE: currently assuming min
+                if cur_val < prev_best:
+                    loss_dict_tracker[l2o_names[i]][step_name][name]["best"] = cur_val
+                    update = True
+                else:
+                    update = False
+            best_update[l2o_names[i]] = {name: update}
+            # TODO: logic with the current best
+
+    return best_update
+
+
+def _report_joint_losses(joint_loss_record):
+    print("_report_joint_losses")
+    for name, mets in joint_loss_record.items():
+        if isinstance(mets, list):
+            for metric_object in mets:
+                print(metric_object.name)
+                print(metric_object.result().numpy())
+        else:
+            print(mets.name)
+            print(mets.result().numpy())
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
 ) -> Dict[str, Any]:
@@ -561,7 +629,11 @@ def train_model(
     loss_dict_tracker = {}
     for _, temp_dict in optimizer_loss_name_map.items():
         for name in temp_dict["losses_to_optimize"]["names"]:
-            loss_dict_tracker[name] = {"best": None, "steps": None, "values": None}
+            loss_dict_tracker[name] = {
+                "epoch": {"mean": {"best": None, "steps": None, "values": None}}
+                # "batch": {"best": None, "steps": None, "values": None}
+            }
+            # TODO: if there is another increment to log, do so here
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
@@ -569,10 +641,14 @@ def train_model(
 
     # NOTE: I'm not sure looping on epochs makes sense as an outter layer
     # anymore.
+    # TODO: is there a way to save a variable in the graph to keep track of
+    # epochs (if multiple runs from a notebook?)
     logger.debug("START - iterating epochs dataset")
-    for e in range(1):  # hp_cdict["epochs"]
+    all_train_step = 0
+    for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
         for optimizer_name, opt_bucket in optimizers_dict.items():
+            HIST_LOGGED = False  # will update for each optimizer
             logger.debug(f"START - optimizing {optimizer_name}")
             # opt_bucket = {"optimizer": tf_obj, "objectives": []}
             # NOTE: if there are multiple objectives, they will be trained *jointly*
@@ -606,9 +682,12 @@ def train_model(
             _reset_loss_records(joint_loss_record_train)
             _reset_loss_records(joint_loss_record_val)
 
-            print("hi")
+            # TODO: ASSUMPTION: running a full loop over the dataset
             # run full loop on dataset
             for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
+                all_train_step += 1
+
+                # TODO: random -- check for nans in loss values
 
                 # track values
                 train_step_v2(
@@ -623,11 +702,23 @@ def train_model(
                     apply_grad_fn,
                 )
 
-            # _report_metrics()
-            # TODO: ASSUMPTION: running a full loop over the dataset
-            # TODO: random -- check nans
+            # TODO: add to tensorboard
+            # _report_metrics(metric_objs_train)
+            best_update = _record_losses(
+                "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_train
+            )
+            # print(joint_loss_record_train)
+            # _report_joint_losses(joint_loss_record_train)
 
-            # TODO: ASSUMPTION: full pass on dataset
+            # print(loss_dict_tracker)
+            # print("--")
+            print(best_update)
+            # This may not be the place to log these...
+            if not HIST_LOGGED:
+                log_model_params(tr_writer, all_train_step, model)
+                HIST_LOGGED = True
+
+    return loss_dict_tracker
 
     sys.exit("done")
 
