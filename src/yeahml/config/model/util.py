@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from yeahml.config.model.config import IGNORE_HASH_KEYS
 
 
-def make_hash(o: Dict[str, Any], ignore_keys: List[str] = []) -> int:
+def make_hash(o: Dict[str, Any], ignore_keys: Any = None) -> int:
     # combination of several answers in
     # https://stackoverflow.com/questions/5884066/hashing-a-dictionary
 

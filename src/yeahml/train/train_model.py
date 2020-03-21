@@ -299,7 +299,8 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
     objectives_used = set()
     optimizer_loss_name_map = {}
     for optimizer_name, optimizer_dict in optimizers_dict.items():
-        losses_to_optimize = []
+        loss_names_to_optimize = []
+        loss_objs_to_optimize = []
 
         try:
             objectives_to_opt = optimizer_dict["objectives"]
@@ -313,7 +314,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
 
             # sanity check ensure loss object from targeted objective exists
             try:
-                _ = objectives_dict[o]["loss"]["object"]
+                loss_object = objectives_dict[o]["loss"]["object"]
             except KeyError:
                 raise KeyError(f"no loss object is present in objective {o}")
 
@@ -333,10 +334,14 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
                 in_to_optimizer = in_conf
 
             # add loss object to a list for grouping
-            losses_to_optimize.append(o)
+            loss_names_to_optimize.append(o)
+            loss_objs_to_optimize.append(loss_object)
 
         optimizer_loss_name_map[optimizer_name] = {
-            "losses_to_optimize": losses_to_optimize,
+            "losses_to_optimize": {
+                "names": loss_names_to_optimize,
+                "objects": loss_objs_to_optimize,
+            },
             "in_conf": in_conf,
         }
 
@@ -388,11 +393,26 @@ def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
     # track of
     for k, v in in_hash_to_conf.items():
         grouped_metrics[k] = {"in_config": v["in_config"]}
+        grouped_metrics[k]["metric_order"] = []
+        grouped_metrics[k]["train_metrics"] = []
+        grouped_metrics[k]["val_metrics"] = []
         for objective in v["objectives"]:
             obj_dict = objectives_dict[objective]
-            grouped_metrics[k]["jack"] = {}
-            print(obj_dict)
-            print("-----")
+            try:
+                cur_metrics = obj_dict["metrics"]
+            except KeyError:
+                cur_metrics = None
+
+            if cur_metrics:
+                grouped_metrics[k]["metric_order"].extend(
+                    obj_dict["metrics"]["metric_order"]
+                )
+                grouped_metrics[k]["train_metrics"].extend(
+                    obj_dict["metrics"]["train_metrics"]
+                )
+                grouped_metrics[k]["val_metrics"].extend(
+                    obj_dict["metrics"]["val_metrics"]
+                )
 
     return grouped_metrics
 
@@ -435,7 +455,7 @@ def train_model(
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
 
-    # create mapping of optimizers to their losses
+    # create mapping of optimizers to their losses (name, and objects)
     optimizer_loss_name_map = _obtain_optimizer_loss_mapping(
         optimizers_dict, objectives_dict
     )
@@ -443,20 +463,43 @@ def train_model(
     # create mapping of in_config (same inputs/outputs) to objectives
     in_hash_to_conf = _map_in_config_to_objective(objectives_dict)
 
-    # TODO: loop and group all metrics -- create groups of metrics to compute
-    # at the same time
+    # use the mapping of in_config to loop and group all metrics -- create
+    # groups of metrics to compute at the same time
+    # grouped_metrics is a mapping of inconfig_hash to inconfig, and metrics (name,train,val)
+    grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
 
+    # TODO: check that all metrics are accounted for.  If so. raise a not
+    # implemented error -- presently the training loop is driven by the
+    # optimizers (and as a result all objectives that have matching in_configs).
+    # meaning, if a metric does not have a matching in_config, it will not be
+    # evaluated.
+
+    print(">>>>>>>> optimizer_loss_name_map")
     print(optimizer_loss_name_map)
     print("-----")
-    print(objectives_dict)
-    print("------")
-    print(in_hash_to_conf)
-
-    print("========" * 10)
-
-    grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
-    print("========" * 10)
+    # print(">>>>>>>> objectives_dict")
+    # print(objectives_dict)
+    # print("------")
+    # print(">>>>>>>> in_hash_to_conf")
+    # print(in_hash_to_conf)
+    # print("------")
+    print(">>>>>>>> optimizers_dict")
+    print(optimizers_dict)
+    print(">>>>>>>> grouped_metrics")
     print(grouped_metrics)
+
+    # for optimizer_name, optimizer_info in optimizer_loss_name_map.items():
+    #     # optimizer_name = name of optimizer
+    #     # optimizer_info = {
+    #     #     losses_to_optimize: {
+    #     #         "names": ["a", "b"],
+    #     #         "objects": ["tf_fnA", "tf_fnB"],
+    #     #         "in_conf": {
+    #     #             "type": "supervised",
+    #     #             "options": {"prediction": "dense_out", "target": "target_v"},
+    #     #         },
+    #     #     }
+    #     # }
 
     sys.exit("done")
 
@@ -468,6 +511,8 @@ def train_model(
     # TODO: hardcoded
     steps = []  # train_losses, val_losses = [], ([], []), ([], [])
     template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
+
+    # NOTE: I'm not sure looping on epochs makes sense as an outter layer anymore.
     for e in range(hp_cdict["epochs"]):
         # TODO: abstract to fn to clear *all* metrics and loss objects
         # avg_train_loss.reset_states()
@@ -490,7 +535,7 @@ def train_model(
                 cur_optimizer_dict,
             ) in optimizer_loss_name_map.items():
 
-                objectives_to_optimize = cur_optimizer_dict["losses_to_optimize"]
+                objectives_to_optimize = cur_optimizer_dict["loss_names_to_optimize"]
 
                 cur_optimizer = optimizers_dict[cur_optimizer_name]["optimizer"]
 
