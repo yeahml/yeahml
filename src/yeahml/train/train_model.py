@@ -460,8 +460,7 @@ def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
     for k, v in in_hash_to_conf.items():
         grouped_metrics[k] = {"in_config": v["in_config"]}
         grouped_metrics[k]["metric_order"] = []
-        grouped_metrics[k]["train_metrics"] = []
-        grouped_metrics[k]["val_metrics"] = []
+        grouped_metrics[k]["objects"] = {"train": [], "val": []}
         for objective in v["objectives"]:
             obj_dict = objectives_dict[objective]
             try:
@@ -473,10 +472,10 @@ def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
                 grouped_metrics[k]["metric_order"].extend(
                     obj_dict["metrics"]["metric_order"]
                 )
-                grouped_metrics[k]["train_metrics"].extend(
+                grouped_metrics[k]["objects"]["train"].extend(
                     obj_dict["metrics"]["train_metrics"]
                 )
-                grouped_metrics[k]["val_metrics"].extend(
+                grouped_metrics[k]["objects"]["val"].extend(
                     obj_dict["metrics"]["val_metrics"]
                 )
 
@@ -504,13 +503,67 @@ def _reset_loss_records(loss_dict):
             mets.reset_states()
 
 
-def _record_metrics(ds_name, step_name, step_value, joint_dict_tracker, mets):
+def _record_metrics(
+    ds_name, step_name, step_value, perf_dict_tracker, metric_names, mets
+):
+    # {
+    #     "train": {
+    #         "meansquarederror": {
+    #             "epoch": {"best": None, "steps": None, "values": None}
+    #         },
+    #         "meanabsoluteerror": {
+    #             "epoch": {"best": None, "steps": None, "values": None}
+    #         },
+    #     },
+    #     "val": {
+    #         "meansquarederror": {
+    #             "epoch": {"best": None, "steps": None, "values": None}
+    #         },
+    #         "meanabsoluteerror": {
+    #             "epoch": {"best": None, "steps": None, "values": None}
+    #         },
+    #     },
+    # }
 
+    best_update = {}
     if not isinstance(mets, list):
         mets = [mets]
     for i, metric_object in enumerate(mets):
-        print(metric_object.name)
-        print(metric_object.result().numpy())
+        if not perf_dict_tracker[ds_name][metric_names[i]][step_name]["steps"]:
+            perf_dict_tracker[ds_name][metric_names[i]][step_name]["steps"] = [
+                step_value
+            ]
+        else:
+            perf_dict_tracker[ds_name][metric_names[i]][step_name]["steps"].append(
+                step_value
+            )
+
+        cur_value = metric_object.result().numpy()
+        if not perf_dict_tracker[ds_name][metric_names[i]][step_name]["values"]:
+            perf_dict_tracker[ds_name][metric_names[i]][step_name]["values"] = [
+                cur_value
+            ]
+        else:
+            perf_dict_tracker[ds_name][metric_names[i]][step_name]["values"].append(
+                cur_value
+            )
+
+        prev_best = perf_dict_tracker[ds_name][metric_names[i]][step_name]["best"]
+        if not prev_best:
+            perf_dict_tracker[ds_name][metric_names[i]][step_name]["best"] = cur_value
+            update = True
+        else:
+            if cur_value < prev_best:
+                perf_dict_tracker[ds_name][metric_names[i]][step_name][
+                    "best"
+                ] = cur_value
+                update = True
+            else:
+                update = False
+        # uggghhhh.. hardcoded "result"
+        best_update[metric_names[i]] = {"result": update}
+
+    return best_update
 
 
 def _record_losses(
@@ -554,7 +607,6 @@ def _record_losses(
                     "best"
                 ] = cur_val
                 update = True
-                best_update[l2o_names[i]] = {name: True}
             else:
                 # NOTE: currently assuming min
                 if cur_val < prev_best:
@@ -729,7 +781,25 @@ def train_model(
                         }
                     }
 
+    # NOTE: this is out of order from losses:
+    # losses = name : ds(train/val): description : .....
+    # metrics = ds(train/val) : name : ....
+    # I'm not sure which is better yet, but this should be standardized
     perf_dict_tracker = {}
+    for _, temp_dict in grouped_metrics.items():
+        try:
+            metric_names = temp_dict["metric_order"]
+            md = temp_dict["objects"]
+        except KeyError:
+            pass
+
+        if md:
+            for ds_name, met_list in md.items():
+                perf_dict_tracker[ds_name] = {}
+                for i, met in enumerate(met_list):
+                    perf_dict_tracker[ds_name][metric_names[i]] = {
+                        "epoch": {"best": None, "steps": None, "values": None}
+                    }
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
@@ -767,8 +837,9 @@ def train_model(
 
             # get metrics
             metric_collection = grouped_metrics[inhash]
-            metric_objs_train = metric_collection["train_metrics"]
-            metric_objs_val = metric_collection["val_metrics"]
+            metric_names = metric_collection["metric_order"]
+            metric_objs_train = metric_collection["objects"]["train"]
+            metric_objs_val = metric_collection["objects"]["val"]
 
             _reset_metric_collection(metric_objs_train)
             _reset_metric_collection(metric_objs_val)
@@ -812,11 +883,15 @@ def train_model(
                 joint_loss_name,
                 joint_loss_record_train,
             )
-            # _record_metrics("train", "epoch", e, perf_dict_tracker, metric_objs_train)
+
+            best_met_update = _record_metrics(
+                "train", "epoch", e, perf_dict_tracker, metric_names, metric_objs_train
+            )
 
             print(e)
             print(best_update)
             print(best_joint_update)
+            print(best_met_update)
             print("------" * 10)
             # This may not be the place to log these...
             if not HIST_LOGGED:
