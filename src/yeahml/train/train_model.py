@@ -402,7 +402,8 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
                 "names": loss_names_to_optimize,
                 "objects": loss_objs_to_optimize,
                 "record": {"train": {"mean": train_means}, "val": {"mean": val_means}},
-                "joint": {
+                "joint_name": train_name,
+                "joint_record": {
                     "train": {"mean": joint_object_train},
                     "val": {"mean": joint_object_val},
                 },
@@ -503,18 +504,21 @@ def _reset_loss_records(loss_dict):
             mets.reset_states()
 
 
-def _report_metrics(metric_objs):
-    print("_report_metrics")
-    if isinstance(metric_objs, list):
-        for metric_object in metric_objs:
-            print(metric_object.name)
-            print(metric_object.result().numpy())
-    else:
-        print(metric_objs.name)
-        print(metric_objs.result().numpy())
+def _record_metrics(ds_name, step_name, step_value, joint_dict_tracker, mets):
+
+    if not isinstance(mets, list):
+        mets = [mets]
+    for i, metric_object in enumerate(mets):
+        print(metric_object.name)
+        print(metric_object.result().numpy())
 
 
-def _record_losses(step_name, step_val, loss_dict_tracker, l2o_names, l2o_loss_record):
+def _record_losses(
+    ds_name, step_name, step_value, loss_dict_tracker, l2o_names, l2o_loss_record
+):
+    # TODO: I think we should change this logic such that we only keep track of
+    # the tensor/metric name and use that as a lookup followed by a dict of
+    # additional information?
     best_update = {}
 
     for name, mets in l2o_loss_record.items():
@@ -523,30 +527,40 @@ def _record_losses(step_name, step_val, loss_dict_tracker, l2o_names, l2o_loss_r
             mets = [mets]
         for i, metric_object in enumerate(mets):
 
-            if not loss_dict_tracker[l2o_names[i]][step_name][name]["steps"]:
-                loss_dict_tracker[l2o_names[i]][step_name][name]["steps"] = [step_val]
+            if not loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["steps"]:
+                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["steps"] = [
+                    step_value
+                ]
             else:
-                loss_dict_tracker[l2o_names[i]][step_name][name]["steps"].append(
-                    step_val
-                )
+                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
+                    "steps"
+                ].append(step_value)
 
             cur_val = metric_object.result().numpy()
-            if not loss_dict_tracker[l2o_names[i]][step_name][name]["values"]:
-                loss_dict_tracker[l2o_names[i]][step_name][name]["values"] = [cur_val]
-            else:
-                loss_dict_tracker[l2o_names[i]][step_name][name]["values"].append(
+            if not loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["values"]:
+                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["values"] = [
                     cur_val
-                )
+                ]
+            else:
+                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
+                    "values"
+                ].append(cur_val)
 
-            prev_best = loss_dict_tracker[l2o_names[i]][step_name][name]["best"]
+            prev_best = loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
+                "best"
+            ]
             if not prev_best:
-                loss_dict_tracker[l2o_names[i]][step_name][name]["best"] = cur_val
+                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
+                    "best"
+                ] = cur_val
                 update = True
                 best_update[l2o_names[i]] = {name: True}
             else:
                 # NOTE: currently assuming min
                 if cur_val < prev_best:
-                    loss_dict_tracker[l2o_names[i]][step_name][name]["best"] = cur_val
+                    loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
+                        "best"
+                    ] = cur_val
                     update = True
                 else:
                     update = False
@@ -556,16 +570,71 @@ def _record_losses(step_name, step_val, loss_dict_tracker, l2o_names, l2o_loss_r
     return best_update
 
 
-def _report_joint_losses(joint_loss_record):
-    print("_report_joint_losses")
+def _record_joint_losses(
+    ds_name,
+    step_name,
+    step_value,
+    joint_dict_tracker,
+    joint_loss_name,
+    joint_loss_record,
+):
+
+    # {
+    #     "main_obj__second_obj__joint_train": {
+    #         "train": {"mean": {"epoch": {"best": None, "steps": None, "values": None}}},
+    #         "val": {"mean": {"epoch": {"best": None, "steps": None, "values": None}}},
+    #     }
+    # }
+
+    best_update = {}
     for name, mets in joint_loss_record.items():
-        if isinstance(mets, list):
-            for metric_object in mets:
-                print(metric_object.name)
-                print(metric_object.result().numpy())
-        else:
-            print(mets.name)
-            print(mets.result().numpy())
+        if not isinstance(mets, list):
+            mets = [mets]
+        for i, metric_object in enumerate(mets):
+
+            if not joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                "steps"
+            ]:
+                joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                    "steps"
+                ] = [step_value]
+            else:
+                joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                    "steps"
+                ].append(step_value)
+
+            cur_val = metric_object.result().numpy()
+            if not joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                "values"
+            ]:
+                joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                    "values"
+                ] = [cur_val]
+            else:
+                joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                    "values"
+                ].append(cur_val)
+
+            prev_best = joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                "best"
+            ]
+            if not prev_best:
+                joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                    "best"
+                ] = cur_val
+                update = True
+                best_update[joint_loss_name] = {name: True}
+            else:
+                # NOTE: currently assuming min
+                if cur_val < prev_best:
+                    joint_dict_tracker[joint_loss_name][ds_name][name][step_name][
+                        "best"
+                    ] = cur_val
+                    update = True
+                else:
+                    update = False
+            best_update[joint_loss_name] = {name: update}
+    return best_update
 
 
 def train_model(
@@ -626,14 +695,41 @@ def train_model(
     # evaluated.
 
     # TODO: build best loss dict
+    # TODO: this is hardcoded... these "trackers" need to be rethought
     loss_dict_tracker = {}
     for _, temp_dict in optimizer_loss_name_map.items():
         for name in temp_dict["losses_to_optimize"]["names"]:
             loss_dict_tracker[name] = {
-                "epoch": {"mean": {"best": None, "steps": None, "values": None}}
-                # "batch": {"best": None, "steps": None, "values": None}
+                "train": {
+                    "mean": {"epoch": {"best": None, "steps": None, "values": None}}
+                    # "batch": {"best": None, "steps": None, "values": None}
+                },
+                "val": {
+                    "mean": {"epoch": {"best": None, "steps": None, "values": None}}
+                    # "batch": {"best": None, "steps": None, "values": None}
+                },
             }
             # TODO: if there is another increment to log, do so here
+
+    joint_dict_tracker = {}
+    for _, temp_dict in optimizer_loss_name_map.items():
+        try:
+            jd = temp_dict["losses_to_optimize"]["joint_record"]
+            joint_name = temp_dict["losses_to_optimize"]["joint_name"]
+        except KeyError:
+            pass
+
+        if jd:
+            joint_dict_tracker[joint_name] = {}
+            for ds_name, do in jd.items():
+                for description, met_tensor in do.items():
+                    joint_dict_tracker[joint_name][ds_name] = {
+                        f"{description}": {
+                            "epoch": {"best": None, "steps": None, "values": None}
+                        }
+                    }
+
+    perf_dict_tracker = {}
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
@@ -665,8 +761,9 @@ def train_model(
             l2o_objects = losses_to_optimize_d["objects"]
             l2o_loss_record_train = losses_to_optimize_d["record"]["train"]
             l2o_loss_record_val = losses_to_optimize_d["record"]["val"]
-            joint_loss_record_train = losses_to_optimize_d["joint"]["train"]
-            joint_loss_record_val = losses_to_optimize_d["joint"]["val"]
+            joint_loss_record_train = losses_to_optimize_d["joint_record"]["train"]
+            joint_loss_record_val = losses_to_optimize_d["joint_record"]["val"]
+            joint_loss_name = losses_to_optimize_d["joint_name"]
 
             # get metrics
             metric_collection = grouped_metrics[inhash]
@@ -703,16 +800,24 @@ def train_model(
                 )
 
             # TODO: add to tensorboard
-            # _report_metrics(metric_objs_train)
-            best_update = _record_losses(
-                "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_train
-            )
-            # print(joint_loss_record_train)
-            # _report_joint_losses(joint_loss_record_train)
 
-            # print(loss_dict_tracker)
-            # print("--")
+            best_update = _record_losses(
+                "train", "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_train
+            )
+            best_joint_update = _record_joint_losses(
+                "train",
+                "epoch",
+                e,
+                joint_dict_tracker,
+                joint_loss_name,
+                joint_loss_record_train,
+            )
+            # _record_metrics("train", "epoch", e, perf_dict_tracker, metric_objs_train)
+
+            print(e)
             print(best_update)
+            print(best_joint_update)
+            print("------" * 10)
             # This may not be the place to log these...
             if not HIST_LOGGED:
                 log_model_params(tr_writer, all_train_step, model)
@@ -830,7 +935,6 @@ def train_model(
         pls = []
         for i, cv in enumerate(loss_means_val):
             pls.append(cv.result().numpy())
-        print(pls)
 
         # TODO: use early_stopping:epochs and early_stopping:warmup
         # if cur_val_loss_ < best_val_loss:
