@@ -84,7 +84,7 @@ class optimizers_parser:
                     opt_options=opt_options,
                     opt_objectives=opt_objectives,
                 )()
-            temp_dict[k] = conf
+                temp_dict[k] = conf
 
         else:
             raise ValueError(
