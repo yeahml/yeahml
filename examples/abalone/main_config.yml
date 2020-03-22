@@ -64,7 +64,13 @@ optimize:
       options:
         learning_rate: 0.0001
         beta_1: 0.91 
-      objectives: ["main_obj", "second_obj"]
+      objectives: ["main_obj"]
+    "second_opt":
+      type: 'adam'
+      options:
+        learning_rate: 0.0001
+        beta_1: 0.91 
+      objectives: [ "second_obj"]
 
 hyper_parameters:
   # optimizer_definition:

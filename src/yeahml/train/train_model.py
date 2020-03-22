@@ -18,6 +18,30 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 import sys
 
 
+"""
+this training logic will need to be cleaned up/refactored a few times, but for
+now it is "working" as I hoped.
+
+- create a single fn that accepts "train"/"val" and does the logic (the loops
+  are ~the same) and accepts a ds that is of the appropriate size .take()
+- simplify/standardize the `return_dict` -- also accept any batch_steps for
+  logging + determining when to save params.
+- the variable naming throughout this is super inconsistent and not always
+  accurate, I intend to improve this over time
+- I need to validate the metric/loss/joint logic. I've only tried the present
+  case and I'm not sure it will generalize well yet
+- tensorboard -- I'm waiting until the loop logic is cleaned up before writing
+  to tb again
+- early stopping
+- save best params
+- create a varible in the graph to keep track of the number of batch
+  steps/epochs run (if run from a notebook) --- also allow for the passing of an
+  epoch param so that if we want to only run ~n more epochs from the notebook we
+  can
+- I'll also need to ensure the tracking dict is persisted.
+"""
+
+
 def get_apply_grad_fn():
 
     # https://github.com/tensorflow/tensorflow/issues/27120
@@ -55,39 +79,8 @@ def get_apply_grad_fn():
     return apply_grad
 
 
-# @tf.function
-# def train_step(
-#     model,
-#     x_batch,
-#     y_batch,
-#     loss_fns,
-#     optimizer,
-#     loss_avg,
-#     metrics,
-#     model_apply_grads_fn,
-# ):
-
-#     # for i,loss_fn in enumerate(loss_fns):
-#     prediction, loss = model_apply_grads_fn(
-#         model, x_batch, y_batch, loss_fns, optimizer
-#     )
-
-#     # from HOML2: NOTE: I'm not sure this belongs here anymore...
-#     for variable in model.variables:
-#         if variable.constraint is not None:
-#             variable.assign(variable.constraint(variable))
-
-#     # TODO: only track the mean of the grouped loss
-#     loss_avg[0](loss)
-#     # print(loss_avg[0].result())
-
-#     # TODO: ensure pred, gt order
-#     for train_metric in metrics:
-#         train_metric(y_batch, prediction)
-
-
 @tf.function
-def train_step_v2(
+def train_step(
     model,
     x_batch_train,
     y_batch_train,
@@ -124,22 +117,45 @@ def train_step_v2(
 
 
 @tf.function
-def val_step(model, x_batch, y_batch, loss_fns, loss_avgs, metrics):
+def val_step(
+    model,
+    x_batch,
+    y_batch,
+    l2o_objects,
+    l2o_loss_record_val,
+    joint_loss_record_val,
+    metric_objs_val,
+):
 
     prediction = model(x_batch, training=False)
 
-    all_losses = []
-    for i, loss_fn in enumerate(loss_fns):
+    # TODO: apply mask?
+    full_losses = []
+    for loss_fn in l2o_objects:
         loss = loss_fn(y_batch, prediction)
-        all_losses.append(loss)
 
-        loss_avgs[i](loss)
-    # TODO: this also needs to be logged
-    # final_loss = tf.reduce_mean(tf.math.add_n(all_losses))
+        # TODO: custom weighting for training could be applied here
+        # weighted_losses = loss * weights_per_instance
+        main_loss = tf.reduce_mean(loss)
+        # model.losses contains the kernel/bias constraints/regularizers
+        cur_loss = tf.add_n([main_loss] + model.losses)
+        # full_loss = tf.add_n(full_loss, cur_loss)
+        full_losses.append(cur_loss)
+        # create joint loss for current optimizer
+        # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
+    final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
+
+    for loss_rec_name, loss_rec_objects in l2o_loss_record_val.items():
+        for i, o in enumerate(loss_rec_objects):
+            o.update_state(full_losses[i])
+
+    # NOTE: this could support min/max/mean etc.
+    for joint_rec_name, join_rec_obj in joint_loss_record_val.items():
+        join_rec_obj.update_state(final_loss)
 
     # TODO: ensure pred, gt order
-    for val_metric in metrics:
-        val_metric(y_batch, prediction)
+    for val_metric in metric_objs_val:
+        val_metric.update_state(y_batch, prediction)
 
 
 def log_model_params(tr_writer, g_train_step, model):
@@ -803,7 +819,12 @@ def train_model(
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
-    apply_grad_fn = get_apply_grad_fn()
+    #   TODO: I am not 100% about this logic for maping the optimizer to the
+    #   apply_gradient fn... this needs to be confirmed to work as expected
+    optimizer_to_optim_fn = {}
+    for optimizer_name, _ in optimizers_dict.items():
+        # apply_grad_fn = get_apply_grad_fn()
+        optimizer_to_optim_fn[optimizer_name] = get_apply_grad_fn()
 
     # NOTE: I'm not sure looping on epochs makes sense as an outter layer
     # anymore.
@@ -811,6 +832,7 @@ def train_model(
     # epochs (if multiple runs from a notebook?)
     logger.debug("START - iterating epochs dataset")
     all_train_step = 0
+    LOGSTEPSIZE = 10
     for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
         for optimizer_name, opt_bucket in optimizers_dict.items():
@@ -850,15 +872,18 @@ def train_model(
             _reset_loss_records(joint_loss_record_train)
             _reset_loss_records(joint_loss_record_val)
 
+            cur_apply_grad_fn = optimizer_to_optim_fn[optimizer_name]
+
             # TODO: ASSUMPTION: running a full loop over the dataset
             # run full loop on dataset
+            logger.debug(f"START iterating training dataset - epoch: {e}")
             for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
                 all_train_step += 1
 
                 # TODO: random -- check for nans in loss values
 
                 # track values
-                train_step_v2(
+                train_step(
                     model,
                     x_batch_train,
                     y_batch_train,
@@ -867,15 +892,21 @@ def train_model(
                     l2o_loss_record_train,
                     joint_loss_record_train,
                     metric_objs_train,
-                    apply_grad_fn,
+                    cur_apply_grad_fn,
                 )
+
+                if all_train_step % LOGSTEPSIZE == 0:
+                    log_model_params(tr_writer, all_train_step, model)
+                    HIST_LOGGED = True
+
+            logger.debug(f"END iterating training dataset- epoch: {e}")
 
             # TODO: add to tensorboard
 
-            best_update = _record_losses(
+            train_best_update = _record_losses(
                 "train", "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_train
             )
-            best_joint_update = _record_joint_losses(
+            train_best_joint_update = _record_joint_losses(
                 "train",
                 "epoch",
                 e,
@@ -884,177 +915,89 @@ def train_model(
                 joint_loss_record_train,
             )
 
-            best_met_update = _record_metrics(
+            train_best_met_update = _record_metrics(
                 "train", "epoch", e, perf_dict_tracker, metric_names, metric_objs_train
             )
 
-            print(e)
-            print(best_update)
-            print(best_joint_update)
-            print(best_met_update)
-            print("------" * 10)
+            # TODO: tensorboard
+            # with tr_writer.as_default():
+            #     tf.summary.scalar("loss", cur_train_loss_, step=e)
+            #     for i, name in enumerate(metric_order):
+            #         cur_train_metric_fn = train_metric_fns[i]
+            #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
+
             # This may not be the place to log these...
             if not HIST_LOGGED:
                 log_model_params(tr_writer, all_train_step, model)
                 HIST_LOGGED = True
 
-    return loss_dict_tracker
+            # iterate validation after iterating entire training.. this will/should
+            # change to update on a set frequency -- also, maybe we don't want to
+            # run the "full" validation, only a (random) subset?
+            logger.debug(f"START iterating validation dataset - epoch: {e}")
 
-    sys.exit("done")
-
-    # TODO: group objectives by the in/
-
-    # train loop
-
-    # # best_val_loss = math.inf
-    # # # TODO: hardcoded
-    # # steps = []  # train_losses, val_losses = [], ([], []), ([], [])
-    # # template_str: str = "epoch: {:3} train loss: {:.4f} | val loss: {:.4f}"
-
-    # NOTE: I'm not sure looping on epochs makes sense as an outter layer anymore.
-    for e in range(hp_cdict["epochs"]):
-        # TODO: abstract to fn to clear *all* metrics and loss objects
-        # avg_train_loss.reset_states()
-        # avg_val_loss.reset_states()
-        # for train_metric in train_metric_fns:
-        #     train_metric.reset_states()
-        # for val_metric in val_metric_fns:
-        #     val_metric.reset_states()
-
-        logger.debug("-> START iterating training dataset")
-        g_train_step = 0
-        LOGSTEPSIZE = 10
-        HIST_LOGGED = False
-        for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
-            g_train_step += 1
-            # TODO: sequential vs alternate
-
-            for (
-                cur_optimizer_name,
-                cur_optimizer_dict,
-            ) in optimizer_loss_name_map.items():
-
-                objectives_to_optimize = cur_optimizer_dict["loss_names_to_optimize"]
-
-                cur_optimizer = optimizers_dict[cur_optimizer_name]["optimizer"]
-
-                # TODO: these need to be grouped before hand
-                metric_names_during_optimization = []
-                metrics_during_optimization_train = []
-                metrics_during_optimization_val = []
-                # TODO: there needs to be a `smarter` way to group all these
-                # metrics -- likely based on the inputs/outputs being used
-                loss_fns = []
-                loss_means_train = []
-                loss_means_val = []
-                for o_to_o in objectives_to_optimize:
-                    loss_fns.append(objectives_dict[o_to_o]["loss"]["object"])
-                    loss_means_train.append(
-                        objectives_dict[o_to_o]["loss"]["train_mean"]
-                    )
-                    loss_means_val.append(objectives_dict[o_to_o]["loss"]["val_mean"])
-                    if objectives_dict[o_to_o]["metrics"]:
-                        # only if the grouping has metrics
-                        metric_names_during_optimization.extend(
-                            objectives_dict[o_to_o]["metrics"]["metric_order"]
-                        )
-                        metrics_during_optimization_train.extend(
-                            objectives_dict[o_to_o]["metrics"]["train_metrics"]
-                        )
-                        metrics_during_optimization_val.extend(
-                            objectives_dict[o_to_o]["metrics"]["val_metrics"]
-                        )
-
-                # for m_during_opt in
-                train_step(
+            # iterate validation after iterating entire training.. this will/should
+            # change to update on a set frequency -- also, maybe we don't want to
+            # run the "full" validation, only a (random) subset?
+            for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
+                val_step(
                     model,
-                    x_batch_train,
-                    y_batch_train,
-                    loss_fns,
-                    cur_optimizer,
-                    loss_means_train,
-                    metrics_during_optimization_train,
-                    apply_grad_fn,
+                    x_batch_val,
+                    y_batch_val,
+                    l2o_objects,
+                    l2o_loss_record_val,
+                    joint_loss_record_val,
+                    metric_objs_val,
                 )
 
-            if g_train_step % LOGSTEPSIZE == 0:
-                HIST_LOGGED = True
-                log_model_params(tr_writer, g_train_step, model)
+            logger.debug(f"END iterating validation dataset - epoch: {e}")
 
-        if not HIST_LOGGED:
-            # in case there are not LOGSTEPSIZE in the training set
-            log_model_params(tr_writer, g_train_step, model)
-
-        logger.debug("-> END iterating training dataset")
-
-        # iterate validation after iterating entire training.. this will/should
-        # change to update on a set frequency -- also, maybe we don't want to
-        # run the "full" validation, only a (random) subset?
-        logger.debug("-> START iterating validation dataset")
-
-        for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
-            val_step(
-                model,
-                x_batch_val,
-                y_batch_val,
-                loss_fns,
-                loss_means_val,
-                metrics_during_optimization_val,
+            val_best_update = _record_losses(
+                "val", "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_val
+            )
+            val_best_joint_update = _record_joint_losses(
+                "val",
+                "epoch",
+                e,
+                joint_dict_tracker,
+                joint_loss_name,
+                joint_loss_record_val,
             )
 
-        logger.debug("-> END iterating validation dataset")
+            val_best_met_update = _record_metrics(
+                "val", "epoch", e, perf_dict_tracker, metric_names, metric_objs_val
+            )
 
-        # check save best metrics.. this is going to get a little hairy. we need
-        # to keep track of the `best_losses` for multiple losses
+            # TODO: save best params with update dict and save params
+            # accordingly
+            # TODO: use early_stopping:epochs and early_stopping:warmup
+            # if cur_val_loss_ < best_val_loss:
+            #     if e == 0:
+            #         # on the first time params are saved, try to save the model
+            #         model.save(save_model_path)
+            #         logger.debug(f"model saved to: {save_model_path}")
+            #     best_val_loss = cur_val_loss_
+            #     model.save_weights(save_best_param_path)
 
-        pls = []
-        for i, cv in enumerate(loss_means_val):
-            pls.append(cv.result().numpy())
+            #     logger.debug(f"best params saved: val loss:
+            #     {cur_val_loss_:.4f}")
 
-        # TODO: use early_stopping:epochs and early_stopping:warmup
-        # if cur_val_loss_ < best_val_loss:
-        #     if e == 0:
-        #         # on the first time params are saved, try to save the model
-        #         model.save(save_model_path)
-        #         logger.debug(f"model saved to: {save_model_path}")
-        #     best_val_loss = cur_val_loss_
-        #     model.save_weights(save_best_param_path)
+            # TODO: log epoch results
+            # logger.debug()
 
-        #     logger.debug(f"best params saved: val loss: {cur_val_loss_:.4f}")
+            # TODO: tensorboard
+            # with v_writer.as_default():
+            #     tf.summary.scalar("loss", cur_val_loss_, step=e)
+            #     for i, name in enumerate(metric_order):
+            #         cur_val_metric_fn = val_metric_fns[i]
+            #         tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
 
-        # TODO: loop metrics
-        # cur_train_loss_ = avg_train_loss.result().numpy()
-        # train_losses.append(cur_train_loss_)
-        # val_losses.append(cur_val_loss_)
-        steps.append(e)
-        # logger.debug(template_str.format(e + 1, cur_train_loss_, cur_val_loss_))
-
-        # with tr_writer.as_default():
-        #     tf.summary.scalar("loss", cur_train_loss_, step=e)
-        #     for i, name in enumerate(metric_order):
-        #         cur_train_metric_fn = train_metric_fns[i]
-        #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
-
-        # with v_writer.as_default():
-        #     tf.summary.scalar("loss", cur_val_loss_, step=e)
-        #     for i, name in enumerate(metric_order):
-        #         cur_val_metric_fn = val_metric_fns[i]
-        #         tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
-
-    logger.info("start creating train_dict")
-    # return_dict = {}
-
-    # loss history
-    # return_dict["train_losses"] = train_losses
-    # return_dict["val_losses"] = val_losses
-    # return_dict["epochs"] = steps
-
-    # metrics
-    # for i, name in enumerate(metric_order):
-    #     cur_train_metric_fn = train_metric_fns[i]
-    #     cur_val_metric_fn = val_metric_fns[i]
-    #     return_dict[name] = cur_train_metric_fn.result().numpy()
-    #     return_dict["val_" + name] = cur_val_metric_fn.result().numpy()
-    # logger.info("[END] creating train_dict")
+    # TODO: I think the 'joint' should likely be the optimizer name, not the
+    # combination of losses name, this would also simplify the creation of these
+    return_dict = {
+        "loss": loss_dict_tracker,
+        "joint": joint_dict_tracker,
+        "metrics": perf_dict_tracker,
+    }
 
     return return_dict
