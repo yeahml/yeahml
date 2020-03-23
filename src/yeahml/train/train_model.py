@@ -1,9 +1,7 @@
-import math
 import os
 import pathlib
 import time
 from typing import Any, Dict
-from yeahml.config.model.util import make_hash
 
 import tensorflow as tf
 
@@ -13,9 +11,9 @@ from yeahml.build.components.loss import configure_loss
 # from yeahml.build.components.optimizer import get_optimizer
 from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
+from yeahml.config.model.util import make_hash
 from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
-import sys
 
 
 """
@@ -353,8 +351,8 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
     # jointly, if we wish to model the losses seperately (sequentially or
     # alternating), then we would want to use a second optimizer
     objectives_used = set()
-    optimizer_loss_name_map = {}
-    for optimizer_name, optimizer_dict in optimizers_dict.items():
+    optimizer_to_loss_name_map = {}
+    for cur_optimizer_name, optimizer_dict in optimizers_dict.items():
         loss_names_to_optimize = []
         loss_objs_to_optimize = []
         train_means = []
@@ -363,7 +361,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
         try:
             objectives_to_opt = optimizer_dict["objectives"]
         except KeyError:
-            raise KeyError(f"no objectives found for {optimizer_name}")
+            raise KeyError(f"no objectives found for {cur_optimizer_name}")
 
         in_to_optimizer = None
         for o in objectives_to_opt:
@@ -413,7 +411,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
         joint_object_train = tf.keras.metrics.Mean(name=train_name, dtype=tf.float32)
         joint_object_val = tf.keras.metrics.Mean(name=val_name, dtype=tf.float32)
 
-        optimizer_loss_name_map[optimizer_name] = {
+        optimizer_to_loss_name_map[cur_optimizer_name] = {
             "losses_to_optimize": {
                 "names": loss_names_to_optimize,
                 "objects": loss_objs_to_optimize,
@@ -432,7 +430,7 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
     for obj_name, obj_dict in objectives_dict.items():
         # only add objective if it contains a loss
         try:
-            l = obj_dict["loss"]
+            _ = obj_dict["loss"]
             if obj_name not in objectives_used:
                 obj_not_used.append(obj_name)
         except KeyError:
@@ -440,43 +438,43 @@ def _obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
     if obj_not_used:
         raise ValueError(f"objectives {obj_not_used} are not mapped to an optimizer")
 
-    return optimizer_loss_name_map
+    return optimizer_to_loss_name_map
 
 
 def _map_in_config_to_objective(objectives_dict):
-    in_hash_to_conf = {}
+    in_hash_to_objectives = {}
     for o, d in objectives_dict.items():
         in_conf = d["in_config"]
         in_conf_hash = make_hash(in_conf)
         try:
-            stored_conf = in_hash_to_conf[in_conf_hash]["in_config"]
+            stored_conf = in_hash_to_objectives[in_conf_hash]["in_config"]
             if not stored_conf == in_conf:
                 raise ValueError(
                     f"the hash is the same, but the in config is different..."
                 )
         except KeyError:
-            in_hash_to_conf[in_conf_hash] = {"in_config": in_conf}
+            in_hash_to_objectives[in_conf_hash] = {"in_config": in_conf}
 
         # ? is there a case where there is no objective?
         try:
-            stored_objectives = in_hash_to_conf[in_conf_hash]["objectives"]
+            stored_objectives = in_hash_to_objectives[in_conf_hash]["objectives"]
             stored_objectives.append(o)
         except KeyError:
-            in_hash_to_conf[in_conf_hash]["objectives"] = [o]
+            in_hash_to_objectives[in_conf_hash]["objectives"] = [o]
 
-    return in_hash_to_conf
+    return in_hash_to_objectives
 
 
-def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
-    grouped_metrics = {}
+def _create_grouped_metrics(objectives_dict, in_hash_to_objectives):
+    in_hash_to_metrics_config = {}
 
     # loop the different in/out combinations and build metrics for each
     # this dict may become a bit messy because there is the train+val to keep
     # track of
-    for k, v in in_hash_to_conf.items():
-        grouped_metrics[k] = {"in_config": v["in_config"]}
-        grouped_metrics[k]["metric_order"] = []
-        grouped_metrics[k]["objects"] = {"train": [], "val": []}
+    for k, v in in_hash_to_objectives.items():
+        in_hash_to_metrics_config[k] = {"in_config": v["in_config"]}
+        in_hash_to_metrics_config[k]["metric_order"] = []
+        in_hash_to_metrics_config[k]["objects"] = {"train": [], "val": []}
         for objective in v["objectives"]:
             obj_dict = objectives_dict[objective]
             try:
@@ -485,17 +483,17 @@ def _create_grouped_metrics(objectives_dict, in_hash_to_conf):
                 cur_metrics = None
 
             if cur_metrics:
-                grouped_metrics[k]["metric_order"].extend(
+                in_hash_to_metrics_config[k]["metric_order"].extend(
                     obj_dict["metrics"]["metric_order"]
                 )
-                grouped_metrics[k]["objects"]["train"].extend(
+                in_hash_to_metrics_config[k]["objects"]["train"].extend(
                     obj_dict["metrics"]["train_metrics"]
                 )
-                grouped_metrics[k]["objects"]["val"].extend(
+                in_hash_to_metrics_config[k]["objects"]["val"].extend(
                     obj_dict["metrics"]["val_metrics"]
                 )
 
-    return grouped_metrics
+    return in_hash_to_metrics_config
 
 
 def _reset_metric_collection(metric_objects):
@@ -744,17 +742,20 @@ def train_model(
     # or jointly combined.
 
     # create mapping of optimizers to their losses (name, and objects)
-    optimizer_loss_name_map = _obtain_optimizer_loss_mapping(
+    optimizer_to_loss_name_map = _obtain_optimizer_loss_mapping(
         optimizers_dict, objectives_dict
     )
 
     # create mapping of in_config (same inputs/outputs) to objectives
-    in_hash_to_conf = _map_in_config_to_objective(objectives_dict)
+    in_hash_to_objectives = _map_in_config_to_objective(objectives_dict)
 
     # use the mapping of in_config to loop and group all metrics -- create
     # groups of metrics to compute at the same time
-    # grouped_metrics is a mapping of inconfig_hash to inconfig, and metrics (name,train,val)
-    grouped_metrics = _create_grouped_metrics(objectives_dict, in_hash_to_conf)
+    # in_hash_to_metrics_config is a mapping of inconfig_hash to inconfig, and
+    # metrics (name,train,val)
+    in_hash_to_metrics_config = _create_grouped_metrics(
+        objectives_dict, in_hash_to_objectives
+    )
 
     # TODO: check that all metrics are accounted for.  If so. raise a not
     # implemented error -- presently the training loop is driven by the
@@ -765,7 +766,7 @@ def train_model(
     # TODO: build best loss dict
     # TODO: this is hardcoded... these "trackers" need to be rethought
     loss_dict_tracker = {}
-    for _, temp_dict in optimizer_loss_name_map.items():
+    for _, temp_dict in optimizer_to_loss_name_map.items():
         for name in temp_dict["losses_to_optimize"]["names"]:
             loss_dict_tracker[name] = {
                 "train": {
@@ -780,7 +781,7 @@ def train_model(
             # TODO: if there is another increment to log, do so here
 
     joint_dict_tracker = {}
-    for _, temp_dict in optimizer_loss_name_map.items():
+    for _, temp_dict in optimizer_to_loss_name_map.items():
         try:
             jd = temp_dict["losses_to_optimize"]["joint_record"]
             joint_name = temp_dict["losses_to_optimize"]["joint_name"]
@@ -802,7 +803,7 @@ def train_model(
     # metrics = ds(train/val) : name : ....
     # I'm not sure which is better yet, but this should be standardized
     perf_dict_tracker = {}
-    for _, temp_dict in grouped_metrics.items():
+    for _, temp_dict in in_hash_to_metrics_config.items():
         try:
             metric_names = temp_dict["metric_order"]
             md = temp_dict["objects"]
@@ -819,12 +820,12 @@ def train_model(
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
-    #   TODO: I am not 100% about this logic for maping the optimizer to the
+
+    # TODO: I am not 100% about this logic for maping the optimizer to the
     #   apply_gradient fn... this needs to be confirmed to work as expected
-    optimizer_to_optim_fn = {}
-    for optimizer_name, _ in optimizers_dict.items():
-        # apply_grad_fn = get_apply_grad_fn()
-        optimizer_to_optim_fn[optimizer_name] = get_apply_grad_fn()
+    opt_name_to_gradient_fn = {}
+    for cur_optimizer_name, _ in optimizers_dict.items():
+        opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
 
     # NOTE: I'm not sure looping on epochs makes sense as an outter layer
     # anymore.
@@ -835,17 +836,17 @@ def train_model(
     LOGSTEPSIZE = 10
     for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
-        for optimizer_name, opt_bucket in optimizers_dict.items():
-            HIST_LOGGED = False  # will update for each optimizer
-            logger.debug(f"START - optimizing {optimizer_name}")
-            # opt_bucket = {"optimizer": tf_obj, "objectives": []}
+        for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
+            # cur_optimizer_config > {"optimizer": tf_obj, "objectives": []}
             # NOTE: if there are multiple objectives, they will be trained *jointly*
+            HIST_LOGGED = False  # will update for each optimizer
+            logger.debug(f"START - optimizing {cur_optimizer_name}")
 
             # get optimizer
-            cur_optimizer = opt_bucket["optimizer"]
+            cur_optimizer = cur_optimizer_config["optimizer"]
 
             # get losses
-            opt_instructs = optimizer_loss_name_map[optimizer_name]
+            opt_instructs = optimizer_to_loss_name_map[cur_optimizer_name]
             # opt_instructs = {'ls_to_opt': {'names':[], 'objects': [], in_conf:{}}}
             inhash = make_hash(opt_instructs["in_conf"])
             losses_to_optimize_d = opt_instructs["losses_to_optimize"]
@@ -858,7 +859,7 @@ def train_model(
             joint_loss_name = losses_to_optimize_d["joint_name"]
 
             # get metrics
-            metric_collection = grouped_metrics[inhash]
+            metric_collection = in_hash_to_metrics_config[inhash]
             metric_names = metric_collection["metric_order"]
             metric_objs_train = metric_collection["objects"]["train"]
             metric_objs_val = metric_collection["objects"]["val"]
@@ -872,7 +873,7 @@ def train_model(
             _reset_loss_records(joint_loss_record_train)
             _reset_loss_records(joint_loss_record_val)
 
-            cur_apply_grad_fn = optimizer_to_optim_fn[optimizer_name]
+            cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
 
             # TODO: ASSUMPTION: running a full loop over the dataset
             # run full loop on dataset
