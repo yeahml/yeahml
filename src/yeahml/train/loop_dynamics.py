@@ -4,6 +4,7 @@ import tensorflow as tf
 from yeahml.build.components.loss import configure_loss
 from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
+from yeahml.config.model.util import make_hash
 
 
 def get_optimizers(optim_cdict):
