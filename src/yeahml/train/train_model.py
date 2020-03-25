@@ -4,8 +4,8 @@ from typing import Any, Dict
 import tensorflow as tf
 
 from yeahml.config.model.util import make_hash
-from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.loop_dynamics import (
     create_grouped_metrics,
     get_objectives,
@@ -176,25 +176,6 @@ def log_model_params(tr_writer, g_train_step, model):
             tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
 
-def _get_datasets(datasets, data_cdict, hp_cdict):
-    # TODO: there needs to be some check here to ensure the same datsets are being compared.
-    if not datasets:
-        train_ds = get_configured_dataset(
-            data_cdict, hp_cdict, ds=None, ds_type="train"
-        )
-        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=None, ds_type="val")
-    else:
-        # TODO: apply shuffle/aug/reshape from config
-        assert (
-            len(datasets) == 2
-        ), f"{len(datasets)} datasets were passed, please pass 2 datasets (train, validation)"
-        train_ds, val_ds = datasets
-        train_ds = get_configured_dataset(data_cdict, hp_cdict, ds=train_ds)
-        val_ds = get_configured_dataset(data_cdict, hp_cdict, ds=val_ds)
-
-    return train_ds, val_ds
-
-
 def _reset_metric_collection(metric_objects):
     # NOTE: I'm not 100% this is always a list
     if isinstance(metric_objects, list):
@@ -246,7 +227,7 @@ def train_model(
     tr_writer, v_writer = get_tb_writers(model_run_path)
 
     # get datasets
-    train_ds, val_ds = _get_datasets(datasets, data_cdict, hp_cdict)
+    train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
 
     optimizers_dict = get_optimizers(optim_cdict)
     objectives_dict = get_objectives(perf_cdict["objectives"])
