@@ -18,14 +18,13 @@ from yeahml.train.setup.paths import (
     create_model_training_paths,
     get_tb_writers,
 )
-from yeahml.train.setup.tracker import (
+from yeahml.train.setup.tracker.tracker import (
     create_joint_dict_tracker,
-    create_loss_dict_tracker,
     create_perf_dict_tracker,
     record_joint_losses,
-    record_losses,
     record_metrics,
 )
+from yeahml.train.setup.tracker.loss import create_loss_trackers, update_loss_trackers
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 
@@ -185,9 +184,6 @@ def _reset_metric_collection(metric_objects):
         metric_objects.reset_states()
 
 
-# def _full_pass_on_ds():
-
-
 def _reset_loss_records(loss_dict):
     for name, mets in loss_dict.items():
         if isinstance(mets, list):
@@ -200,6 +196,8 @@ def _reset_loss_records(loss_dict):
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
 ) -> Dict[str, Any]:
+
+    # TODO: option to reinitialize model?
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -259,7 +257,13 @@ def train_model(
 
     # TODO: build best loss dict
     # TODO: this is hardcoded... these "trackers" need to be rethought
-    loss_dict_tracker = create_loss_dict_tracker(optimizer_to_loss_name_map)
+    #  optimizer_to_loss_name_map, ds_names=None, descriptions=None, to_track=None
+    loss_trackers = create_loss_trackers(
+        optimizer_to_loss_name_map,
+        ds_names=["train", "val"],
+        descriptions=["mean"],
+        to_track=["max", "min"],
+    )
     joint_dict_tracker = create_joint_dict_tracker(optimizer_to_loss_name_map)
     perf_dict_tracker = create_perf_dict_tracker(in_hash_to_metrics_config)
 
@@ -279,6 +283,10 @@ def train_model(
     logger.debug("START - iterating epochs dataset")
     all_train_step = 0
     LOGSTEPSIZE = 10
+    # TODO: this total_train_inst is the number of instances the model has
+    # trained on and in stop optimizer specific. there should be multiple
+    # values, one for each otimizer and a total_steps
+    total_train_inst = 0
     for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
         for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
@@ -290,10 +298,9 @@ def train_model(
             # get optimizer
             cur_optimizer = cur_optimizer_config["optimizer"]
 
-            # get losses
+            # get losses (optimizer specific)
             opt_instructs = optimizer_to_loss_name_map[cur_optimizer_name]
             # opt_instructs = {'ls_to_opt': {'names':[], 'objects': [], in_conf:{}}}
-            inhash = make_hash(opt_instructs["in_conf"])
             losses_to_optimize_d = opt_instructs["losses_to_optimize"]
             l2o_names = losses_to_optimize_d["names"]
             l2o_objects = losses_to_optimize_d["objects"]
@@ -304,7 +311,9 @@ def train_model(
             joint_loss_name = losses_to_optimize_d["joint_name"]
 
             # get metrics
-            metric_collection = in_hash_to_metrics_config[inhash]
+            metric_collection = in_hash_to_metrics_config[
+                make_hash(opt_instructs["in_conf"])
+            ]
             metric_names = metric_collection["metric_order"]
             metric_objs_train = metric_collection["objects"]["train"]
             metric_objs_val = metric_collection["objects"]["val"]
@@ -329,6 +338,7 @@ def train_model(
                 # TODO: random -- check for nans in loss values
 
                 # track values
+                # TODO: pass trackers here
                 train_step(
                     model,
                     x_batch_train,
@@ -340,6 +350,8 @@ def train_model(
                     metric_objs_train,
                     cur_apply_grad_fn,
                 )
+                # add number of instances that have gone through the model for training
+                total_train_inst += x_batch_train.shape[0]
 
                 if all_train_step % LOGSTEPSIZE == 0:
                     log_model_params(tr_writer, all_train_step, model)
@@ -349,9 +361,29 @@ def train_model(
 
             # TODO: add to tensorboard
 
-            train_best_update = record_losses(
-                "train", "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_train
+            # TODO: maybe rather than track epochs, I should track number of
+            # instances run through the model
+            print("****" * 10)
+            for n, d in loss_trackers.items():
+                print(n)
+                print(d["train"]["mean"])
+            up = update_loss_trackers(
+                "train",
+                total_train_inst,
+                loss_trackers,
+                l2o_names,
+                l2o_loss_record_train,
             )
+            print(up)
+            print("****" * 10)
+            for n, d in loss_trackers.items():
+                print(n)
+                print(d["train"]["mean"])
+            sys.exit()
+
+            # train_best_update = record_losses(
+            #     "train", "epoch", e, loss_trackers, l2o_names, l2o_loss_record_train
+            # )
             train_best_joint_update = record_joint_losses(
                 "train",
                 "epoch",
@@ -398,9 +430,9 @@ def train_model(
 
             logger.debug(f"END iterating validation dataset - epoch: {e}")
 
-            val_best_update = record_losses(
-                "val", "epoch", e, loss_dict_tracker, l2o_names, l2o_loss_record_val
-            )
+            # val_best_update = record_losses(
+            #     "val", "epoch", e, loss_trackers, l2o_names, l2o_loss_record_val
+            # )
             val_best_joint_update = record_joint_losses(
                 "val",
                 "epoch",
@@ -441,7 +473,7 @@ def train_model(
     # TODO: I think the 'joint' should likely be the optimizer name, not the
     # combination of losses name, this would also simplify the creation of these
     return_dict = {
-        "loss": loss_dict_tracker,
+        "loss": loss_trackers,
         "joint": joint_dict_tracker,
         "metrics": perf_dict_tracker,
     }
