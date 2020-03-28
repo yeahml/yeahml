@@ -1,5 +1,5 @@
 class Tracker:
-    def __init__(self, to_track, step_description):
+    def __init__(self, to_track):
         if not to_track:
             self.to_track = None
         elif isinstance(to_track, list):
@@ -18,13 +18,13 @@ class Tracker:
         self.values = None
         self.steps = None
 
-        if not step_description:
-            raise ValueError(f"must specify a step_description")
-        elif not isinstance(step_description, str):
-            raise TypeError(
-                f"step_description ({step_description}) must be type string not {type(step_description)}"
-            )
-        self.step_description = step_description
+        # if not step_description:
+        #     raise ValueError(f"must specify a step_description")
+        # elif not isinstance(step_description, str):
+        #     raise TypeError(
+        #         f"step_description ({step_description}) must be type string not {type(step_description)}"
+        #     )
+        # self.step_description = step_description
 
         for obj in self.to_track:
             if obj == "max":
@@ -37,6 +37,7 @@ class Tracker:
                 raise ValueError(f"{obj} is not an accepted description to track")
 
     def update(self, step, value):
+        UPDATED = {}
         if self.steps and self.values:
             self.steps.append(step)
             self.values.append(value)
@@ -45,11 +46,14 @@ class Tracker:
             self.values = [value]
         try:
             cur_max = self.max
+            UPDATED["max"] = False
             if cur_max:
                 if value > cur_max:
+                    UPDATED["max"] = True
                     self.max = value
                     self.step_at_max = step
             else:
+                UPDATED["max"] = True
                 self.max = value
                 self.step_at_max = step
         except AttributeError:
@@ -57,12 +61,20 @@ class Tracker:
 
         try:
             cur_min = self.min
+            UPDATED["min"] = False
             if cur_min:
                 if value < cur_min:
+                    UPDATED["min"] = True
                     self.min = value
                     self.step_at_min = step
+            else:
+                UPDATED["min"] = True
+                self.min = value
+                self.step_at_min = step
         except AttributeError:
             pass
+
+        return UPDATED
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -95,24 +107,6 @@ def create_joint_dict_tracker(optimizer_to_loss_name_map):
     return joint_dict_tracker
 
 
-def create_loss_dict_tracker(optimizer_to_loss_name_map):
-    loss_dict_tracker = {}
-    for _, temp_dict in optimizer_to_loss_name_map.items():
-        for name in temp_dict["losses_to_optimize"]["names"]:
-            loss_dict_tracker[name] = {
-                "train": {
-                    "mean": {"epoch": {"best": None, "steps": None, "values": None}}
-                    # "batch": {"best": None, "steps": None, "values": None}
-                },
-                "val": {
-                    "mean": {"epoch": {"best": None, "steps": None, "values": None}}
-                    # "batch": {"best": None, "steps": None, "values": None}
-                },
-            }
-            # TODO: if there is another increment to log, do so here
-    return loss_dict_tracker
-
-
 def create_perf_dict_tracker(in_hash_to_metrics_config):
     # NOTE: this is out of order from losses:
     # losses = name : ds(train/val): description : .....
@@ -137,62 +131,6 @@ def create_perf_dict_tracker(in_hash_to_metrics_config):
 
 
 ## record
-
-
-def record_losses(
-    ds_name, step_name, step_value, loss_dict_tracker, l2o_names, l2o_loss_record
-):
-    # TODO: I think we should change this logic such that we only keep track of
-    # the tensor/metric name and use that as a lookup followed by a dict of
-    # additional information?
-    best_update = {}
-
-    for name, mets in l2o_loss_record.items():
-        # name is the name of {description?} of the metric (mean, etc.)
-        if not isinstance(mets, list):
-            mets = [mets]
-        for i, metric_object in enumerate(mets):
-
-            if not loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["steps"]:
-                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["steps"] = [
-                    step_value
-                ]
-            else:
-                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
-                    "steps"
-                ].append(step_value)
-
-            cur_val = metric_object.result().numpy()
-            if not loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["values"]:
-                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name]["values"] = [
-                    cur_val
-                ]
-            else:
-                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
-                    "values"
-                ].append(cur_val)
-
-            prev_best = loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
-                "best"
-            ]
-            if not prev_best:
-                loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
-                    "best"
-                ] = cur_val
-                update = True
-            else:
-                # NOTE: currently assuming min
-                if cur_val < prev_best:
-                    loss_dict_tracker[l2o_names[i]][ds_name][name][step_name][
-                        "best"
-                    ] = cur_val
-                    update = True
-                else:
-                    update = False
-            best_update[l2o_names[i]] = {name: update}
-            # TODO: logic with the current best
-
-    return best_update
 
 
 def record_metrics(
