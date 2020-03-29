@@ -2,9 +2,12 @@ from yeahml.build.components.loss import return_available_losses
 from yeahml.build.components.metric import return_available_metrics
 from yeahml.config.default.types.base_types import categorical, list_of_categorical
 
+# TODO: I'm not sure where this belongs yet
+AVAILABLE_TRACKERS = ["mean"]
+
 
 class loss_config:
-    def __init__(self, loss_type=None, loss_options=None):
+    def __init__(self, loss_type=None, loss_options=None, loss_track=None):
 
         self.type = categorical(
             default_value=None,
@@ -17,6 +20,13 @@ class loss_config:
         self.options = categorical(
             default_value=None, required=False, is_type=str, to_lower=True
         )(loss_options)
+        self.track = list_of_categorical(
+            default_value=None,
+            is_type=str,
+            required=False,
+            is_in_list=AVAILABLE_TRACKERS,
+            to_lower=True,
+        )(loss_track)
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -97,6 +107,7 @@ class performance_config:
         self,
         loss_type=None,
         loss_options=None,
+        loss_track=None,
         metric_type=None,
         metric_options=None,
         in_dict=None,
@@ -105,7 +116,9 @@ class performance_config:
         # and where the types are being created/checked
 
         if loss_type:
-            self.loss = loss_config(loss_type=loss_type, loss_options=loss_options)()
+            self.loss = loss_config(
+                loss_type=loss_type, loss_options=loss_options, loss_track=loss_track
+            )()
         else:
             self.loss = None
 
@@ -189,10 +202,16 @@ class performances_config:
                             loss_type = loss_dict["type"]
                         except KeyError:
                             loss_type = None
+
                         try:
                             loss_options = loss_dict["options"]
                         except KeyError:
                             loss_options = None
+
+                        try:
+                            loss_track = loss_dict["track"]
+                        except KeyError:
+                            loss_track = None
 
                     if metric_dict:
                         try:
@@ -207,6 +226,7 @@ class performances_config:
                     val = performance_config(
                         loss_type=loss_type,
                         loss_options=loss_options,
+                        loss_track=loss_track,
                         metric_type=metric_type,
                         metric_options=metric_options,
                         in_dict=in_dict,

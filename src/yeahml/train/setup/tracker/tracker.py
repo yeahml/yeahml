@@ -37,7 +37,7 @@ class Tracker:
                 raise ValueError(f"{obj} is not an accepted description to track")
 
     def update(self, step, value):
-        UPDATED = {}
+        updated = {}
         if self.steps and self.values:
             self.steps.append(step)
             self.values.append(value)
@@ -46,14 +46,14 @@ class Tracker:
             self.values = [value]
         try:
             cur_max = self.max
-            UPDATED["max"] = False
+            updated["max"] = False
             if cur_max:
                 if value > cur_max:
-                    UPDATED["max"] = True
+                    updated["max"] = True
                     self.max = value
                     self.step_at_max = step
             else:
-                UPDATED["max"] = True
+                updated["max"] = True
                 self.max = value
                 self.step_at_max = step
         except AttributeError:
@@ -61,20 +61,20 @@ class Tracker:
 
         try:
             cur_min = self.min
-            UPDATED["min"] = False
+            updated["min"] = False
             if cur_min:
                 if value < cur_min:
-                    UPDATED["min"] = True
+                    updated["min"] = True
                     self.min = value
                     self.step_at_min = step
             else:
-                UPDATED["min"] = True
+                updated["min"] = True
                 self.min = value
                 self.step_at_min = step
         except AttributeError:
             pass
 
-        return UPDATED
+        return updated
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)

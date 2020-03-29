@@ -19,6 +19,7 @@ performance:
         # each loss can only be one loss
         # TODO: support custom losses
         type: 'MSE'
+        track: "mean"
         #options:
       metric:
         # there can be many metrics
@@ -33,6 +34,7 @@ performance:
     second_obj:
       loss: 
         type: 'MAE'
+        track: "mean"
         #options:
       metric:
         type: ["meanabsoluteerror"]
