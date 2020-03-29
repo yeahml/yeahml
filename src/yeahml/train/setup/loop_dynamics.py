@@ -6,6 +6,9 @@ from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
 from yeahml.config.model.util import make_hash
 
+# TODO: I'm not sure where this belongs yet
+ACCEPTED_LOSS_TRACK = {"mean": tf.keras.metrics.Mean}
+
 
 def get_optimizers(optim_cdict):
     def _configure_optimizer(opt_dict):
@@ -30,106 +33,140 @@ def get_optimizers(optim_cdict):
     return optimizers_dict
 
 
-def _get_metrics(metric_config):
-    train_metric_fns = []
-    val_metric_fns = []
-    metric_order = []
+def _get_metrics(metric_config, datasets):
 
     assert len(metric_config["options"]) == len(
         metric_config["type"]
     ), f"len of options does not len of metrics: {len(metric_config['options'])} != {len(metric_config['type'])}"
 
     # loop operations and options
+    metric_ds_to_metric = {}
     try:
         met_opts = metric_config["options"]
     except KeyError:
         met_opts = None
     for i, metric in enumerate(metric_config["type"]):
+        metric_ds_to_metric[metric] = {}
         if met_opts:
             met_opt_dict = met_opts[i]
         else:
             met_opt_dict = None
 
-        # train
-        train_metric_fn = configure_metric(metric, met_opt_dict)
-        train_metric_fns.append(train_metric_fn)
+        for dataset in datasets:
+            metric_fn = configure_metric(metric, met_opt_dict)
+            metric_ds_to_metric[metric][dataset] = metric_fn
 
-        # validation
-        val_metric_fn = configure_metric(metric, met_opt_dict)
-        val_metric_fns.append(val_metric_fn)
-
-        # order
-        metric_order.append(metric)
-
-    return (metric_order, train_metric_fns, val_metric_fns)
+    return metric_ds_to_metric
 
 
-def get_objectives(objectives):
+def get_objectives(objectives, datasets):
     # TODO: should these be grouped based on their inputs?
 
+    if not isinstance(datasets, list):
+        if not isinstance(datasets, str):
+            raise ValueError(
+                f"datasets ({datasets}) must be of type list of strings or string not {type(datasets)}"
+            )
+    else:
+        for o in datasets:
+            if not isinstance(o, str):
+                raise ValueError(
+                    f"object ({o}) in ({datasets}) must be of type string not {type(o)}"
+                )
+
     obj_conf = {}
-    for obj_name, config in objectives.items():
-        in_config = config["in_config"]
+    for objective_name, objective_config in objectives.items():
+        # in_config: defines the type (e.g. supervised) and io (e.g. pred, gt)
+        # loss --> defines whether a loss is present
+        # metric --> defines whether a metric is present
+        in_config = objective_config["in_config"]
 
         try:
-            loss_config = config["loss"]
+            loss_config = objective_config["loss"]
         except KeyError:
             loss_config = None
 
         try:
-            metric_config = config["metric"]
+            metric_config = objective_config["metric"]
         except KeyError:
             metric_config = None
 
         if not loss_config and not metric_config:
-            raise ValueError(f"Neither a loss or metric was defined for {obj_name}")
+            raise ValueError(
+                f"Neither a loss or metric was defined for {objective_name}"
+            )
 
         if loss_config:
+            loss_ds_to_tracker = {}
+            # build loss object
             loss_object = configure_loss(loss_config)
+            loss_ds_to_tracker["object"] = loss_object
 
-            # mean loss for both training and validation
-            # NOTE: maybe it doesn't make sense to add this here... this could
-            # instead be created when grouping the metrics.
-            loss_type = loss_config["type"]
-            avg_train_loss = tf.keras.metrics.Mean(
-                name=f"loss_mean_{obj_name}_{loss_type}_train", dtype=tf.float32
-            )
-            avg_val_loss = tf.keras.metrics.Mean(
-                name=f"loss_mean_{obj_name}_{loss_type}_validation", dtype=tf.float32
-            )
+            try:
+                loss_track = loss_config["track"]
+                loss_ds_to_tracker["track"] = {}
+            except KeyError:
+                loss_track = None
+
+            if loss_track:
+                for name in loss_track:
+                    try:
+                        track_class = ACCEPTED_LOSS_TRACK[name]
+                    except KeyError:
+                        raise KeyError(
+                            f"{name} is not an accepted track method please select from {ACCEPTED_LOSS_TRACK.keys()}"
+                        )
+
+                    for dataset in datasets:
+                        loss_ds_to_tracker["track"][dataset] = {}
+                        loss_ds_to_tracker["track"][dataset][loss_config["type"]] = {}
+                        tf_tracker_name = f"loss_{objective_name}_{loss_config['type']}_{name}_{dataset}"
+                        dtype = tf.float32
+                        tf_tracker = track_class(name=tf_tracker_name, dtype=dtype)
+                        loss_ds_to_tracker["track"][dataset][loss_config["type"]][
+                            name
+                        ] = tf_tracker
+
+                    # avg_train_loss = tf.keras.metrics.Mean(
+                    #     name=f"loss_mean_{objective_name}_{loss_type}_train",
+                    #     dtype=tf.float32,
+                    # )
+                    # avg_val_loss = tf.keras.metrics.Mean(
+                    #     name=f"loss_mean_{objective_name}_{loss_type}_validation",
+                    #     dtype=tf.float32,
+                    # )
         else:
-            loss_object, avg_train_loss, avg_val_loss = None, None, None
+            loss_ds_to_tracker = None
 
         if metric_config:
-            metric_order, train_metric_fns, val_metric_fns = _get_metrics(metric_config)
+            metric_ds_to_metric = _get_metrics(metric_config, datasets)
         else:
-            metric_order, train_metric_fns, val_metric_fns = None, None, None
+            metric_ds_to_metric = None
 
-        obj_conf[obj_name] = {
+        obj_conf[objective_name] = {
             "in_config": in_config,
-            "loss": {
-                "object": loss_object,
-                "train_mean": avg_train_loss,
-                "val_mean": avg_val_loss,
-            },
-            "metrics": {
-                "metric_order": metric_order,
-                "train_metrics": train_metric_fns,
-                "val_metrics": val_metric_fns,
-            },
+            "loss": loss_ds_to_tracker,
+            "metrics": metric_ds_to_metric,
         }
 
     # Currently, only supervised is accepted
-    for obj_name, obj_dict in obj_conf.items():
+    for objective_name, obj_dict in obj_conf.items():
         if obj_dict["in_config"]["type"] != "supervised":
             raise NotImplementedError(
-                f"only 'supervised' is accepted as the type for the in_config of {obj_name}, not {obj_conf['in_config']['type']} yet..."
+                f"only 'supervised' is accepted as the type for the in_config of {objective_name}, not {obj_conf['in_config']['type']} yet..."
             )
 
     return obj_conf
 
 
-def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
+def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict, datasets):
+
+    print(optimizers_dict)
+    print("******" * 8)
+    print(objectives_dict)
+    print("******" * 8)
+    sys.exit()
+
     # TODO: this function needs to be rewritten -- no hardcoding and better organization
     # NOTE: multiple losses by the same optimizer, are currently only modeled
     # jointly, if we wish to model the losses seperately (sequentially or
@@ -213,12 +250,12 @@ def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
 
     # ensure all losses are mapped to an optimizer
     obj_not_used = []
-    for obj_name, obj_dict in objectives_dict.items():
+    for objective_name, obj_dict in objectives_dict.items():
         # only add objective if it contains a loss
         try:
             _ = obj_dict["loss"]
-            if obj_name not in objectives_used:
-                obj_not_used.append(obj_name)
+            if objective_name not in objectives_used:
+                obj_not_used.append(objective_name)
         except KeyError:
             pass
     if obj_not_used:

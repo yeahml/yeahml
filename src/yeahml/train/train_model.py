@@ -231,20 +231,26 @@ def train_model(
 
     # TODO: this section is ...messy
     #########################################################################
+    DATASETS = ["train", "val"]
 
     optimizers_dict = get_optimizers(optim_cdict)
-    objectives_dict = get_objectives(perf_cdict["objectives"])
+    objectives_dict = get_objectives(perf_cdict["objectives"], datasets=DATASETS)
 
     # TODO: We need to be able to specify whether the losses should be separately
     # or jointly combined.
 
     # create mapping of optimizers to their losses (name, and objects)
     optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
-        optimizers_dict, objectives_dict
+        optimizers_dict, objectives_dict, datasets=DATASETS
     )
 
     # create mapping of in_config (same inputs/outputs) to objectives
     in_hash_to_objectives = map_in_config_to_objective(objectives_dict)
+
+    print("#####" * 8)
+    print(in_hash_to_objectives)
+    print("#####" * 8)
+    sys.exit()
 
     # use the mapping of in_config to loop and group all metrics -- create
     # groups of metrics to compute at the same time
