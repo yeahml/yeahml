@@ -59,6 +59,45 @@ def _get_metrics(metric_config, datasets):
     return metric_ds_to_metric
 
 
+def _get_loss(loss_config, datasets, objective_name):
+    loss_ds_to_tracker = {}
+
+    # build tf loss object
+    loss_object = configure_loss(loss_config)
+    loss_ds_to_tracker["object"] = loss_object
+
+    try:
+        loss_track = loss_config["track"]
+        loss_ds_to_tracker["track"] = {}
+    except KeyError:
+        loss_track = None
+
+    if loss_track:
+        for name in loss_track:
+            try:
+                track_class = ACCEPTED_LOSS_TRACK[name]
+            except KeyError:
+                raise KeyError(
+                    f"{name} is not an accepted track method please select from {ACCEPTED_LOSS_TRACK.keys()}"
+                )
+
+            for dataset in datasets:
+                loss_ds_to_tracker["track"][dataset] = {}
+                loss_ds_to_tracker["track"][dataset][loss_config["type"]] = {}
+                # TODO: I'm not consistent with naming here.. should the user be
+                # allowed to name this?
+                tf_tracker_name = (
+                    f"loss_{objective_name}_{loss_config['type']}_{name}_{dataset}"
+                )
+                dtype = tf.float32
+                tf_tracker = track_class(name=tf_tracker_name, dtype=dtype)
+                loss_ds_to_tracker["track"][dataset][loss_config["type"]][
+                    name
+                ] = tf_tracker
+
+    return loss_ds_to_tracker
+
+
 def get_objectives(objectives, datasets):
     # TODO: should these be grouped based on their inputs?
 
@@ -97,44 +136,8 @@ def get_objectives(objectives, datasets):
             )
 
         if loss_config:
-            loss_ds_to_tracker = {}
-            # build loss object
-            loss_object = configure_loss(loss_config)
-            loss_ds_to_tracker["object"] = loss_object
+            loss_ds_to_tracker = _get_loss(loss_config, datasets, objective_name)
 
-            try:
-                loss_track = loss_config["track"]
-                loss_ds_to_tracker["track"] = {}
-            except KeyError:
-                loss_track = None
-
-            if loss_track:
-                for name in loss_track:
-                    try:
-                        track_class = ACCEPTED_LOSS_TRACK[name]
-                    except KeyError:
-                        raise KeyError(
-                            f"{name} is not an accepted track method please select from {ACCEPTED_LOSS_TRACK.keys()}"
-                        )
-
-                    for dataset in datasets:
-                        loss_ds_to_tracker["track"][dataset] = {}
-                        loss_ds_to_tracker["track"][dataset][loss_config["type"]] = {}
-                        tf_tracker_name = f"loss_{objective_name}_{loss_config['type']}_{name}_{dataset}"
-                        dtype = tf.float32
-                        tf_tracker = track_class(name=tf_tracker_name, dtype=dtype)
-                        loss_ds_to_tracker["track"][dataset][loss_config["type"]][
-                            name
-                        ] = tf_tracker
-
-                    # avg_train_loss = tf.keras.metrics.Mean(
-                    #     name=f"loss_mean_{objective_name}_{loss_type}_train",
-                    #     dtype=tf.float32,
-                    # )
-                    # avg_val_loss = tf.keras.metrics.Mean(
-                    #     name=f"loss_mean_{objective_name}_{loss_type}_validation",
-                    #     dtype=tf.float32,
-                    # )
         else:
             loss_ds_to_tracker = None
 
@@ -149,6 +152,7 @@ def get_objectives(objectives, datasets):
             "metrics": metric_ds_to_metric,
         }
 
+    # TODO: eventually this needs to be removed/changed to a more general check.
     # Currently, only supervised is accepted
     for objective_name, obj_dict in obj_conf.items():
         if obj_dict["in_config"]["type"] != "supervised":
