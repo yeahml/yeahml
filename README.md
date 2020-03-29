@@ -2,39 +2,50 @@
 
 YeahML is a prototype framework for creating ML models using configuration files (yaml or json).
 
-The api currently changes frequently, but I will be trying to include examples+documentation in the [examples directory](./examples) in the coming weeks/months.
-
-## Development
-
-This project and documentation is ongoing+work in progress. Please reach out if you have questions, thoughts, or general interest.
-
-I could use help working+thinking through this project. If you would like to help, please feel free to open an issue and/or reach out to me on twitter [@Jack_Burdick](https://twitter.com/Jack_Burdick)
+Please note: this is a work in progress and may change dramatically. I would
+appreciate help developing+thinking through this project. If you are interested,
+please reach out via an issue or on twitter
+[@Jack_Burdick](https://twitter.com/Jack_Burdick)
 
 ## Overview
 
 The core implementation is as follows:
 
-1. Write configuration file(s) (json or yaml, see below)
-2. Use python, as shown below, to train and evaluate the model
-3. Iterate
-  - logs/tensorboard are created
+1. Write+validate configuration file(s)
+
+<img src="./misc/overview_configs.png" alt="drawing" style="width:400px;"/>
+
+2. Build, train, and evaluate models/data according to the configuration
+
+<img src="./misc/overview_yeahml.png" alt="drawing" style="width:400px;"/>
 
 
-## Example Use
+### Example in code
 
 ```python
-example_config_path = "./main_config.yml"
-yml_dict = yml.create_configs(example_config_path)
+######################################################
+# create+validate configuration file
+yml_config = yml.create_configs("./main_config.yml")
 
-# build model
-model = yml.build_model(yml_dict)
+######################################################
+# build a model according to the config
+model = yml.build_model(yml_config)
 
-# train the model with a training and validation dataset (or .tfrecords directory)
+
+######################################################
+# train the created model, where `train_dict` contains 
+# information about the training dynamics
+train_dict = yml.train_model(model, yml_config)
+
+# note: if you can also pass an already created tf_dataset
+# e.g.
 ds_tuple = (ds_dict["train"], ds_dict["val"])
-train_dict = yml.train_model(model, yml_dict, ds_tuple)
+train_dict = yml.train_model(model, yml_config, ds_tuple)
 
+######################################################
 # evaluate graph -- can specify parameters to use, or will load the 
-# "best params" (as defined by the user) created during training
+# "best params" (as defined by the user) created during training.
+# where `eval_dict` contains information about the performance on the test dataset
 eval_dict = yml.eval_model(
     model,
     yml_dict,
@@ -43,16 +54,40 @@ eval_dict = yml.eval_model(
 
 ```
 
-<!-- Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_cdict.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). -->
-
 ## [Examples](./examples)
 
 Examples are a work in progress
 
 
-### Configuration Files
+## Configuration Files
 
-The model config may look similar to the following:
+The configuration files can either be written in json or yaml (hence the project
+name..) and may look something like the following. Eventually, the documentation
+will display all of the available options.
+
+<!-- Where documentation+examples for the main configuration file can be found [here](./docs/configuration_files/model_cdict.md) and documentation+examples for the main hidden layer architecture configuration file can be found [here](./docs/configuration_files/hidden_config.md). -->
+
+The main config may look similar to the following. Where each of the main
+headings can either be defined in the main configuration file or may be specified
+as a path to another configuration file (such as the example case below where
+the model is defined in another location). These indicated heading are required:
+- meta
+  - defines organizational information (project name etc)
+- logging
+  - defines how and where to log tf/yeahml information
+- performance
+  - defines the metrics/loss information for training/evaluating the model
+- data
+  - defines the connection from raw data --> model (may change significantly)
+- optimize
+  - defines _how_ to train the model
+- hyper_parameters
+  - catch-all for adjusting training information like batch_size.. however,
+    these will should be moved to their corresponding locations. for example,
+    batch size likely belongs with the dataset.
+- model
+  - defines how the model should be built and connected.  All tf.keras layers
+    are available by their name.
 
 ```yaml
 meta:
@@ -123,14 +158,14 @@ meta:
   name: "model_a"
   name_override: True
   activation:
-    type: 'elu'
+    type: 'elu' # defines default information
 
 layers:
   dense_1:
-    type: 'dense'
-    options:
+    type: 'dense' # all tf.keras.layers are available
+    options: # kwargs to the tf.keras.layers.___
       units: 16
-    in_name: 'features'
+    in_name: 'features' # defines the connection
   dense_2:
     type: 'dense'
     options:
@@ -140,7 +175,7 @@ layers:
     options:
       units: 1
       activation:
-        type: 'linear'
+        type: 'linear' # all tf activation functions are available
 ```
 
 ### TensorBoard
@@ -165,8 +200,8 @@ Logging, if enabled, will produce the following log files:
 
 ## Motivation
 
-The primary motivation is to define and create models easily. The *real* purpose for this framework, in addition to making developing/training models more easily, is to act as a helper for a separate project (TODO: include link once made) that will attempt to generate/analyze architectures.
-
-
-### Other:
-If you experience problems with using the tensorboard extension in jupyter, try running this script found [here](https://raw.githubusercontent.com/tensorflow/tensorboard/master/tensorboard/tools/diagnose_tensorboard.py)
+The primary motivation is to define and create models easily. The *real* purpose
+for this framework, in addition to developing+training models more
+easily, is to act as a foundation for a separate project that will attempt to
+generate/analyze architectures -- by allowing for config based model and
+training definitions, performing meta-learning becomes a lot easier.
