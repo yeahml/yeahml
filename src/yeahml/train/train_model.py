@@ -20,11 +20,13 @@ from yeahml.train.setup.paths import (
 )
 from yeahml.train.setup.tracker.tracker import (
     create_joint_dict_tracker,
-    create_perf_dict_tracker,
     record_joint_losses,
-    record_metrics,
 )
 from yeahml.train.setup.tracker.loss import create_loss_trackers, update_loss_trackers
+from yeahml.train.setup.tracker.metric import (
+    create_metric_trackers,
+    update_metric_trackers,
+)
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 
@@ -227,6 +229,9 @@ def train_model(
     # get datasets
     train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
 
+    # TODO: this section is ...messy
+    #########################################################################
+
     optimizers_dict = get_optimizers(optim_cdict)
     objectives_dict = get_objectives(perf_cdict["objectives"])
 
@@ -255,6 +260,8 @@ def train_model(
     # meaning, if a metric does not have a matching in_config, it will not be
     # evaluated.
 
+    #########################################################################
+
     # TODO: build best loss dict
     # TODO: this is hardcoded... these "trackers" need to be rethought
     #  optimizer_to_loss_name_map, ds_names=None, descriptions=None, to_track=None
@@ -262,10 +269,14 @@ def train_model(
         optimizer_to_loss_name_map,
         ds_names=["train", "val"],
         descriptions=["mean"],
-        to_track=["max", "min"],
+        to_track=["min"],
     )
     joint_dict_tracker = create_joint_dict_tracker(optimizer_to_loss_name_map)
-    perf_dict_tracker = create_perf_dict_tracker(in_hash_to_metrics_config)
+
+    # TODO: the to_track should be specific to the metric
+    metric_trackers = create_metric_trackers(
+        in_hash_to_metrics_config, to_track=["max"]
+    )
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
@@ -361,29 +372,23 @@ def train_model(
 
             # TODO: add to tensorboard
 
-            # TODO: maybe rather than track epochs, I should track number of
-            # instances run through the model
-            print("****" * 10)
-            for n, d in loss_trackers.items():
-                print(n)
-                print(d["train"]["mean"])
-            up = update_loss_trackers(
+            train_loss_updates = update_loss_trackers(
                 "train",
                 total_train_inst,
                 loss_trackers,
                 l2o_names,
                 l2o_loss_record_train,
             )
-            print(up)
-            print("****" * 10)
-            for n, d in loss_trackers.items():
-                print(n)
-                print(d["train"]["mean"])
-            sys.exit()
 
-            # train_best_update = record_losses(
-            #     "train", "epoch", e, loss_trackers, l2o_names, l2o_loss_record_train
-            # )
+            train_best_met_update = update_metric_trackers(
+                "train",
+                total_train_inst,
+                metric_trackers,
+                metric_names,
+                metric_objs_train,
+            )
+
+            # TODO: adjust
             train_best_joint_update = record_joint_losses(
                 "train",
                 "epoch",
@@ -391,10 +396,6 @@ def train_model(
                 joint_dict_tracker,
                 joint_loss_name,
                 joint_loss_record_train,
-            )
-
-            train_best_met_update = record_metrics(
-                "train", "epoch", e, perf_dict_tracker, metric_names, metric_objs_train
             )
 
             # TODO: tensorboard
@@ -430,9 +431,10 @@ def train_model(
 
             logger.debug(f"END iterating validation dataset - epoch: {e}")
 
-            # val_best_update = record_losses(
-            #     "val", "epoch", e, loss_trackers, l2o_names, l2o_loss_record_val
-            # )
+            train_loss_updates = update_loss_trackers(
+                "val", total_train_inst, loss_trackers, l2o_names, l2o_loss_record_val
+            )
+
             val_best_joint_update = record_joint_losses(
                 "val",
                 "epoch",
@@ -442,8 +444,8 @@ def train_model(
                 joint_loss_record_val,
             )
 
-            val_best_met_update = record_metrics(
-                "val", "epoch", e, perf_dict_tracker, metric_names, metric_objs_val
+            val_best_met_update = update_metric_trackers(
+                "val", total_train_inst, metric_trackers, metric_names, metric_objs_val
             )
 
             # TODO: save best params with update dict and save params
@@ -475,7 +477,7 @@ def train_model(
     return_dict = {
         "loss": loss_trackers,
         "joint": joint_dict_tracker,
-        "metrics": perf_dict_tracker,
+        "metrics": metric_trackers,
     }
 
     return return_dict

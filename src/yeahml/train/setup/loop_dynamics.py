@@ -130,6 +130,7 @@ def get_objectives(objectives):
 
 
 def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
+    # TODO: this function needs to be rewritten -- no hardcoding and better organization
     # NOTE: multiple losses by the same optimizer, are currently only modeled
     # jointly, if we wish to model the losses seperately (sequentially or
     # alternating), then we would want to use a second optimizer
@@ -187,6 +188,8 @@ def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict):
             loss_objs_to_optimize.append(loss_object)
             train_means.append(train_mean)
             val_means.append(val_mean)
+
+        # TODO: this may not be true -- there may only be one loss to optimize
         # create and include joint metric
         joint_name = "__".join(loss_names_to_optimize) + "__joint"
         train_name = joint_name + "_train"
