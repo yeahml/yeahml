@@ -233,6 +233,7 @@ class list_of_categorical(categorical):
         to_lower=None,
         # specific
         list_must_include=None,
+        allow_duplicates=None,
     ):
         super().__init__(
             default_value=default_value,
@@ -249,18 +250,28 @@ class list_of_categorical(categorical):
         else:
             self.list_must_include = list_must_include
 
+        if allow_duplicates is None:
+            self.allow_duplicates = False
+        else:
+            if not isinstance(allow_duplicates, bool):
+                raise TypeError(f"{allow_duplicates} is not type {type(bool)}.")
+            self.allow_duplicates = allow_duplicates
+
     def __call__(self, cur_values_list=None):
         if isinstance(cur_values_list, list):
             out_list = []
             # duplicate logic adopted from
             # https://stackoverflow.com/questions/9835762/how-do-i-find-the-duplicates-in-a-list-and-create-another-list-with-them
-            duplicates = [
-                v
-                for i, v in enumerate(cur_values_list)
-                if v in cur_values_list[:i] and v is not None
-            ]
-            if duplicates:
-                raise ValueError(f"{duplicates} are duplicated in f{cur_values_list}")
+            if not self.allow_duplicates:
+                duplicates = [
+                    v
+                    for i, v in enumerate(cur_values_list)
+                    if v in cur_values_list[:i] and v is not None
+                ]
+                if duplicates:
+                    raise ValueError(
+                        f"{duplicates} are duplicated in f{cur_values_list}"
+                    )
 
             if self.list_must_include:
                 req_not_included = [

@@ -7,6 +7,7 @@ __pycache__/
 
 ######## Examples
 examples/abalone/yeahml
+examples/mnist/yeahml
 
 src/yeahml/*/\.mypy_cache/3\.6/
 
