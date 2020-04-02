@@ -213,6 +213,8 @@ class categorical(default_config):
 
         if val:
             # TODO: call function with args
+            # TODO: is_in_list should only be a list, but
+            # categorical_crossentropy as a loss checks against a dict
             if self.is_in_list:
                 if val not in self.is_in_list:
                     raise ValueError(f"value {val} is not in {self.is_in_list}")
@@ -307,3 +309,38 @@ class list_of_categorical(categorical):
             ]
 
         return out_list
+
+
+class list_of_dict(default_config):
+    # TODO: this class is a temporary check and should eventually be replaced.
+    # This class is being used to ensure a list of dicts is passed as options to
+    # the metrics -- eventually it should be metric specific and should check
+    # against the arguments for a particular metric
+    def __init__(
+        self,
+        default_value=None,
+        is_type=None,
+        required=None,
+        description=None,
+        fn=None,
+        fn_args=None,
+        # specific
+        bounds=None,
+    ):
+        super().__init__(
+            default_value=default_value,
+            is_type=is_type,
+            required=required,
+            description=description,
+            fn=fn,
+            fn_args=fn_args,
+        )
+
+    def __call__(self, cur_values_list=None):
+        if isinstance(cur_values_list, list):
+            for o in cur_values_list:
+                if o:
+                    if not isinstance(o, dict):
+                        raise ValueError(f"{o} is type ({type(o)}), not {type(dict)}")
+
+        return cur_values_list

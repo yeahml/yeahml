@@ -1,6 +1,10 @@
 from yeahml.build.components.loss import return_available_losses
 from yeahml.build.components.metric import return_available_metrics
-from yeahml.config.default.types.base_types import categorical, list_of_categorical
+from yeahml.config.default.types.base_types import (
+    categorical,
+    list_of_categorical,
+    list_of_dict,
+)
 
 # TODO: I'm not sure where this belongs yet
 AVAILABLE_TRACKERS = ["mean"]
@@ -38,16 +42,19 @@ class loss_config:
 class metric_config:
     def __init__(self, metric_type=None, metric_options=None):
 
+        # TODO: this should parse each option.. not do them all at once.
+
         self.type = list_of_categorical(
             default_value=None,
             is_type=str,
             required=True,
             is_in_list=return_available_metrics(),
             to_lower=True,
+            allow_duplicates=True,
         )(metric_type)
-        self.options = list_of_categorical(
-            default_value=None, is_type=list, required=False, to_lower=True
-        )(metric_options)
+        self.options = list_of_dict(default_value=None, is_type=list, required=False)(
+            metric_options
+        )
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
