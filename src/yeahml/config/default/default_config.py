@@ -10,7 +10,10 @@ from yeahml.config.default.types.param_types import optional_config, parameter_c
 from yeahml.config.default.types.compound.data import data_in_spec, dict_of_data_in_spec
 from yeahml.config.default.types.compound.layer import layers_config
 from yeahml.config.default.types.compound.performance import performances_config
-from yeahml.config.default.types.compound.optimizer import optimizers_parser
+from yeahml.config.default.types.compound.optimizer import (
+    optimizers_parser,
+    instruct_parser,
+)
 
 # meta
 # TODO: set accepted options for `trace_level`
@@ -85,7 +88,9 @@ hyper_parameters = {
     }
 }
 
-optimize = {"optimize": {"optimizers": optimizers_parser()}}
+optimize = {
+    "optimize": {"optimizers": optimizers_parser(), "directive": instruct_parser()}
+}
 
 
 ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]]
@@ -200,4 +205,3 @@ DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **data}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **model}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **optimize}
-
