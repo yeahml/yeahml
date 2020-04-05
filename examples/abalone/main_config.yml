@@ -31,6 +31,7 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
+        dataset: 'abalone' # TODO: this could be infered if only one dataset is used?
     second_obj:
       loss: 
         type: 'MAE'
@@ -44,17 +45,21 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
+        dataset: 'abalone'
 
 # TODO: this section needs to be redone
+# TODO: this section should have different names for different datasets
 data:
-  in:
-    feature_a:
-      shape: [2,1]
-      dtype: 'float64'
-    target_v:
-      shape: [1,1]
-      dtype: 'int32'
-      label: True
+  datasets:
+    "abalone":
+      in:
+        feature_a:
+          shape: [2,1]
+          dtype: 'float64'
+        target_v:
+          shape: [1,1]
+          dtype: 'int32'
+          label: True
 
 optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled
@@ -78,7 +83,7 @@ optimize:
     # eventually, we should be able to specify time/epoch/% before moving to the
     # next instruction, but presently each `opt` represents an (ENTIRE) pass of the training set
     # instruct: "(a|b)"
-    instructions: "(((main_opt, second_opt) & second_opt & third_opt) & second_opt)"
+    instructions: "((main_opt, second_opt) & second_opt)"
 
 hyper_parameters:
   # optimizer_definition:

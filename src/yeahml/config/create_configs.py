@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from typing import Any, Dict, List
+
 from yeahml.config.data.parse_data import format_data_config
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
@@ -137,27 +139,48 @@ class g_node:
         return self.conf_dict
 
 
-LOOP_ORDER = [("data", ["data", "in"]), ("model", ["model", "layers"])]
+LOOP_ORDER = [
+    ("data", ["data", "datasets", "**", "in"]),
+    ("model", ["model", "layers"]),
+]
 
 
-def _extract_raw_nodes(config_location, cur_config):
+def _extract_raw_nodes(cur_configs):
+
     cur_dict = {}
-    for k, d in cur_config.items():
+    for k, cur_config in cur_configs.items():
+        object_dict = cur_config["object_dict"]
 
         # only data objects have label attribute
         try:
-            is_label = d["label"]
+            is_label = object_dict["label"]
         except KeyError:
             is_label = False
 
         cur_dict[k] = g_node(
             name=k,
-            config_location=config_location,
-            startpoint=d["startpoint"],
-            endpoint=d["endpoint"],
+            config_location=cur_config["source_keys"],
+            startpoint=object_dict["startpoint"],
+            endpoint=object_dict["endpoint"],
             label=is_label,
         )
     return cur_dict
+
+
+def _obtain_nested_dataset_dict(nested_keys, outter_dict) -> dict:
+    full_dict = {}
+    ind = nested_keys.index("**")
+    pre_keys = nested_keys[:ind]
+    post_keys = nested_keys[ind + 1 :]
+    pre_dict = _obtain_nested_dict(pre_keys, outter_dict)
+
+    for k, cur_pre_dict in pre_dict.items():
+        cur_inner_dict = _obtain_nested_dict(post_keys, cur_pre_dict["object_dict"])
+        src_keys = pre_keys + [k] + post_keys
+        for k, d in cur_inner_dict.items():
+            full_dict[k] = {"source_keys": src_keys, "object_dict": d["object_dict"]}
+
+    return full_dict
 
 
 def _obtain_nested_dict(nested_keys, outter_dict) -> dict:
@@ -167,6 +190,62 @@ def _obtain_nested_dict(nested_keys, outter_dict) -> dict:
             cur_config = outter_dict[v]
         else:
             cur_config = cur_config[v]
+    ret_dict = {}
+    for k, d in cur_config.items():
+        ret_dict[k] = {"source_keys": nested_keys, "object_dict": d}
+    return ret_dict
+
+
+def _obtain_items_from_nested_dict(
+    nested_keys: List[str], outter_dict: Dict[str, Any]
+) -> dict:
+    """Extract the relevant components from a nested dictionary
+
+    if the nested keys obtain a "**", then the dict is looped to obtain all
+    values from the keys beyond the "**".
+    
+    Parameters
+    ----------
+    nested_keys : List[str]
+        e.g.
+            ['data', 'datasets', '**', 'in']
+    outter_dict : Dict[str, Any]
+        e.g.
+            {
+                "data": {
+                    "datasets": {
+                        "abalone": {
+                            "in": {
+                                "feature_a": {
+                                    "shape": [2, 1],
+                                    "dtype": "float64",
+                                    "startpoint": True,
+                                    "endpoint": False,
+                                    "label": False,
+                                },
+                                "target_v": {
+                                    "shape": [1, 1],
+                                    "dtype": "int32",
+                                    "startpoint": True,
+                                    "endpoint": True,
+                                    "label": True,
+            },}}}}}
+
+    
+    Returns
+    -------
+    dict
+        [description]
+        e.g.
+            TODO
+            
+    """
+
+    if "**" in nested_keys:
+        cur_config = _obtain_nested_dataset_dict(nested_keys, outter_dict)
+    else:
+        cur_config = _obtain_nested_dict(nested_keys, outter_dict)
+
     return cur_config
 
 
@@ -175,28 +254,34 @@ def _build_empty_graph(config_dict):
 
     graph_dict = {}
     for outter_config_key, nested_keys in LOOP_ORDER:
-        raw_node_config = _obtain_nested_dict(nested_keys, config_dict)
-        empty_node_dict = _extract_raw_nodes(outter_config_key, raw_node_config)
+        # LIST
+        raw_node_configs = _obtain_items_from_nested_dict(nested_keys, config_dict)
+        empty_node_dict = _extract_raw_nodes(raw_node_configs)
         # TODO: ensure there aren't any name overwrites here
         graph_dict = {**graph_dict, **empty_node_dict}
 
     return graph_dict
 
 
-def _get_node_by_name(search_name, config_dict):
+def get_node_config_by_name(search_name, config_dict):
     for name, nested_keys in LOOP_ORDER:
-        cur_conf_dict = _obtain_nested_dict(nested_keys, outter_dict=config_dict)
-        if search_name in cur_conf_dict.keys():
+        # LIST
+        cur_conf_dicts = _obtain_items_from_nested_dict(
+            nested_keys, outter_dict=config_dict
+        )
+
+        # assert len(cur_conf_dicts) == 1, f"multiple nodes were returned for {}"
+        if search_name in cur_conf_dicts.keys():
             try:
-                cur_node = cur_conf_dict[search_name]
+                cur_node_config = cur_conf_dicts[search_name]
             except KeyError:
-                cur_node = NOTDEFINED
-            return (cur_node, nested_keys[0])
+                cur_node_config = NOTDEFINED
+            return cur_node_config
     raise ValueError(f"node {search_name} is not locatable")
 
 
 def get_config_node_input(node, location):
-    if location == "data":
+    if location[0] == "data":
         cur_in = RAW
     else:
         try:
@@ -217,17 +302,22 @@ def _validate_inputs(config_dict: dict, graph_dict: dict):
         # NOTE: should the data spec be parsed to include information about
         # where the data is coming from (from the raw source - e.g.
         # col_name, ...)
-        config_node, location = _get_node_by_name(node_name, config_dict)
+        config_node = get_node_config_by_name(node_name, config_dict)
+        location = config_node["source_keys"]
+        object_dict = config_node["object_dict"]
 
         # TODO: convert to named tuple?
         locs = node.in_source
         if locs:
+            raise NotImplementedError(
+                f"{locs} --- unfortunately, this code is messy, and I don't remember why this case is accounted for. TODO: implement"
+            )
             new_locs = locs + location
         else:
-            new_locs = [location]
+            new_locs = location
         node.in_source = new_locs
 
-        in_node_name = get_config_node_input(config_node, location)
+        in_node_name = get_config_node_input(object_dict, location)
         in_names = node.in_name
         if in_names:
             new_in_names = in_names + in_node_name
@@ -237,8 +327,6 @@ def _validate_inputs(config_dict: dict, graph_dict: dict):
             else:
                 new_in_names = [in_node_name]
         node.in_name = new_in_names
-
-    return True
 
 
 def build_chain(call_chain, node, graph_dict):
@@ -334,7 +422,8 @@ def static_analysis(config_dict: dict) -> dict:
     graph_dict = _build_empty_graph(config_dict)
 
     # validate that all input layers are accounted for
-    valid_inputs = _validate_inputs(config_dict, graph_dict)
+    # TODO: I would prefer this return a True/False...
+    _validate_inputs(config_dict, graph_dict)
 
     # could loop for NOTDEFINED here
     # TODO: Analyze graph_dict to see if there are any "dead_ends"
@@ -370,10 +459,11 @@ def create_configs(main_path: str) -> dict:
     # build the order of inputs into the model. This logic will likely need to
     # change as inputs become more complex
     input_order = []
-    for name, config in config_dict["data"]["in"].items():
-        if config["startpoint"]:
-            if not config["label"]:
-                input_order.append(name)
+    for ds_name, ds_config in config_dict["data"]["datasets"].items():
+        for feat_name, config in ds_config["in"].items():
+            if config["startpoint"]:
+                if not config["label"]:
+                    input_order.append(feat_name)
     if not input_order:
         raise ValueError("no inputs have been specified to the model")
 
@@ -384,6 +474,7 @@ def create_configs(main_path: str) -> dict:
             output_order.append(name)
     if not output_order:
         raise ValueError("no outputs have been specified for the model")
+    # TODO: maybe this should be a dictionary
     config_dict["model_io"] = {"inputs": input_order, "outputs": output_order}
 
     # validate graph

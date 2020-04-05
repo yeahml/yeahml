@@ -36,6 +36,7 @@ class data_in_spec:
 
 
 class dict_of_data_in_spec(data_in_spec):
+    # This code is nearly embarassing
     def __init__(self, required=None):
 
         if required is None:
@@ -44,12 +45,21 @@ class dict_of_data_in_spec(data_in_spec):
             self.required = required
 
     def __call__(self, data_spec_dict):
+
         if self.required and not data_spec_dict:
             raise ValueError("data_spec_dict is required but not specified")
 
-        out_dict = {}
-        if isinstance(data_spec_dict, dict):
-            for k, d in data_spec_dict.items():
+        ####################### parse :in
+        try:
+            temp_in_dict = data_spec_dict["in"]
+        except KeyError:
+            raise KeyError(
+                f"no :in key was specified for current data config: {data_spec_dict}"
+            )
+
+        temp_out_dict = {}
+        if isinstance(temp_in_dict, dict):
+            for k, d in temp_in_dict.items():
 
                 try:
                     layer_is_startpoint = d["startpoint"]
@@ -72,7 +82,7 @@ class dict_of_data_in_spec(data_in_spec):
                     layer_is_endpoint = True
 
                 try:
-                    out_dict[k] = data_in_spec(
+                    temp_out_dict[k] = data_in_spec(
                         shape=d["shape"],
                         dtype=d["dtype"],
                         startpoint=layer_is_startpoint,
@@ -85,6 +95,32 @@ class dict_of_data_in_spec(data_in_spec):
                     )
         else:
             raise ValueError(
-                f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
+                f"{temp_in_dict} is type {type(temp_in_dict)} not type {type({})}"
+            )
+
+        out_dict = {"in": temp_out_dict}
+        return out_dict
+
+
+class data_set_name_dict:
+    def __init__(self, required=None):
+
+        if required is None:
+            self.required = None
+        else:
+            self.required = required
+
+    def __call__(self, data_spec_dict):
+        if self.required and not data_spec_dict:
+            raise ValueError("data_spec_dict is required but not specified")
+
+        out_dict = {}
+        if isinstance(data_spec_dict, dict):
+            for ds_name, ds_dict in data_spec_dict.items():
+                parsed_dict = dict_of_data_in_spec(required=True)(ds_dict)
+                out_dict[ds_name] = parsed_dict
+        else:
+            raise ValueError(
+                f"{data_spec_dict} is type {type(data_spec_dict)} not type {type({})}"
             )
         return out_dict

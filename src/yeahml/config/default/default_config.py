@@ -7,7 +7,7 @@ from yeahml.config.default.types.base_types import (
 )
 
 from yeahml.config.default.types.param_types import optional_config, parameter_config
-from yeahml.config.default.types.compound.data import data_in_spec, dict_of_data_in_spec
+from yeahml.config.default.types.compound.data import data_in_spec, data_set_name_dict
 from yeahml.config.default.types.compound.layer import layers_config
 from yeahml.config.default.types.compound.performance import performances_config
 from yeahml.config.default.types.compound.optimizer import optimizers_parser
@@ -133,7 +133,7 @@ logging = {
 
 
 # Data
-data = {"data": {"in": dict_of_data_in_spec(required=True)}}
+data = {"data": {"datasets": data_set_name_dict(required=True)}}
 
 # NOTE: these two are really simliar, but I think it may be worth keeping them
 # separate.. that is I like the idea of being able to define these as separate processes

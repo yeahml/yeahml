@@ -71,7 +71,8 @@ PERFORMANCE_OPTIONS = [("supervised", ["prediction", "target"])]
 
 
 class performance_options:
-    def __init__(self, cur_type=None, cur_options=None):
+    # this is a really ugly class. I need to revisit this.
+    def __init__(self, cur_type=None, cur_options=None, cur_dataset=None):
         if not cur_type:
             raise ValueError("no type is specified")
         performance_options_names = [v[0] for v in PERFORMANCE_OPTIONS]
@@ -101,6 +102,8 @@ class performance_options:
                     f"cur options are not a dict: {cur_options}, type:{type(cur_options)}"
                 )
         self.options = cur_options
+
+        self.dataset = cur_dataset
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -149,16 +152,27 @@ class performance_config:
         if in_dict:
             try:
                 in_type = in_dict["type"]
-            except:
-                raise ValueError("no type was specified")
+            except KeyError:
+                raise ValueError(
+                    f"no type was specified for current objective in_config: {in_dict}"
+                )
             try:
                 in_options = in_dict["options"]
-            except:
+            except KeyError:
                 in_options = None
+
+            try:
+                in_dataset_name = in_dict["dataset"]
+            except KeyError:
+                raise ValueError(
+                    f"no dataset was specified for currect objective in_config: {in_dict}"
+                )
         else:
             raise ValueError(f"in dict was not specified")
 
-        self.in_config = performance_options(cur_type=in_type, cur_options=in_options)()
+        self.in_config = performance_options(
+            cur_type=in_type, cur_options=in_options, cur_dataset=in_dataset_name
+        )()
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)

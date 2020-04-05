@@ -6,11 +6,10 @@ import tensorflow as tf
 from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
-from yeahml.train.setup.loop_dynamics import (
+from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,
     create_grouped_metrics,
     get_optimizers,
     map_in_config_to_objective,
-    obtain_optimizer_loss_mapping,
 )
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
@@ -246,11 +245,6 @@ def train_model(
     # }
     training_directive = optim_cdict["directive"]
 
-    print("#####" * 8)
-    print(training_directive)
-    print("#####" * 8)
-    sys.exit()
-
     # create mapping of optimizers to their losses (name, and objects)
     # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
     #     optimizers_dict, objectives_dict, datasets=DATASETS
@@ -282,6 +276,8 @@ def train_model(
     )
 
     print("#####" * 8)
+    print(training_directive)
+    print("------" * 8)
     print(in_hash_to_objectives)
     print("#####" * 8)
 

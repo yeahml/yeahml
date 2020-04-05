@@ -3,8 +3,8 @@ from typing import Any, Dict
 
 import tensorflow as tf
 
-from yeahml.build.build_layers import build_hidden_block
 from yeahml.build.layers.config import NOTPRESENT
+from yeahml.config.create_configs import get_node_config_by_name
 from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
@@ -159,9 +159,9 @@ def _unpack_and_build_tuple(tuple_seq, built_nodes):
 
     # ((2, [[((2, [['n_a', ...], ['n_a', ...]]), 'ct_1'), 'ct_1', 'out'], ['n_a', 'd_1', ...]]), 'c3')
     branch_tuple = tuple_seq[0]
-    num_branches = branch_tuple[0]
+    # num_branches = branch_tuple[0]
     branch_seqs = branch_tuple[1]
-    name = tuple_seq[1]
+    # name = tuple_seq[1]
     outer_seq_to_build = TupleOut()
 
     for branch_seq in branch_seqs:
@@ -261,17 +261,16 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
         .joinpath(meta_cdict["data_name"])
         .joinpath(meta_cdict["experiment_name"])
     )
-    g_logger = config_logger(full_exp_path, log_cdict, "graph")
+    # g_logger = config_logger(full_exp_path, log_cdict, "graph")
 
     # configure/build all layers and save in lookup table
     built_nodes = {}
     for name, node in static_cdict.items():
-        if node.config_location == "model":
-            blueprint = model_cdict["layers"][node.name]
-        elif node.config_location == "data":
-            blueprint = data_cdict["in"][node.name]
-        else:
+
+        node_config = get_node_config_by_name(node.name, config_dict)
+        if not node_config:
             raise ValueError(f"layer {name} can't be found in {node.config_location}")
+        blueprint = node_config["object_dict"]
 
         if node.startpoint:
             if node.label:
