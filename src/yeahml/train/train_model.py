@@ -8,24 +8,24 @@ from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.loop_dynamics import (
     create_grouped_metrics,
-    get_objectives,
     get_optimizers,
     map_in_config_to_objective,
     obtain_optimizer_loss_mapping,
 )
+from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
     create_model_run_path,
     create_model_training_paths,
     get_tb_writers,
 )
-from yeahml.train.setup.tracker.tracker import (
-    create_joint_dict_tracker,
-    record_joint_losses,
-)
 from yeahml.train.setup.tracker.loss import create_loss_trackers, update_loss_trackers
 from yeahml.train.setup.tracker.metric import (
     create_metric_trackers,
     update_metric_trackers,
+)
+from yeahml.train.setup.tracker.tracker import (
+    create_joint_dict_tracker,
+    record_joint_losses,
 )
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
@@ -47,7 +47,7 @@ now it is "working" as I hoped.
   to tb again
 - early stopping
 - save best params
-- create a varible in the graph to keep track of the number of batch
+- create a variable in the graph to keep track of the number of batch
   steps/epochs run (if run from a notebook) --- also allow for the passing of an
   epoch param so that if we want to only run ~n more epochs from the notebook we
   can
@@ -233,19 +233,28 @@ def train_model(
     #########################################################################
     DATASETS = ["train", "val"]
 
+    # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
     optimizers_dict = get_optimizers(optim_cdict)
-    objectives_dict = get_objectives(perf_cdict["objectives"], datasets=DATASETS)
 
-    # TODO: We need to be able to specify whether the losses should be separately
-    # or jointly combined.
+    # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
+    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_names=DATASETS)
+
+    # TODO: training_directive may be empty.
+    # {
+    #     "YEAHML_1": {"optimizers": ["YEAHML_0", "second_opt"], "operation": "&"},
+    #     "YEAHML_0": {"optimizers": ["main_opt", "second_opt"], "operation": ","},
+    # }
+    training_directive = optim_cdict["directive"]
+
+    print("#####" * 8)
+    print(training_directive)
+    print("#####" * 8)
+    sys.exit()
 
     # create mapping of optimizers to their losses (name, and objects)
     # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
     #     optimizers_dict, objectives_dict, datasets=DATASETS
     # )
-
-    # TODO: training_directive may be empty.
-    training_directive = optim_cdict["directive"]
 
     # NOTE:
     # now that we have the training directive, we need to group the losses and
@@ -257,26 +266,24 @@ def train_model(
     # b. create a tracker for this
     # ---
     # ensure these (loss, joint loss, and metrics) can all be easily accessed
-
-    print(training_directive)
-    sys.exit()
-    print("#####" * 8)
+    # xxxxxxxxxxxxxxxxxxxxx
+    # sort the keys for the instructions
+    # train in order
+    # TODO: per batch/epoch/adaptive -- all open questions.
 
     # create mapping of in_config (same inputs/outputs) to objectives
+
     in_hash_to_objectives = map_in_config_to_objective(objectives_dict)
+
+    # create groups of metrics to compute at the same time
+
+    in_hash_to_metrics_config = create_grouped_metrics(
+        objectives_dict, in_hash_to_objectives
+    )
 
     print("#####" * 8)
     print(in_hash_to_objectives)
     print("#####" * 8)
-    sys.exit()
-
-    # use the mapping of in_config to loop and group all metrics -- create
-    # groups of metrics to compute at the same time
-    # in_hash_to_metrics_config is a mapping of inconfig_hash to inconfig, and
-    # metrics (name,train,val)
-    in_hash_to_metrics_config = create_grouped_metrics(
-        objectives_dict, in_hash_to_objectives
-    )
 
     # TODO: check that all metrics are accounted for.  If so. raise a not
     # implemented error -- presently the training loop is driven by the

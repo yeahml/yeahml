@@ -1,13 +1,8 @@
 # from yeahml.build.components.optimizer import get_optimizer
 import tensorflow as tf
 
-from yeahml.build.components.loss import configure_loss
-from yeahml.build.components.metric import configure_metric
 from yeahml.build.components.optimizer import return_optimizer
 from yeahml.config.model.util import make_hash
-
-# TODO: I'm not sure where this belongs yet
-ACCEPTED_LOSS_TRACK = {"mean": tf.keras.metrics.Mean}
 
 
 def get_optimizers(optim_cdict):
@@ -33,137 +28,7 @@ def get_optimizers(optim_cdict):
     return optimizers_dict
 
 
-def _get_metrics(metric_config, datasets):
-
-    assert len(metric_config["options"]) == len(
-        metric_config["type"]
-    ), f"len of options does not len of metrics: {len(metric_config['options'])} != {len(metric_config['type'])}"
-
-    # loop operations and options
-    metric_ds_to_metric = {}
-    try:
-        met_opts = metric_config["options"]
-    except KeyError:
-        met_opts = None
-    for i, metric in enumerate(metric_config["type"]):
-        metric_ds_to_metric[metric] = {}
-        if met_opts:
-            met_opt_dict = met_opts[i]
-        else:
-            met_opt_dict = None
-
-        for dataset in datasets:
-            metric_fn = configure_metric(metric, met_opt_dict)
-            metric_ds_to_metric[metric][dataset] = metric_fn
-
-    return metric_ds_to_metric
-
-
-def _get_loss(loss_config, datasets, objective_name):
-    loss_ds_to_tracker = {}
-
-    # build tf loss object
-    loss_object = configure_loss(loss_config)
-    loss_ds_to_tracker["object"] = loss_object
-
-    try:
-        loss_track = loss_config["track"]
-        loss_ds_to_tracker["track"] = {}
-    except KeyError:
-        loss_track = None
-
-    if loss_track:
-        for name in loss_track:
-            try:
-                track_class = ACCEPTED_LOSS_TRACK[name]
-            except KeyError:
-                raise KeyError(
-                    f"{name} is not an accepted track method please select from {ACCEPTED_LOSS_TRACK.keys()}"
-                )
-
-            for dataset in datasets:
-                loss_ds_to_tracker["track"][dataset] = {}
-                loss_ds_to_tracker["track"][dataset][loss_config["type"]] = {}
-                # TODO: I'm not consistent with naming here.. should the user be
-                # allowed to name this?
-                tf_tracker_name = (
-                    f"loss_{objective_name}_{loss_config['type']}_{name}_{dataset}"
-                )
-                dtype = tf.float32
-                tf_tracker = track_class(name=tf_tracker_name, dtype=dtype)
-                loss_ds_to_tracker["track"][dataset][loss_config["type"]][
-                    name
-                ] = tf_tracker
-
-    return loss_ds_to_tracker
-
-
-def get_objectives(objectives, datasets):
-    # TODO: should these be grouped based on their inputs?
-
-    if not isinstance(datasets, list):
-        if not isinstance(datasets, str):
-            raise ValueError(
-                f"datasets ({datasets}) must be of type list of strings or string not {type(datasets)}"
-            )
-    else:
-        for o in datasets:
-            if not isinstance(o, str):
-                raise ValueError(
-                    f"object ({o}) in ({datasets}) must be of type string not {type(o)}"
-                )
-
-    obj_conf = {}
-    for objective_name, objective_config in objectives.items():
-        # in_config: defines the type (e.g. supervised) and io (e.g. pred, gt)
-        # loss --> defines whether a loss is present
-        # metric --> defines whether a metric is present
-        in_config = objective_config["in_config"]
-
-        try:
-            loss_config = objective_config["loss"]
-        except KeyError:
-            loss_config = None
-
-        try:
-            metric_config = objective_config["metric"]
-        except KeyError:
-            metric_config = None
-
-        if not loss_config and not metric_config:
-            raise ValueError(
-                f"Neither a loss or metric was defined for {objective_name}"
-            )
-
-        if loss_config:
-            loss_ds_to_tracker = _get_loss(loss_config, datasets, objective_name)
-
-        else:
-            loss_ds_to_tracker = None
-
-        if metric_config:
-            metric_ds_to_metric = _get_metrics(metric_config, datasets)
-        else:
-            metric_ds_to_metric = None
-
-        obj_conf[objective_name] = {
-            "in_config": in_config,
-            "loss": loss_ds_to_tracker,
-            "metrics": metric_ds_to_metric,
-        }
-
-    # TODO: eventually this needs to be removed/changed to a more general check.
-    # Currently, only supervised is accepted
-    for objective_name, obj_dict in obj_conf.items():
-        if obj_dict["in_config"]["type"] != "supervised":
-            raise NotImplementedError(
-                f"only 'supervised' is accepted as the type for the in_config of {objective_name}, not {obj_conf['in_config']['type']} yet..."
-            )
-
-    return obj_conf
-
-
-def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict, datasets):
+def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict, dataset_names):
 
     # print(optimizers_dict)
     # print("******" * 8)
