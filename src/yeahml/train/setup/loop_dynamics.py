@@ -165,11 +165,22 @@ def get_objectives(objectives, datasets):
 
 def obtain_optimizer_loss_mapping(optimizers_dict, objectives_dict, datasets):
 
-    print(optimizers_dict)
-    print("******" * 8)
-    print(objectives_dict)
-    print("******" * 8)
-    sys.exit()
+    # print(optimizers_dict)
+    # print("******" * 8)
+    # print(objectives_dict)
+    # print("******" * 8)
+
+    # optimizer_to_loss_name_map = {}
+    # for cur_optimizer_name, optimizer_dict in optimizers_dict.items():
+    #     try:
+    #         objectives_to_opt = optimizer_dict["objectives"]
+    #     except KeyError:
+    #         raise KeyError(f"no objectives found for {cur_optimizer_name}")
+
+    #     for o in objectives_to_opt:
+    #         pass
+
+    # sys.exit()
 
     # TODO: this function needs to be rewritten -- no hardcoding and better organization
     # NOTE: multiple losses by the same optimizer, are currently only modeled

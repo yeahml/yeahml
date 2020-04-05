@@ -240,9 +240,27 @@ def train_model(
     # or jointly combined.
 
     # create mapping of optimizers to their losses (name, and objects)
-    optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
-        optimizers_dict, objectives_dict, datasets=DATASETS
-    )
+    # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
+    #     optimizers_dict, objectives_dict, datasets=DATASETS
+    # )
+
+    # TODO: training_directive may be empty.
+    training_directive = optim_cdict["directive"]
+
+    # NOTE:
+    # now that we have the training directive, we need to group the losses and
+    # metrics such that we can access them easily during training
+    # 1. group metrics based on in/out similarity (idk if this always holds)
+    # 2. match the grouped metrics to when the optimizers are run
+    # ---
+    # a. create a "joint"/average loss for each instruction step
+    # b. create a tracker for this
+    # ---
+    # ensure these (loss, joint loss, and metrics) can all be easily accessed
+
+    print(training_directive)
+    sys.exit()
+    print("#####" * 8)
 
     # create mapping of in_config (same inputs/outputs) to objectives
     in_hash_to_objectives = map_in_config_to_objective(objectives_dict)
@@ -270,10 +288,14 @@ def train_model(
 
     # TODO: build best loss dict
     # TODO: this is hardcoded... these "trackers" need to be rethought
-    #  optimizer_to_loss_name_map, ds_names=None, descriptions=None, to_track=None
+    # optimizer_to_loss_name_map, ds_names=None, descriptions=None,
+    # to_track=None
+    # TODO: the `to_track` should be infered from the config.. that is not all
+    # losses should be minimized -- will need to ensure optimizer op also
+    # considers this.
     loss_trackers = create_loss_trackers(
         optimizer_to_loss_name_map,
-        ds_names=["train", "val"],
+        ds_names=DATASETS,
         descriptions=["mean"],
         to_track=["min"],
     )

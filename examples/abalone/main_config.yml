@@ -78,7 +78,7 @@ optimize:
     # eventually, we should be able to specify time/epoch/% before moving to the
     # next instruction, but presently each `opt` represents an (ENTIRE) pass of the training set
     # instruct: "(a|b)"
-    instructions: "(((main_opt,second_opt)&second_opt)&second_opt)"
+    instructions: "(((main_opt, second_opt) & second_opt & third_opt) & second_opt)"
 
 hyper_parameters:
   # optimizer_definition:
