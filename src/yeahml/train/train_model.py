@@ -195,7 +195,7 @@ def _reset_loss_records(loss_dict):
 
 
 def train_model(
-    model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: tuple = ()
+    model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
 
     # TODO: option to reinitialize model?
@@ -226,17 +226,17 @@ def train_model(
     tr_writer, v_writer = get_tb_writers(model_run_path)
 
     # get datasets
-    train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
+    # train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
+    dataset_dict = get_datasets(datasets, data_cdict, hp_cdict)
 
     # TODO: this section is ...messy
     #########################################################################
-    DATASETS = ["train", "val"]
 
     # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
     optimizers_dict = get_optimizers(optim_cdict)
 
     # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
-    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_names=DATASETS)
+    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
 
     # TODO: training_directive may be empty.
     # {

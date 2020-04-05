@@ -10,7 +10,7 @@ ACCEPTED_LOSS_TRACK = {"mean": tf.keras.metrics.Mean}
 
 
 def _get_metrics(
-    metric_config: Dict[str, Any], dataset_names: List[str], objective_name: str
+    metric_config: Dict[str, Any], datasplit_names: List[str], objective_name: str
 ) -> Dict[str, Dict[str, Any]]:
     """[summary]
     
@@ -19,7 +19,7 @@ def _get_metrics(
     metric_config : Dict[str, Any]
         e.g.
             {'type': ['meansquarederror'], 'options': [None]}
-    dataset_names : List[str]
+    datasplit_names : List[str]
         e.g.
             ['train', 'val']
     objective_name : str
@@ -54,23 +54,22 @@ def _get_metrics(
         else:
             met_opt_dict = {}
 
-        if met_opt_dict:
-            try:
-                _ = met_opt_dict["name"]
-            except KeyError:
-                met_opt_dict[
-                    "name"
-                ] = f"metric_{objective_name}_{metric_name}_{dataset_name}"
-
-        for dataset_name in dataset_names:
+        for datasplit_name in datasplit_names:
+            if met_opt_dict:
+                try:
+                    _ = met_opt_dict["name"]
+                except KeyError:
+                    met_opt_dict[
+                        "name"
+                    ] = f"metric_{objective_name}_{metric_name}_{datasplit_name}"
             metric_fn = configure_metric(metric_name, met_opt_dict)
-            metric_ds_to_metric[metric_name][dataset_name] = metric_fn
+            metric_ds_to_metric[metric_name][datasplit_name] = metric_fn
 
     return metric_ds_to_metric
 
 
 def _get_loss(
-    loss_config: Dict[str, Any], dataset_names: List[str], objective_name: str
+    loss_config: Dict[str, Any], datasplit_names: List[str], objective_name: str
 ) -> Dict[str, Any]:
     """Create a dictionary containing the loss and corresponding tracking object for each datasets
     
@@ -81,7 +80,7 @@ def _get_loss(
         list of the type of tracking to perform on the given loss function
         e.g.
             {'type': 'mse', 'options': None, 'track': ['mean']}
-    dataset_names : List[str]
+    datasplit_names : List[str]
         e.g.
             ['train', 'val']
     objective_name : str
@@ -132,17 +131,15 @@ def _get_loss(
                     f"{name} is not an accepted track method please select from {ACCEPTED_LOSS_TRACK.keys()}"
                 )
 
-            for dataset_name in dataset_names:
-                loss_ds_to_loss["track"][dataset_name] = {}
-                loss_ds_to_loss["track"][dataset_name][loss_config["type"]] = {}
+            for datasplit_name in datasplit_names:
+                loss_ds_to_loss["track"][datasplit_name] = {}
+                loss_ds_to_loss["track"][datasplit_name][loss_config["type"]] = {}
                 # TODO: I'm not consistent with naming here.. should the user be
                 # allowed to name this?
-                tf_tracker_name = (
-                    f"loss_{objective_name}_{loss_config['type']}_{name}_{dataset_name}"
-                )
+                tf_tracker_name = f"loss_{objective_name}_{loss_config['type']}_{name}_{datasplit_name}"
                 dtype = tf.float32
                 tf_tracker = tf_track_class(name=tf_tracker_name, dtype=dtype)
-                loss_ds_to_loss["track"][dataset_name][loss_config["type"]][
+                loss_ds_to_loss["track"][datasplit_name][loss_config["type"]][
                     name
                 ] = tf_tracker
 
@@ -150,7 +147,7 @@ def _get_loss(
 
 
 def get_objectives(
-    objectives: Dict[str, Any], dataset_names: List[str]
+    objectives: Dict[str, Any], dataset_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Any]:
     """Builds the objective configuration for a given objective
     
@@ -165,12 +162,18 @@ def get_objectives(
                     "in_config": {
                         "type": "supervised",
                         "options": {"prediction": "dense_out", "target": "target_v"},
+                        'dataset': 'abalone'
                     },},
                 ...}
-    dataset_names : List[str]
+    dataset_dict : Dict[str, Dict[str, Any]]
         [description]
         e.g.
-            ['train', 'val']
+            {
+                'abalone': 
+                {
+                    'train': '<BatchDataset shapes: (None,), types: tf.int32'>, 
+                    'val': '<BatchDataset shapes: (None,), types: tf.int32>'
+                }}
     
     Returns
     -------
@@ -214,24 +217,21 @@ def get_objectives(
         [description]
     """
 
-    if not isinstance(dataset_names, list):
-        if not isinstance(dataset_names, str):
-            raise ValueError(
-                f"dataset_names ({dataset_names}) must be of type list of strings or string not {type(dataset_names)}"
-            )
-    else:
-        for o in dataset_names:
-            if not isinstance(o, str):
-                raise ValueError(
-                    f"object ({o}) in ({dataset_names}) must be of type string not {type(o)}"
-                )
-
     obj_conf = {}
     for objective_name, objective_config in objectives.items():
         # in_config: defines the type (e.g. supervised) and io (e.g. pred, gt)
         # loss --> defines whether a loss is present
         # metric --> defines whether a metric is present
         in_config = objective_config["in_config"]
+        ds_name = in_config["dataset"]
+        try:
+            tf_dataset_dict = dataset_dict[ds_name]
+        except KeyError:
+            raise KeyError(
+                f"no dataset named {ds_name} is included in the dataset_dict {dataset_dict}"
+            )
+
+        datasplit_names = list(tf_dataset_dict.keys())
 
         try:
             loss_config = objective_config["loss"]
@@ -249,14 +249,14 @@ def get_objectives(
             )
 
         if loss_config:
-            loss_ds_to_loss = _get_loss(loss_config, dataset_names, objective_name)
+            loss_ds_to_loss = _get_loss(loss_config, datasplit_names, objective_name)
 
         else:
             loss_ds_to_loss = None
 
         if metric_config:
             metric_ds_to_metric = _get_metrics(
-                metric_config, dataset_names, objective_name
+                metric_config, datasplit_names, objective_name
             )
         else:
             metric_ds_to_metric = None

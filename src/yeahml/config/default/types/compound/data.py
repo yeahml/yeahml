@@ -35,6 +35,15 @@ class data_in_spec:
         return self.__dict__
 
 
+def _parse_split_config(raw):
+    try:
+        split_names = raw["names"]
+    except KeyError:
+        raise KeyError(f"no names were provided for current dataset")
+
+    return {"names": split_names}
+
+
 class dict_of_data_in_spec(data_in_spec):
     # This code is nearly embarassing
     def __init__(self, required=None):
@@ -98,7 +107,18 @@ class dict_of_data_in_spec(data_in_spec):
                 f"{temp_in_dict} is type {type(temp_in_dict)} not type {type({})}"
             )
 
-        out_dict = {"in": temp_out_dict}
+        # parse split information
+        try:
+            split_config_raw = data_spec_dict["split"]
+        except KeyError:
+            raise KeyError(
+                f"no :split key was specified for current data config: {data_spec_dict}"
+            )
+
+        # TODO: more advanced parsing here
+        out_split_config = _parse_split_config(split_config_raw)
+
+        out_dict = {"in": temp_out_dict, "split": out_split_config}
         return out_dict
 
 
