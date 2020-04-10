@@ -7,9 +7,10 @@ from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,
-    create_grouped_metrics,
+    create_full_dict,
+    # create_grouped_metrics,
     get_optimizers,
-    map_in_config_to_objective,
+    # map_in_config_to_objective,
 )
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
@@ -245,11 +246,6 @@ def train_model(
     # }
     training_directive = optim_cdict["directive"]
 
-    # create mapping of optimizers to their losses (name, and objects)
-    # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
-    #     optimizers_dict, objectives_dict, datasets=DATASETS
-    # )
-
     # NOTE:
     # now that we have the training directive, we need to group the losses and
     # metrics such that we can access them easily during training
@@ -265,16 +261,40 @@ def train_model(
     # train in order
     # TODO: per batch/epoch/adaptive -- all open questions.
 
-    # create mapping of in_config (same inputs/outputs) to objectives
+    # create mapping of optimizers to their losses (name, and objects)
+    # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
+    #     optimizers_dict, objectives_dict, datasets=["train", "val"]
+    # )
 
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    # create dict of optimizer to metrics and losses
+    # NOTE: this isn't perfect in that someone may care about the output of
+    # something they are not directly optimizing.. I'd argue the current
+    # workaround is to specify that metric with a dataset and associate it to a
+    # particular optimizer (it will eval at the same time this optimizer is run)
+
+    main_dict = create_full_dict(
+        optimizers_dict=optimizers_dict,
+        objectives_dict=objectives_dict,
+        datasets_dict=dataset_dict,
+    )
+
+    # TODO: create list order of directives to loop through
+
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    sys.exit()
+
+    # create mapping of in_config (same inputs/outputs) to objectives
     in_hash_to_objectives = map_in_config_to_objective(objectives_dict)
 
     # create groups of metrics to compute at the same time
-
+    # group based on dataset name
     in_hash_to_metrics_config = create_grouped_metrics(
         objectives_dict, in_hash_to_objectives
     )
 
+    print("#####" * 8)
+    print("#####" * 8)
     print("#####" * 8)
     print(training_directive)
     print("------" * 8)
@@ -289,11 +309,18 @@ def train_model(
 
     #########################################################################
 
+    print("create_loss_trackers_v2")
+    loss_trackers = create_loss_trackers_v2(optimizer_to_loss_name_map, dataset_dict)
+
+    sys.exit()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # TODO: build best loss dict
     # TODO: this is hardcoded... these "trackers" need to be rethought
     # optimizer_to_loss_name_map, ds_names=None, descriptions=None,
     # to_track=None
-    # TODO: the `to_track` should be infered from the config.. that is not all
+    # TODO: the `to_track` should be inferred from the config.. that is not all
     # losses should be minimized -- will need to ensure optimizer op also
     # considers this.
     loss_trackers = create_loss_trackers(
@@ -308,6 +335,8 @@ def train_model(
     metric_trackers = create_metric_trackers(
         in_hash_to_metrics_config, to_track=["max"]
     )
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # TODO: ASSUMPTION: using optimizers sequentially. this may be:
     # - jointly, ordered: sequentially, or unordered: alternate/random
@@ -331,6 +360,7 @@ def train_model(
     total_train_inst = 0
     for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
+        # TODO: this needs to be driven by the directive, not just a walkthrough
         for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
             # cur_optimizer_config > {"optimizer": tf_obj, "objectives": []}
             # NOTE: if there are multiple objectives, they will be trained *jointly*

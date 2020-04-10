@@ -4,6 +4,11 @@ from typing import Any, Dict
 
 from yeahml.build.components.optimizer import return_optimizer
 from yeahml.config.model.util import make_hash
+from yeahml.train.setup.tracker.loss import (
+    create_loss_trackers,
+    create_joint_loss_tracker,
+)
+from yeahml.train.setup.tracker.metric import create_metric_trackers
 
 
 def get_optimizers(optim_cdict):
@@ -145,115 +150,215 @@ def get_optimizers(optim_cdict):
 #     return optimizer_to_loss_name_map
 
 
-def map_in_config_to_objective(objectives_dict):
-    in_hash_to_objectives = {}
-    for o, d in objectives_dict.items():
-        in_conf = d["in_config"]
-        in_conf_hash = make_hash(in_conf)
-        try:
-            stored_conf = in_hash_to_objectives[in_conf_hash]["in_config"]
-            if not stored_conf == in_conf:
-                raise ValueError(
-                    f"the hash is the same, but the in config is different..."
-                )
-        except KeyError:
-            in_hash_to_objectives[in_conf_hash] = {"in_config": in_conf}
+# def map_in_config_to_objective(objectives_dict):
+#     in_hash_to_objectives = {}
+#     for o, d in objectives_dict.items():
+#         in_conf = d["in_config"]
+#         in_conf_hash = make_hash(in_conf)
+#         try:
+#             stored_conf = in_hash_to_objectives[in_conf_hash]["in_config"]
+#             if not stored_conf == in_conf:
+#                 raise ValueError(
+#                     f"the hash is the same, but the in config is different..."
+#                 )
+#         except KeyError:
+#             in_hash_to_objectives[in_conf_hash] = {"in_config": in_conf}
 
-        # ? is there a case where there is no objective?
-        try:
-            stored_objectives = in_hash_to_objectives[in_conf_hash]["objectives"]
-            stored_objectives.append(o)
-        except KeyError:
-            in_hash_to_objectives[in_conf_hash]["objectives"] = [o]
+#         # ? is there a case where there is no objective?
+#         try:
+#             stored_objectives = in_hash_to_objectives[in_conf_hash]["objectives"]
+#             stored_objectives.append(o)
+#         except KeyError:
+#             in_hash_to_objectives[in_conf_hash]["objectives"] = [o]
 
-    return in_hash_to_objectives
+#     return in_hash_to_objectives
 
 
-def create_grouped_metrics(
-    objectives_dict: Dict[str, Any], in_hash_to_objectives: Dict[int, Dict[str, Any]]
-) -> Dict[int, Any]:
-    """[summary]
-    
-    Parameters
-    ----------
-    objectives_dict : Dict[str, Any]
-        [description]
-        e.g.
-            {
-                "main_obj": {
-                    "in_config": {
-                        "type": "supervised",
-                        "options": {"prediction": "dense_out", "target": "target_v"},
-                    },
-                    "loss": {
-                        "object": "<function mean_squared_error at 0x7f2bd628d268>",
-                        "track": {
-                            "train": {
-                                "mse": {
-                                    "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7f2bb4114a20>"
-                            }},
-                            "val": {
-                                "mse": {
-                                    "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7f2bb4114d68>"
-                    }},},},
-                    "metrics": {
-                        "meansquarederror": {
-                            "train": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7f2bb4114f28>",
-                            "val": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7f2bb4120748>",
-                },
-                ...
-            },}}
-    in_hash_to_objectives : Dict[int, Dict[str, Any]]
-        [description]
-        e.g.
-            {
-                7236791920024407028: {
-                    "in_config": {
-                        "type": "supervised",
-                        "options": {"prediction": "dense_out", "target": "target_v"},
-                    },
-                    "objectives": ["main_obj", "second_obj"],
-            }}
-    
-    Returns
-    -------
-    Dict[int, Any]
-        [description]
-    """
-    print("######" * 8)
-    print(objectives_dict)
-    print("*****" * 8)
-    print(in_hash_to_objectives)
-    print("######" * 8)
+# def create_grouped_metrics(
+#     objectives_dict: Dict[str, Any], in_hash_to_objectives: Dict[int, Dict[str, Any]]
+# ) -> Dict[int, Any]:
+#     """[summary]
 
-    in_hash_to_metrics_config = {}
+#     Parameters
+#     ----------
+#     objectives_dict : Dict[str, Any]
+#         [description]
+#         e.g.
+#             {
+#                 "main_obj": {
+#                     "in_config": {
+#                         "type": "supervised",
+#                         "options": {"prediction": "dense_out", "target": "target_v"},
+#                         "dataset": "abalone",
+#                     },
+#                     "loss": {
+#                         "object": "<function mean_squared_error at 0x7fa5ab24b268>",
+#                         "track": {
+#                             "train": {
+#                                 "mse": {
+#                                     "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7fa580348f60>"
+#                                 },
+#                             "val": {
+#                                 "mse": {
+#                                     "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7fa580348ef0>"
+#                                 }},},},
+#                     "metrics": {
+#                         "meansquarederror": {
+#                             "train": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7fa5802dd630>",
+#                             "val": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7fa5802dda90>",
+#                 }},
+#                 ...
+#                 }}}
+#     in_hash_to_objectives : Dict[int, Dict[str, Any]]
+#         [description]
+#         e.g.
+#             {
+#                 7236791920024407028: {
+#                     "in_config": {
+#                         "type": "supervised",
+#                         "options": {"prediction": "dense_out", "target": "target_v"},
+#                     },
+#                     "objectives": ["main_obj", "second_obj"],
+#             }}
 
-    # loop the different in/out combinations and build metrics for each
-    # this dict may become a bit messy because there is the train+val to keep
-    # track of
-    for k, v in in_hash_to_objectives.items():
-        in_hash_to_metrics_config[k] = {"in_config": v["in_config"]}
-        in_hash_to_metrics_config[k]["metric_order"] = []
-        in_hash_to_metrics_config[k]["objects"] = {"train": [], "val": []}
-        for objective in v["objectives"]:
-            obj_dict = objectives_dict[objective]
+#     Returns
+#     -------
+#     Dict[int, Any]
+#         [description]
+#     """
+#     print("######" * 8)
+#     print(objectives_dict)
+#     print("*****" * 8)
+#     print(in_hash_to_objectives)
+#     print("######" * 8)
+
+#     in_hash_to_metrics_config = {}
+
+#     # loop the different in/out combinations and build metrics for each
+#     # this dict may become a bit messy because there is the train+val to keep
+#     # track of
+#     for k, v in in_hash_to_objectives.items():
+#         in_hash_to_metrics_config[k] = {"in_config": v["in_config"]}
+#         in_hash_to_metrics_config[k]["metric_order"] = []
+#         in_hash_to_metrics_config[k]["objects"] = {"train": [], "val": []}
+#         for objective in v["objectives"]:
+#             obj_dict = objectives_dict[objective]
+#             try:
+#                 cur_metrics = obj_dict["metrics"]
+#             except KeyError:
+#                 cur_metrics = None
+
+#             if cur_metrics:
+#                 in_hash_to_metrics_config[k]["metric_order"].extend(
+#                     obj_dict["metrics"]["metric_order"]
+#                 )
+#                 in_hash_to_metrics_config[k]["objects"]["train"].extend(
+#                     obj_dict["metrics"]["train_metrics"]
+#                 )
+#                 in_hash_to_metrics_config[k]["objects"]["val"].extend(
+#                     obj_dict["metrics"]["val_metrics"]
+#                 )
+
+#     print(in_hash_to_objectives)
+#     print("xxxxxxxx" * 8)
+
+#     return in_hash_to_metrics_config
+
+
+def _return_loss_trackers(raw_obj_dict):
+    try:
+        raw_loss_conf = raw_obj_dict["loss"]
+    except KeyError:
+        raw_loss_conf = None
+
+    if raw_loss_conf:
+        loss_tracker_dict = create_loss_trackers(raw_loss_conf, raw_obj_dict)
+    else:
+        loss_tracker_dict = None
+
+    return loss_tracker_dict
+
+
+def _return_metric_trackers(raw_obj_dict):
+    try:
+        raw_metric_conf = raw_obj_dict["metric"]
+    except KeyError:
+        raw_metric_conf = None
+
+    if raw_metric_conf:
+        metric_tracker_dict = create_metric_trackers(raw_metric_conf, raw_obj_dict)
+    else:
+        metric_tracker_dict = None
+
+    return metric_tracker_dict
+
+
+def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=None):
+    # optimizers_dict
+    # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
+
+    # objective_dict
+    # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
+
+    # dataset_dict
+    # {'abalone': {'train': 'tf.Data.dataset', 'val': 'tf.Data.dataset'}}
+    ret_dict = {}
+    for opt_name, opt_and_obj_dict in optimizers_dict.items():
+        ret_dict[opt_name] = {**opt_and_obj_dict}
+        objectives = opt_and_obj_dict["objectives"]
+        loss_names = []
+        for objective_name in objectives:
             try:
-                cur_metrics = obj_dict["metrics"]
+                raw_obj_dict = objectives_dict[objective_name]
             except KeyError:
-                cur_metrics = None
-
-            if cur_metrics:
-                in_hash_to_metrics_config[k]["metric_order"].extend(
-                    obj_dict["metrics"]["metric_order"]
-                )
-                in_hash_to_metrics_config[k]["objects"]["train"].extend(
-                    obj_dict["metrics"]["train_metrics"]
-                )
-                in_hash_to_metrics_config[k]["objects"]["val"].extend(
-                    obj_dict["metrics"]["val_metrics"]
+                raise KeyError(
+                    f"objective name {objective_name} not found in objective_dict :{objectives_dict.keys()}"
                 )
 
-    print(in_hash_to_objectives)
-    print("xxxxxxxx" * 8)
+            loss_tracker_dict = _return_loss_trackers(raw_obj_dict)
+            if loss_tracker_dict:
+                loss_names.append(objective_name)
+            metric_tracker_dict = _return_metric_trackers(raw_obj_dict)
+        if len(loss_names) > 1:
+            # there are more than 1 losses present, create joint tracker for
+            # both losses
+            joint_tracker_dict = create_joint_loss_tracker(loss_names, raw_obj_dict)
 
-    return in_hash_to_metrics_config
+        ret_dict[opt_name] = {
+            "loss": loss_tracker_dict,
+            "metric": metric_tracker_dict,
+            "joint": joint_tracker_dict,
+        }
+
+    print(ret_dict)
+    return ret_dict
+
+
+# obj_dict = {
+#     "in_config": {
+#         "type": "supervised",
+#         "options": {"prediction": "dense_out", "target": "target_v"},
+#         "dataset": "abalone",
+#     },
+#     "loss": {
+#         "object": "<function mean_squared_error at 0x7f73c8cf98c8>",
+#         "track": {
+#             "train": {
+#                 "mse": {
+#                     "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7f73a0448e80>"
+#                 }
+#             },
+#             "val": {
+#                 "mse": {
+#                     "mean": "<tensorflow.python.keras.metrics.Mean object at 0x7f73a0448f60>"
+#                 }
+#             },
+#         },
+#     },
+#     "metrics": {
+#         "meansquarederror": {
+#             "train": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7f73a0448f98>",
+#             "val": "<tensorflow.python.keras.metrics.MeanSquaredError object at 0x7f73a0460898>",
+#         }
+#     },
+# }

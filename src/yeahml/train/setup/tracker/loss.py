@@ -1,7 +1,7 @@
 from yeahml.train.setup.tracker.tracker import Tracker
 
 
-def create_loss_trackers(
+def create_loss_trackers_v1(
     optimizer_to_loss_name_map, ds_names=None, descriptions=None, to_track=None
 ):
     """creates a dictionary mapping the each loss by name to a Tracker for the 
@@ -61,6 +61,52 @@ def create_loss_trackers(
                     )
 
     return loss_dict_tracker
+
+
+def create_loss_trackers(loss_config, objective_dict):
+    """creates a dictionary mapping the each loss by name to a Tracker for the 
+    number of instances that have passed through the model during training
+    
+    Returns
+    -------
+    loss_dict_tracker
+        holds loss_name: {Tracker()} for each loss for train and val
+    """
+
+    # TODO: The joint losses (if they exist) should also be tracked here
+    loss_dict_tracker = None
+    print(loss_config)
+    print("------")
+    print(objective_dict)
+
+    # ALLOWED_TO_TRACK = ["max", "min"]
+    # to_track = [name.lower() for name in to_track]
+    # for name in to_track:
+    #     if name not in ALLOWED_TO_TRACK:
+    #         raise ValueError(
+    #             f"{name} is not allowed to be track. please only use from selected: {ALLOWED_TO_TRACK}"
+    #         )
+
+    # loss_dict_tracker = {}
+    # for _, temp_dict in optimizer_to_loss_name_map.items():
+    #     for name in temp_dict["losses_to_optimize"]["names"]:
+    #         loss_dict_tracker[name] = {}
+    #         for ds_name in ds_names:
+    #             loss_dict_tracker[name][ds_name] = {}
+    #             for description in descriptions:
+    #                 # 'mean', for example
+    #                 loss_dict_tracker[name][ds_name][description] = Tracker(
+    #                     to_track=to_track
+    #                 )
+    raise NotImplementedError(f"not implemented yet...")
+
+    return loss_dict_tracker
+
+
+def create_joint_loss_tracker(loss_names, raw_obj_dict):
+    joint_dict_tracker = None
+    raise NotImplementedError(f"not implemented yet...")
+    return joint_dict_tracker
 
 
 def update_loss_trackers(
