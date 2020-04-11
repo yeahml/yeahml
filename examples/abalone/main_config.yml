@@ -19,7 +19,7 @@ performance:
         # each loss can only be one loss
         # TODO: support custom losses
         type: 'MSE'
-        track: "mean"
+        track: ["mean"] # only mean is supported currently
         #options:
       metric:
         # there can be many metrics
@@ -67,6 +67,13 @@ optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled
   # jointly, if we wish to model the losses seperately (sequentially or
   # alternating), then we would want to use a second optimizer
+  # optimizers:
+  #   "main_opt":
+  #     type: 'adam'
+  #     options:
+  #       learning_rate: 0.0001
+  #       beta_1: 0.91 
+  #     objectives: ["main_obj", "second_obj"]
   optimizers:
     "main_opt":
       type: 'adam'
@@ -86,6 +93,8 @@ optimize:
     # next instruction, but presently each `opt` represents an (ENTIRE) pass of the training set
     # instruct: "(a|b)"
     instructions: "((main_opt, second_opt) & second_opt)"
+    # TODO: handle case where not present
+    #instructions: "(main_opt,second_opt)"
 
 hyper_parameters:
   # optimizer_definition:

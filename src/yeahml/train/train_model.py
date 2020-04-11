@@ -6,11 +6,9 @@ import tensorflow as tf
 from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
-from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,
+from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
-    # create_grouped_metrics,
     get_optimizers,
-    # map_in_config_to_objective,
 )
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
@@ -273,11 +271,12 @@ def train_model(
     # workaround is to specify that metric with a dataset and associate it to a
     # particular optimizer (it will eval at the same time this optimizer is run)
 
-    main_dict = create_full_dict(
+    main_tracker_dict = create_full_dict(
         optimizers_dict=optimizers_dict,
         objectives_dict=objectives_dict,
         datasets_dict=dataset_dict,
     )
+    print(main_tracker_dict)
 
     # TODO: create list order of directives to loop through
 

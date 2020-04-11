@@ -1,12 +1,10 @@
 # from yeahml.build.components.optimizer import get_optimizer
 
-from typing import Any, Dict
 
 from yeahml.build.components.optimizer import return_optimizer
-from yeahml.config.model.util import make_hash
 from yeahml.train.setup.tracker.loss import (
-    create_loss_trackers,
     create_joint_loss_tracker,
+    create_loss_trackers,
 )
 from yeahml.train.setup.tracker.metric import create_metric_trackers
 
@@ -265,28 +263,20 @@ def get_optimizers(optim_cdict):
 #     return in_hash_to_metrics_config
 
 
-def _return_loss_trackers(raw_obj_dict):
-    try:
-        raw_loss_conf = raw_obj_dict["loss"]
-    except KeyError:
-        raw_loss_conf = None
+def _return_loss_trackers(objective_name, raw_obj_dict):
 
-    if raw_loss_conf:
-        loss_tracker_dict = create_loss_trackers(raw_loss_conf, raw_obj_dict)
+    if "loss" in raw_obj_dict.keys():
+        loss_tracker_dict = create_loss_trackers(objective_name, raw_obj_dict)
     else:
         loss_tracker_dict = None
 
     return loss_tracker_dict
 
 
-def _return_metric_trackers(raw_obj_dict):
-    try:
-        raw_metric_conf = raw_obj_dict["metric"]
-    except KeyError:
-        raw_metric_conf = None
+def _return_metric_trackers(objective_name, raw_obj_dict):
 
-    if raw_metric_conf:
-        metric_tracker_dict = create_metric_trackers(raw_metric_conf, raw_obj_dict)
+    if "metrics" in raw_obj_dict.keys():
+        metric_tracker_dict = create_metric_trackers(objective_name, raw_obj_dict)
     else:
         metric_tracker_dict = None
 
@@ -306,7 +296,10 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
     for opt_name, opt_and_obj_dict in optimizers_dict.items():
         ret_dict[opt_name] = {**opt_and_obj_dict}
         objectives = opt_and_obj_dict["objectives"]
-        loss_names = []
+
+        # loss_names will be used to determine whether a joint tracker should be
+        # created
+        objective_names_with_losses = []
         for objective_name in objectives:
             try:
                 raw_obj_dict = objectives_dict[objective_name]
@@ -315,14 +308,21 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
                     f"objective name {objective_name} not found in objective_dict :{objectives_dict.keys()}"
                 )
 
-            loss_tracker_dict = _return_loss_trackers(raw_obj_dict)
+            # create loss Trackers
+            loss_tracker_dict = _return_loss_trackers(objective_name, raw_obj_dict)
             if loss_tracker_dict:
-                loss_names.append(objective_name)
-            metric_tracker_dict = _return_metric_trackers(raw_obj_dict)
-        if len(loss_names) > 1:
+                objective_names_with_losses.append(objective_name)
+
+            # create metric Trackers
+            metric_tracker_dict = _return_metric_trackers(objective_name, raw_obj_dict)
+
+        joint_tracker_dict = None
+        if len(objective_names_with_losses) > 1:
             # there are more than 1 losses present, create joint tracker for
             # both losses
-            joint_tracker_dict = create_joint_loss_tracker(loss_names, raw_obj_dict)
+            joint_tracker_dict = create_joint_loss_tracker(
+                opt_name, objective_names_with_losses, objectives_dict
+            )
 
         ret_dict[opt_name] = {
             "loss": loss_tracker_dict,
@@ -330,7 +330,6 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
             "joint": joint_tracker_dict,
         }
 
-    print(ret_dict)
     return ret_dict
 
 
