@@ -6,17 +6,13 @@ import tensorflow as tf
 from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
-from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
-    create_full_dict,
-    get_optimizers,
-)
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
     create_model_run_path,
     create_model_training_paths,
     get_tb_writers,
 )
-from yeahml.train.setup.tracker.loss import create_loss_trackers, update_loss_trackers
+from yeahml.train.setup.tracker.loss import update_loss_trackers
 from yeahml.train.setup.tracker.metric import (
     create_metric_trackers,
     update_metric_trackers,
@@ -24,6 +20,11 @@ from yeahml.train.setup.tracker.metric import (
 from yeahml.train.setup.tracker.tracker import (
     create_joint_dict_tracker,
     record_joint_losses,
+)
+
+from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
+    create_full_dict,
+    get_optimizers,
 )
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
@@ -50,6 +51,34 @@ now it is "working" as I hoped.
   epoch param so that if we want to only run ~n more epochs from the notebook we
   can
 - I'll also need to ensure the tracking dict is persisted.
+"""
+
+
+"""
+TODO: check that all metrics are accounted for.  If so. raise a not
+implemented error -- presently the training loop is driven by the
+optimizers (and as a result all objectives that have matching in_configs).
+meaning, if a metric does not have a matching in_config, it will not be
+evaluated.
+
+TODO: build best loss dict
+
+TODO: ASSUMPTION: using optimizers sequentially. this may be:
+- jointly, ordered: sequentially, or unordered: alternate/random
+
+NOTE: I'm not sure looping on epochs makes sense as an outter layer
+anymore.
+TODO: is there a way to save a variable in the graph to keep track of
+epochs (if multiple runs from a notebook?)
+
+TODO: per batch/epoch/adaptive -- all open questions.
+
+NOTE: this isn't perfect in that someone may care about the output of
+something they are not directly optimizing.. I'd argue the current
+workaround is to specify that metric with a dataset and associate it to a
+particular optimizer (it will eval at the same time this optimizer is run)
+
+
 """
 
 
@@ -228,14 +257,18 @@ def train_model(
     # train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
     dataset_dict = get_datasets(datasets, data_cdict, hp_cdict)
 
-    # TODO: this section is ...messy
-    #########################################################################
-
     # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
     optimizers_dict = get_optimizers(optim_cdict)
 
     # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
     objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
+
+    # create a tf.function for applying gradients for each optimizer
+    # TODO: I am not 100% about this logic for maping the optimizer to the
+    #   apply_gradient fn... this needs to be confirmed to work as expected
+    opt_name_to_gradient_fn = {}
+    for cur_optimizer_name, _ in optimizers_dict.items():
+        opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
 
     # TODO: training_directive may be empty.
     # {
@@ -244,112 +277,42 @@ def train_model(
     # }
     training_directive = optim_cdict["directive"]
 
-    # NOTE:
-    # now that we have the training directive, we need to group the losses and
-    # metrics such that we can access them easily during training
-    # 1. group metrics based on in/out similarity (idk if this always holds)
-    # 2. match the grouped metrics to when the optimizers are run
-    # ---
-    # a. create a "joint"/average loss for each instruction step
-    # b. create a tracker for this
-    # ---
-    # ensure these (loss, joint loss, and metrics) can all be easily accessed
-    # xxxxxxxxxxxxxxxxxxxxx
-    # sort the keys for the instructions
-    # train in order
-    # TODO: per batch/epoch/adaptive -- all open questions.
-
-    # create mapping of optimizers to their losses (name, and objects)
-    # optimizer_to_loss_name_map = obtain_optimizer_loss_mapping(
-    #     optimizers_dict, objectives_dict, datasets=["train", "val"]
-    # )
-
-    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    # create dict of optimizer to metrics and losses
-    # NOTE: this isn't perfect in that someone may care about the output of
-    # something they are not directly optimizing.. I'd argue the current
-    # workaround is to specify that metric with a dataset and associate it to a
-    # particular optimizer (it will eval at the same time this optimizer is run)
-
     main_tracker_dict = create_full_dict(
         optimizers_dict=optimizers_dict,
         objectives_dict=objectives_dict,
         datasets_dict=dataset_dict,
     )
-    print(main_tracker_dict)
 
     # TODO: create list order of directives to loop through
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
+    print("directive\n")
+    print(training_directive)
+    print("-------" * 8, "\n")
+
+    print("main_tracker_dict\n")
+    print(main_tracker_dict)
+    print("-------" * 8, "\n")
+
+    print("optimizers_dict\n")
+    print(optimizers_dict)
+    print("-------" * 8, "\n")
+
+    print("objectives_dict\n")
+    print(objectives_dict)
+    print("-------" * 8, "\n")
+
+    print("dataset_dict\n")
+    print(dataset_dict)
+    print("-------" * 8, "\n")
+
+    print("opt_name_to_gradient_fn\n")
+    print(opt_name_to_gradient_fn)
+    print("-------" * 8, "\n")
 
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     sys.exit()
 
-    # create mapping of in_config (same inputs/outputs) to objectives
-    in_hash_to_objectives = map_in_config_to_objective(objectives_dict)
-
-    # create groups of metrics to compute at the same time
-    # group based on dataset name
-    in_hash_to_metrics_config = create_grouped_metrics(
-        objectives_dict, in_hash_to_objectives
-    )
-
-    print("#####" * 8)
-    print("#####" * 8)
-    print("#####" * 8)
-    print(training_directive)
-    print("------" * 8)
-    print(in_hash_to_objectives)
-    print("#####" * 8)
-
-    # TODO: check that all metrics are accounted for.  If so. raise a not
-    # implemented error -- presently the training loop is driven by the
-    # optimizers (and as a result all objectives that have matching in_configs).
-    # meaning, if a metric does not have a matching in_config, it will not be
-    # evaluated.
-
-    #########################################################################
-
-    print("create_loss_trackers_v2")
-    loss_trackers = create_loss_trackers_v2(optimizer_to_loss_name_map, dataset_dict)
-
-    sys.exit()
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # TODO: build best loss dict
-    # TODO: this is hardcoded... these "trackers" need to be rethought
-    # optimizer_to_loss_name_map, ds_names=None, descriptions=None,
-    # to_track=None
-    # TODO: the `to_track` should be inferred from the config.. that is not all
-    # losses should be minimized -- will need to ensure optimizer op also
-    # considers this.
-    loss_trackers = create_loss_trackers(
-        optimizer_to_loss_name_map,
-        ds_names=DATASETS,
-        descriptions=["mean"],
-        to_track=["min"],
-    )
-    joint_dict_tracker = create_joint_dict_tracker(optimizer_to_loss_name_map)
-
-    # TODO: the to_track should be specific to the metric
-    metric_trackers = create_metric_trackers(
-        in_hash_to_metrics_config, to_track=["max"]
-    )
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # TODO: ASSUMPTION: using optimizers sequentially. this may be:
-    # - jointly, ordered: sequentially, or unordered: alternate/random
-
-    # TODO: I am not 100% about this logic for maping the optimizer to the
-    #   apply_gradient fn... this needs to be confirmed to work as expected
-    opt_name_to_gradient_fn = {}
-    for cur_optimizer_name, _ in optimizers_dict.items():
-        opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
-
-    # NOTE: I'm not sure looping on epochs makes sense as an outter layer
-    # anymore.
-    # TODO: is there a way to save a variable in the graph to keep track of
-    # epochs (if multiple runs from a notebook?)
     logger.debug("START - iterating epochs dataset")
     all_train_step = 0
     LOGSTEPSIZE = 10

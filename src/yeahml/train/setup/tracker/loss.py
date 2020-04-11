@@ -5,68 +5,6 @@ import tensorflow as tf
 from yeahml.train.setup.tracker.tracker import Tracker
 
 
-def create_loss_trackers_v1(
-    optimizer_to_loss_name_map, ds_names=None, descriptions=None, to_track=None
-):
-    """creates a dictionary mapping the each loss by name to a Tracker for the 
-    number of instances that have passed through the model during training
-    
-    Returns
-    -------
-    loss_dict_tracker
-        holds loss_name: {Tracker()} for each loss for train and val
-    """
-
-    # TODO: The joint losses (if they exist) should also be tracked here
-
-    if not isinstance(ds_names, list):
-        if isinstance(ds_names, str):
-            ds_names = [ds_names]
-        else:
-            raise TypeError(
-                f"ds_names ({ds_names}) must be type string or list of string not {type(ds_names)}"
-            )
-
-    if not isinstance(descriptions, list):
-        if isinstance(descriptions, str):
-            descriptions = [descriptions]
-        else:
-            raise TypeError(
-                f"descriptions ({descriptions}) must be type string or list of string not {type(descriptions)}"
-            )
-
-    if not to_track:
-        to_track = ["max", "min"]
-    if not isinstance(to_track, list):
-        if isinstance(to_track, str):
-            to_track = [to_track]
-        else:
-            raise TypeError(
-                f"to_track ({to_track}) must be type string or list of string not {type(to_track)}"
-            )
-    ALLOWED_TO_TRACK = ["max", "min"]
-    to_track = [name.lower() for name in to_track]
-    for name in to_track:
-        if name not in ALLOWED_TO_TRACK:
-            raise ValueError(
-                f"{name} is not allowed to be track. please only use from selected: {ALLOWED_TO_TRACK}"
-            )
-
-    loss_dict_tracker = {}
-    for _, temp_dict in optimizer_to_loss_name_map.items():
-        for name in temp_dict["losses_to_optimize"]["names"]:
-            loss_dict_tracker[name] = {}
-            for ds_name in ds_names:
-                loss_dict_tracker[name][ds_name] = {}
-                for description in descriptions:
-                    # 'mean', for example
-                    loss_dict_tracker[name][ds_name][description] = Tracker(
-                        to_track=to_track
-                    )
-
-    return loss_dict_tracker
-
-
 def create_loss_trackers(objective_name, objective_dict):
     """creates a dictionary mapping the each loss by name to a Tracker for the 
     number of instances that have passed through the model during training
