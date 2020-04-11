@@ -442,6 +442,8 @@ def train_model(
 
             # TODO: reset losses
             all_grads = None
+
+            obj_to_grads = {}
             for cur_objective in loss_objective_names:
                 cur_in_conf = objectives_dict[cur_objective]["in_config"]
                 loss_conf = objectives_dict[cur_objective]["loss"]
@@ -462,13 +464,21 @@ def train_model(
                 #     "final_loss": final_loss,
                 #     "losses": loss,
                 # }
+                obj_to_grads[cur_objective] = grad_dict
 
-                # model, grads, optimizer
-                app_grads_fn(model, grad_dict["gradients"], cur_tf_optimizer)
+            all_grads = None
+            for obj_name, grad_dict in obj_to_grads.items():
+                # TODO: we could add scaling/weighting here
+                if not all_grads:
+                    all_grads = grad_dict["gradients"]
+                else:
+                    all_grads += grad_dict["gradients"]
 
-                print("applied")
+                # apply gradients to the model
 
-                # TODO: get grads
+            app_grads_fn(model, grad_dict["gradients"], cur_tf_optimizer)
+
+            print("applied")
 
             # TODO: apply scaling (if specified)
             # TODO: apply grads
