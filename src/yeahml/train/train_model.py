@@ -82,12 +82,19 @@ particular optimizer (it will eval at the same time this optimizer is run)
 """
 
 
-def get_get_grads_fn():
+# TODO: this is supervised
+def get_get_supervised_grads_fn():
 
     # https://github.com/tensorflow/tensorflow/issues/27120
     # this allows the model to continue to be trained on multiple calls
     @tf.function
-    def get_grad(model, x_batch, y_batch, loss_fns, optimizer):
+    def get_grad(model, batch, loss_fns, optimizer):
+        # supervised implies a x, and y.. however, this maybe should change to a
+        # dict indexing
+        if not isinstance(loss_fns, list):
+            loss_fns = [loss_fns]
+
+        x_batch, y_batch = batch
         with tf.GradientTape() as tape:
             prediction = model(x_batch, training=True)
 
@@ -111,7 +118,13 @@ def get_get_grads_fn():
         # by specific optimizers
         grads = tape.gradient(final_loss, model.trainable_variables)
 
-        return grads, prediction, final_loss, full_losses
+        return {
+            "gradients": grads,
+            "predictions": prediction,
+            "final_loss": final_loss,
+            "losses": loss,
+        }
+        # return grads, prediction, final_loss, full_losses
 
     return get_grad
 
@@ -335,13 +348,14 @@ def train_model(
     #   apply_gradient fn... this needs to be confirmed to work as expected
     # opt_name_to_gradient_fn = {}
     # get_apply_grad_fn
-    # get_get_grads_fn
+    # get_get_supervised_grads_fn
     opt_to_get_grads_fn = {}
     opt_to_app_grads_fn = {}
     opt_to_steps = {}
     for cur_optimizer_name, _ in optimizers_dict.items():
         # opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
-        opt_to_get_grads_fn[cur_optimizer_name] = get_get_grads_fn()
+        # TODO: check config to see which fn to get supervised/etc
+        opt_to_get_grads_fn[cur_optimizer_name] = get_get_supervised_grads_fn()
         opt_to_app_grads_fn[cur_optimizer_name] = get_apply_grad_fn()
         opt_to_steps[cur_optimizer_name] = 0
 
@@ -431,7 +445,7 @@ def train_model(
             for cur_objective in loss_objective_names:
                 cur_in_conf = objectives_dict[cur_objective]["in_config"]
                 loss_conf = objectives_dict[cur_objective]["loss"]
-                # print(loss_conf)
+
                 cur_ds_dict = dataset_iter_dict[cur_in_conf["dataset"]]
                 if "train" not in cur_ds_dict.keys():
                     raise ValueError(
@@ -440,7 +454,16 @@ def train_model(
                 cur_train_ds = cur_ds_dict["train"]
 
                 cur_batch = get_next_batch(cur_train_ds)
-                print(cur_batch)
+
+                grad_dict = get_grads_fn(
+                    model, cur_batch, loss_conf["object"], cur_tf_optimizer
+                )
+                # grad_dict contains {
+                #     "gradients": grads,
+                #     "predictions": prediction,
+                #     "final_loss": final_loss,
+                #     "losses": loss,
+                # }
 
                 # TODO: get grads
 
