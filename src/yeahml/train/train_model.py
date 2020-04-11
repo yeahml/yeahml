@@ -88,7 +88,7 @@ def get_get_supervised_grads_fn():
     # https://github.com/tensorflow/tensorflow/issues/27120
     # this allows the model to continue to be trained on multiple calls
     @tf.function
-    def get_grad(model, batch, loss_fns, optimizer):
+    def get_grad(model, batch, loss_fns):
         # supervised implies a x, and y.. however, this maybe should change to a
         # dict indexing
         if not isinstance(loss_fns, list):
@@ -455,15 +455,18 @@ def train_model(
 
                 cur_batch = get_next_batch(cur_train_ds)
 
-                grad_dict = get_grads_fn(
-                    model, cur_batch, loss_conf["object"], cur_tf_optimizer
-                )
+                grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
                 # grad_dict contains {
                 #     "gradients": grads,
                 #     "predictions": prediction,
                 #     "final_loss": final_loss,
                 #     "losses": loss,
                 # }
+
+                # model, grads, optimizer
+                app_grads_fn(model, grad_dict["gradients"], cur_tf_optimizer)
+
+                print("applied")
 
                 # TODO: get grads
 
