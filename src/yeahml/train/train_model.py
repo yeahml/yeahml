@@ -82,7 +82,56 @@ particular optimizer (it will eval at the same time this optimizer is run)
 """
 
 
+def get_get_grads_fn():
+
+    # https://github.com/tensorflow/tensorflow/issues/27120
+    # this allows the model to continue to be trained on multiple calls
+    @tf.function
+    def get_grad(model, x_batch, y_batch, loss_fns, optimizer):
+        with tf.GradientTape() as tape:
+            prediction = model(x_batch, training=True)
+
+            # TODO: apply mask?
+            full_losses = []
+            for loss_fn in loss_fns:
+                loss = loss_fn(y_batch, prediction)
+
+                # TODO: custom weighting for training could be applied here
+                # weighted_losses = loss * weights_per_instance
+                main_loss = tf.reduce_mean(loss)
+                # model.losses contains the kernel/bias constraints/regularizers
+                cur_loss = tf.add_n([main_loss] + model.losses)
+                # full_loss = tf.add_n(full_loss, cur_loss)
+                full_losses.append(cur_loss)
+                # create joint loss for current optimizer
+                # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
+            final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
+
+        # TODO: maybe we should be able to specify which params to be optimized
+        # by specific optimizers
+        grads = tape.gradient(final_loss, model.trainable_variables)
+
+        return grads, prediction, final_loss, full_losses
+
+    return get_grad
+
+
 def get_apply_grad_fn():
+
+    # https://github.com/tensorflow/tensorflow/issues/27120
+    # this allows the model to continue to be trained on multiple calls
+    @tf.function
+    def apply_grad(model, grads, optimizer):
+
+        # NOTE: any gradient adjustments would happen here
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+        return
+
+    return apply_grad
+
+
+def get_apply_grad_fn_v1():
 
     # https://github.com/tensorflow/tensorflow/issues/27120
     # this allows the model to continue to be trained on multiple calls
@@ -124,7 +173,7 @@ def train_step(
     model,
     x_batch_train,
     y_batch_train,
-    cur_optimizer,
+    cur_tf_optimizer,
     l2o_objects,
     l2o_loss_record_train,
     joint_loss_record_train,
@@ -134,7 +183,7 @@ def train_step(
 
     # for i,loss_fn in enumerate(loss_fns):
     prediction, final_loss, full_losses = model_apply_grads_fn(
-        model, x_batch_train, y_batch_train, l2o_objects, cur_optimizer
+        model, x_batch_train, y_batch_train, l2o_objects, cur_tf_optimizer
     )
 
     # from HOML2: NOTE: I'm not sure this belongs here anymore...
@@ -222,6 +271,24 @@ def _reset_loss_records(loss_dict):
             mets.reset_states()
 
 
+def get_next_batch(ds_iter):
+    try:
+        batch = next(ds_iter)
+    except StopIteration:
+        # raise StopIteration
+        raise ValueError("current dataset is out..")
+    return batch
+
+
+def convert_to_endless_iterator(ds_dict):
+    iter_dict = {}
+    for ds_name, ds_name_conf in ds_dict.items():
+        iter_dict[ds_name] = {}
+        for split_name, tf_ds in ds_name_conf.items():
+            iter_dict[ds_name][split_name] = tf_ds.repeat(-1).__iter__()
+    return iter_dict
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
@@ -266,9 +333,17 @@ def train_model(
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the
     #   apply_gradient fn... this needs to be confirmed to work as expected
-    opt_name_to_gradient_fn = {}
+    # opt_name_to_gradient_fn = {}
+    # get_apply_grad_fn
+    # get_get_grads_fn
+    opt_to_get_grads_fn = {}
+    opt_to_app_grads_fn = {}
+    opt_to_steps = {}
     for cur_optimizer_name, _ in optimizers_dict.items():
-        opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
+        # opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
+        opt_to_get_grads_fn[cur_optimizer_name] = get_get_grads_fn()
+        opt_to_app_grads_fn[cur_optimizer_name] = get_apply_grad_fn()
+        opt_to_steps[cur_optimizer_name] = 0
 
     # TODO: training_directive may be empty.
     # {
@@ -283,12 +358,15 @@ def train_model(
         datasets_dict=dataset_dict,
     )
 
+    dataset_iter_dict = convert_to_endless_iterator(dataset_dict)
+
     # TODO: create list order of directives to loop through
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
-    print("directive\n")
-    print(training_directive)
-    print("-------" * 8, "\n")
+    # print("directive\n")
+    # print(training_directive)
+    # # TODO: I will need to parse this to create a cleaner directive to follow
+    # print("-------" * 8, "\n")
 
     print("main_tracker_dict\n")
     print(main_tracker_dict)
@@ -302,36 +380,77 @@ def train_model(
     print(objectives_dict)
     print("-------" * 8, "\n")
 
-    print("dataset_dict\n")
-    print(dataset_dict)
+    print("dataset_iter_dict\n")
+    print(dataset_iter_dict)
     print("-------" * 8, "\n")
 
-    print("opt_name_to_gradient_fn\n")
-    print(opt_name_to_gradient_fn)
+    print("opt_to_get_grads_fn\n")
+    print(opt_to_get_grads_fn)
+    print("-------" * 8, "\n")
+
+    print("opt_to_app_grads_fn\n")
+    print(opt_to_app_grads_fn)
     print("-------" * 8, "\n")
 
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    sys.exit()
 
     logger.debug("START - iterating epochs dataset")
     all_train_step = 0
     LOGSTEPSIZE = 10
-    # TODO: this total_train_inst is the number of instances the model has
-    # trained on and in stop optimizer specific. there should be multiple
-    # values, one for each otimizer and a total_steps
-    total_train_inst = 0
     for e in range(hp_cdict["epochs"]):  #
         logger.debug(f"epoch: {e}")
         # TODO: this needs to be driven by the directive, not just a walkthrough
         for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
-            # cur_optimizer_config > {"optimizer": tf_obj, "objectives": []}
             # NOTE: if there are multiple objectives, they will be trained *jointly*
+            # cur_optimizer_config:
+            #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
+            # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
+            get_grads_fn = opt_to_get_grads_fn[cur_optimizer_name]
+            app_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
+
             HIST_LOGGED = False  # will update for each optimizer
             logger.debug(f"START - optimizing {cur_optimizer_name}")
 
             # get optimizer
-            cur_optimizer = cur_optimizer_config["optimizer"]
+            cur_tf_optimizer = cur_optimizer_config["optimizer"]
+            objectives_to_opt = cur_optimizer_config["objectives"]
 
+            # TODO: should this happen outside the loop? I feel like yes..
+            # gather losses and metrics
+            loss_objective_names = []
+            metrics_objective_names = []
+            for cur_objective in objectives_to_opt:
+                cur_objective_dict = objectives_dict[cur_objective]
+                if "loss" in cur_objective_dict.keys():
+                    loss_objective_names.append(cur_objective)
+                if "metrics" in cur_objective_dict.keys():
+                    metrics_objective_names.append(cur_objective)
+
+            # TODO: reset losses
+            all_grads = None
+            for cur_objective in loss_objective_names:
+                cur_in_conf = objectives_dict[cur_objective]["in_config"]
+                loss_conf = objectives_dict[cur_objective]["loss"]
+                # print(loss_conf)
+                cur_ds_dict = dataset_iter_dict[cur_in_conf["dataset"]]
+                if "train" not in cur_ds_dict.keys():
+                    raise ValueError(
+                        f"{cur_in_conf['dataset']} does not have a 'train' dataset"
+                    )
+                cur_train_ds = cur_ds_dict["train"]
+
+                cur_batch = get_next_batch(cur_train_ds)
+                print(cur_batch)
+
+                # TODO: get grads
+
+            # TODO: apply scaling (if specified)
+            # TODO: apply grads
+
+            # TODO: run metrics
+
+            sys.exit()
+            ##############################################################
             # get losses (optimizer specific)
             opt_instructs = optimizer_to_loss_name_map[cur_optimizer_name]
             # opt_instructs = {'ls_to_opt': {'names':[], 'objects': [], in_conf:{}}}
@@ -361,8 +480,6 @@ def train_model(
             _reset_loss_records(joint_loss_record_train)
             _reset_loss_records(joint_loss_record_val)
 
-            cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
-
             # TODO: ASSUMPTION: running a full loop over the dataset
             # run full loop on dataset
             logger.debug(f"START iterating training dataset - epoch: {e}")
@@ -377,7 +494,7 @@ def train_model(
                     model,
                     x_batch_train,
                     y_batch_train,
-                    cur_optimizer,
+                    cur_tf_optimizer,
                     l2o_objects,
                     l2o_loss_record_train,
                     joint_loss_record_train,
@@ -385,7 +502,7 @@ def train_model(
                     cur_apply_grad_fn,
                 )
                 # add number of instances that have gone through the model for training
-                total_train_inst += x_batch_train.shape[0]
+                opt_to_steps[cur_optimizer_name] += x_batch_train.shape[0]
 
                 if all_train_step % LOGSTEPSIZE == 0:
                     log_model_params(tr_writer, all_train_step, model)
@@ -397,7 +514,7 @@ def train_model(
 
             train_loss_updates = update_loss_trackers(
                 "train",
-                total_train_inst,
+                opt_to_steps[cur_optimizer_name],
                 loss_trackers,
                 l2o_names,
                 l2o_loss_record_train,
@@ -405,7 +522,7 @@ def train_model(
 
             train_best_met_update = update_metric_trackers(
                 "train",
-                total_train_inst,
+                opt_to_steps[cur_optimizer_name],
                 metric_trackers,
                 metric_names,
                 metric_objs_train,
@@ -455,7 +572,11 @@ def train_model(
             logger.debug(f"END iterating validation dataset - epoch: {e}")
 
             train_loss_updates = update_loss_trackers(
-                "val", total_train_inst, loss_trackers, l2o_names, l2o_loss_record_val
+                "val",
+                opt_to_steps[cur_optimizer_name],
+                loss_trackers,
+                l2o_names,
+                l2o_loss_record_val,
             )
 
             val_best_joint_update = record_joint_losses(
@@ -468,7 +589,11 @@ def train_model(
             )
 
             val_best_met_update = update_metric_trackers(
-                "val", total_train_inst, metric_trackers, metric_names, metric_objs_val
+                "val",
+                opt_to_steps[cur_optimizer_name],
+                metric_trackers,
+                metric_names,
+                metric_objs_val,
             )
 
             # TODO: save best params with update dict and save params
