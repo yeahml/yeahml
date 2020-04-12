@@ -123,6 +123,7 @@ def get_get_supervised_grads_fn():
             "predictions": prediction,
             "final_loss": final_loss,
             "losses": loss,
+            "y_batch": y_batch,
         }
         # return grads, prediction, final_loss, full_losses
 
@@ -430,6 +431,11 @@ def train_model(
             objectives_to_opt = cur_optimizer_config["objectives"]
 
             # TODO: should this happen outside the loop? I feel like yes..
+            # TODO: these should really be grouped by the in config (likely by
+            # creating a hash) this allows us to group objectives by what
+            # dataset their using so that we can reuse the same batch.
+            # NOTE: for now, I'm saving the prediction and gt (if supervised) in
+            # the grad_dict
             # gather losses and metrics
             loss_objective_names = []
             metrics_objective_names = []
@@ -444,6 +450,7 @@ def train_model(
             all_grads = None
 
             obj_to_grads = {}
+            # TODO:
             for cur_objective in loss_objective_names:
                 cur_in_conf = objectives_dict[cur_objective]["in_config"]
                 loss_conf = objectives_dict[cur_objective]["loss"]
@@ -466,6 +473,8 @@ def train_model(
                 # }
                 obj_to_grads[cur_objective] = grad_dict
 
+            # combine all gradients. This portion (with in the optimizer loop)
+            # will combine the gradients as if it were trained jointly
             all_grads = None
             for obj_name, grad_dict in obj_to_grads.items():
                 # TODO: we could add scaling/weighting here
@@ -474,16 +483,59 @@ def train_model(
                 else:
                     all_grads += grad_dict["gradients"]
 
-                # apply gradients to the model
-
+            # apply gradients to the model
             app_grads_fn(model, grad_dict["gradients"], cur_tf_optimizer)
 
-            print("applied")
-
-            # TODO: apply scaling (if specified)
-            # TODO: apply grads
+            # apply constraints
+            for variable in model.variables:
+                if variable.constraint is not None:
+                    variable.assign(variable.constraint(variable))
 
             # TODO: run metrics
+            # NOTE: do we need to combine predictions here at all?
+            for cur_objective in metrics_objective_names:
+                # could make hash of this
+                cur_in_conf = objectives_dict[cur_objective]["in_config"]
+                # {
+                #     "type": "supervised",
+                #     "options": {"prediction": "dense_out", "target": "target_v"},
+                #     "dataset": "abalone",
+                # }
+                ds_name = cur_in_conf["dataset"]
+                metric_conf = objectives_dict[cur_objective]["metrics"]
+                # {'meanabsoluteerror': {'train': "tf.metric", 'val':
+                # "tf.metric"}}
+                for metric_name, split_to_metric in metric_conf.items():
+                    if "train" in split_to_metric.keys():
+                        metric_obj = split_to_metric["train"]
+
+                        # TODO: hardcoded
+                        if cur_in_conf["type"] == "supervised":
+                            preds = obj_to_grads[cur_objective]["predictions"]
+                            y_batch = obj_to_grads[cur_objective]["y_batch"]
+                            metric_obj.update_state(y_batch, preds)
+
+                            # TODO: update tracker
+
+                print(metric_conf)
+
+                # for train_metric in metrics_objective_names:
+                #     train_metric.update_state(y_batch_train, prediction)
+
+            # TODO: record metrics + losses
+            # we could have predictions here for multiple
+            for cur_objective in metrics_objective_names:
+                cur_in_conf = objectives_dict[cur_objective]["in_config"]
+                for metric_name, split_to_metric in metric_conf.items():
+                    if "train" in split_to_metric.keys():
+                        metric_obj = split_to_metric["train"]
+
+                        # TODO: hardcoded
+                        if cur_in_conf["type"] == "supervised":
+                            preds = obj_to_grads[cur_objective]["predictions"]
+                            y_batch = obj_to_grads[cur_objective]["y_batch"]
+                            res = metric_obj.result().numpy()
+                            print(f"{metric_obj.name} - {res:0.3f}")
 
             sys.exit()
             ##############################################################
