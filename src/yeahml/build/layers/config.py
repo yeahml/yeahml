@@ -41,9 +41,13 @@ def get_layer_options(layer_func):
 
     try:
         layer_opt_spec = inspect.getfullargspec(layer_func)
-        # print(layer_opt_spec)
         cur_func_vars = layer_opt_spec.args
-        cur_func_defaults = list(layer_opt_spec.defaults)
+
+        # some layers don't have defaults (like reshape)
+        if layer_opt_spec.defaults:
+            cur_func_defaults = list(layer_opt_spec.defaults)
+        else:
+            cur_func_defaults = []
     except KeyError:
         # some layers inherit "__init__" from a base class e.g. batchnorm
         # the assumption here is that the 1st base class will contain the init..
@@ -52,7 +56,11 @@ def get_layer_options(layer_func):
             first_parent = layer_func.__bases__[0]
             layer_opt_spec = inspect.getfullargspec(first_parent)
             cur_func_vars = layer_opt_spec.args
-            cur_func_defaults = list(layer_opt_spec.defaults)
+            # some layers don't have defaults (like reshape)
+            if layer_opt_spec.defaults:
+                cur_func_defaults = list(layer_opt_spec.defaults)
+            else:
+                cur_func_defaults = []
         except KeyError:
             raise NotImplementedError(
                 f"error with type:{layer_func}, first parent: {first_parent}, other parents ({func.__bases__}). This error may be a result of an assumption that the __init__ params are from {first_parent} and not one of ({func.__bases__})"
