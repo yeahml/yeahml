@@ -51,6 +51,14 @@ class layer_base_config:
         return self.__dict__
 
 
+def convert_to_list(raw_str):
+    raw_str = raw_str.rstrip(")([]")
+    raw_str = raw_str.lstrip(")([]")
+    split_vals = raw_str.split(",")
+    split_ints = [int(string) for string in split_vals]
+    return split_ints
+
+
 class layer_options_config:
     def __init__(self, func_args=None, func_defaults=None, user_args=None):
         # ensure user args is a subset of func_args
@@ -89,12 +97,19 @@ class layer_options_config:
                                 )
                     else:
                         arg_v = user_args[arg_name]
+
                 else:
                     arg_v = func_defaults[i]
                     if type(arg_v) == type(NOTPRESENT):
                         raise ValueError(
                             f"arg value for {arg_name} is not specified, but is required to be specified"
                         )
+
+                # TODO: I'm not sure this "_shape" will always be true in that
+                # it requires a list of ints.. also, consider tuple v list.
+                if arg_name.endswith("_shape"):
+                    arg_v = convert_to_list(arg_v)
+
                 self.user_vals.append(arg_v)
             # sanity check
             assert len(self.user_vals) == len(
