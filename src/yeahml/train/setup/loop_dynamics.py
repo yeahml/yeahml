@@ -146,6 +146,11 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
             # create metric Trackers
             metric_tracker_dict = _return_metric_trackers(objective_name, raw_obj_dict)
 
+            ret_dict[opt_name][objective_name] = {
+                "loss": loss_tracker_dict,
+                "metrics": metric_tracker_dict,
+            }
+
         joint_tracker_dict = None
         if len(objective_names_with_losses) > 1:
             # there are more than 1 losses present, create joint tracker for
@@ -154,10 +159,6 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
                 opt_name, objective_names_with_losses, objectives_dict
             )
 
-        ret_dict[opt_name] = {
-            "loss": loss_tracker_dict,
-            "metric": metric_tracker_dict,
-            "joint": joint_tracker_dict,
-        }
+        ret_dict[opt_name]["joint"] = joint_tracker_dict
 
     return ret_dict
