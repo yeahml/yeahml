@@ -3,7 +3,7 @@ from typing import Any, Dict
 from yeahml.train.setup.tracker.tracker import Tracker
 
 
-def create_metric_trackers(objective_name: str, objective_dict: Dict[str, Any]):
+def create_metric_trackers(objective_dict: Dict[str, Any]):
     """[summary]
     
     NOTE: is there a better way to build up this dictionary?
@@ -50,17 +50,18 @@ def create_metric_trackers(objective_name: str, objective_dict: Dict[str, Any]):
     """
 
     ds_name = objective_dict["in_config"]["dataset"]
-    metric_dict_tracker = {objective_name: {ds_name: {}}}
+    # metric_dict_tracker = {objective_name: {ds_name: {}}}
+    metric_dict_tracker = {ds_name: {}}
 
     for metric_name, dd in objective_dict["metrics"].items():
         for ds_split_name, _ in dd.items():
-            metric_dict_tracker[objective_name][ds_name][ds_split_name] = {}
+            metric_dict_tracker[ds_name][ds_split_name] = {}
             # _ is the object
 
             # TODO: consider adding to_track to metrics?
-            metric_dict_tracker[objective_name][ds_name][ds_split_name][
-                metric_name
-            ] = Tracker(to_track=["min", "max"])
+            metric_dict_tracker[ds_name][ds_split_name][metric_name] = Tracker(
+                to_track=["min", "max"]
+            )
 
     return metric_dict_tracker
 

@@ -32,20 +32,20 @@ def get_optimizers(optim_cdict):
     return optimizers_dict
 
 
-def _return_loss_trackers(objective_name, raw_obj_dict):
+def _return_loss_trackers(raw_obj_dict):
 
     if "loss" in raw_obj_dict.keys():
-        loss_tracker_dict = create_loss_trackers(objective_name, raw_obj_dict)
+        loss_tracker_dict = create_loss_trackers(raw_obj_dict)
     else:
         loss_tracker_dict = None
 
     return loss_tracker_dict
 
 
-def _return_metric_trackers(objective_name, raw_obj_dict):
+def _return_metric_trackers(raw_obj_dict):
 
     if "metrics" in raw_obj_dict.keys():
-        metric_tracker_dict = create_metric_trackers(objective_name, raw_obj_dict)
+        metric_tracker_dict = create_metric_trackers(raw_obj_dict)
     else:
         metric_tracker_dict = None
 
@@ -139,12 +139,12 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
                 )
 
             # create loss Trackers
-            loss_tracker_dict = _return_loss_trackers(objective_name, raw_obj_dict)
+            loss_tracker_dict = _return_loss_trackers(raw_obj_dict)
             if loss_tracker_dict:
                 objective_names_with_losses.append(objective_name)
 
             # create metric Trackers
-            metric_tracker_dict = _return_metric_trackers(objective_name, raw_obj_dict)
+            metric_tracker_dict = _return_metric_trackers(raw_obj_dict)
 
             ret_dict[opt_name][objective_name] = {
                 "loss": loss_tracker_dict,

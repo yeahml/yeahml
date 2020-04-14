@@ -5,7 +5,7 @@ import tensorflow as tf
 from yeahml.train.setup.tracker.tracker import Tracker
 
 
-def create_loss_trackers(objective_name, objective_dict):
+def create_loss_trackers(objective_dict):
     """creates a dictionary mapping the each loss by name to a Tracker for the 
     number of instances that have passed through the model during training
 
@@ -54,12 +54,13 @@ def create_loss_trackers(objective_name, objective_dict):
 
     # get data set name, create empty tracker
     ds_name = objective_dict["in_config"]["dataset"]
-    loss_dict_tracker = {objective_name: {ds_name: {}}}
+    # loss_dict_tracker = {objective_name: {ds_name: {}}}
+    loss_dict_tracker = {ds_name: {}}
 
     for ds_split_name, dd in objective_dict["loss"]["track"].items():
-        loss_dict_tracker[objective_name][ds_name][ds_split_name] = {}
+        loss_dict_tracker[ds_name][ds_split_name] = {}
         for loss_name, loss_track_conf in dd.items():
-            loss_dict_tracker[objective_name][ds_name][ds_split_name][loss_name] = {}
+            loss_dict_tracker[ds_name][ds_split_name][loss_name] = {}
             assert (
                 len(loss_track_conf) == 1
             ), f"{loss_track_conf} should only have one item"
@@ -68,9 +69,9 @@ def create_loss_trackers(objective_name, objective_dict):
 
             # NOTE: assume that we are always minimizing the loss, thus
             # interested in tracking the minimum
-            loss_dict_tracker[objective_name][ds_name][ds_split_name][loss_name][
-                track_name
-            ] = Tracker(to_track=["min"])
+            loss_dict_tracker[ds_name][ds_split_name][loss_name][track_name] = Tracker(
+                to_track=["min"]
+            )
 
     return loss_dict_tracker
 

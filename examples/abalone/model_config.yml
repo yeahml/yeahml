@@ -53,4 +53,8 @@ layers:
       units: 1
       activation:
         type: 'linear'
+  reshape_out:
+    type: 'reshape'
+    options:
+      target_shape: 1,1
     endpoint: True
