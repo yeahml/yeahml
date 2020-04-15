@@ -397,34 +397,42 @@ def update_loss_tracking(
     return update_dict
 
 
-def create_ds_to_epoch_dict(dataset_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Create dictionary for keeping track of how many times we've iterated a dataset
-    
-    Parameters
-    ----------
-    dataset_dict : Dict[str, Any]
-        [description]
-        e.g.
-            {
-                "abalone": {
-                    "train": "<BatchDataset shapes: ((None, 2, 1), (None, 1, 1)), types: (tf.float64, tf.int64)>",
-                    "val": "<BatchDataset shapes: ((None, 2, 1), (None, 1, 1)), types: (tf.float64, tf.int64)>",
-            }}
-    
-    Returns
-    -------
-    Dict[str, Any]
-        dictionary of dataset and split to number of passes over the entire
-        dataset
-        e.g.
-            {'abalone': {'train': 0, 'val': 0}}
+def update_epoch_dict(
+    obj_ds_to_epoch: Dict[str, Any],
+    objective_name: str,
+    dataset_name: str,
+    split_name: str,
+):
+    """update num of iterations
     """
-    ds_to_epoch_dict = {}
-    for ds_name, name_ds_dict in dataset_dict.items():
-        ds_to_epoch_dict[ds_name] = {}
-        for split_name in name_ds_dict.keys():
-            ds_to_epoch_dict[ds_name][split_name] = 0
-    return ds_to_epoch_dict
+    try:
+        obj_ds_to_epoch[objective_name][dataset_name][split_name] += 1
+    except KeyError:
+        tmp_dict = {objective_name: {dataset_name: {split_name: 0}}}
+        obj_ds_to_epoch = {**obj_ds_to_epoch, **tmp_dict}
+    return obj_ds_to_epoch
+
+
+def update_is_training_dict(
+    obj_ds_to_training, objective_name, dataset_name, split_name
+):
+    try:
+        obj_ds_to_training[objective_name][dataset_name][split_name] = False
+    except KeyError:
+        obj_ds_to_training = {objective_name: {dataset_name: {split_name: True}}}
+
+
+def is_still_training(obj_ds_to_training):
+
+    # if a single is_training is found return True, else they are all false,
+    # return false
+    for obj_name, obj_to_training in obj_ds_to_training.items():
+        for ds_name, ds_to_training in obj_to_training.items():
+            for split_name, is_training in ds_to_training.items():
+                if is_training:
+                    return True
+    else:
+        return False
 
 
 def train_model(
@@ -478,9 +486,6 @@ def train_model(
     opt_to_app_grads_fn = {}
     opt_to_steps = {}
     opt_to_val_runs = {}
-    ds_to_epoch = create_ds_to_epoch_dict(dataset_dict)
-    print(ds_to_epoch)
-    sys.exit("yep")
     for cur_optimizer_name, _ in optimizers_dict.items():
         # opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
         # TODO: check config to see which fn to get supervised/etc
@@ -509,16 +514,21 @@ def train_model(
     logger.debug("START - iterating epochs dataset")
     all_train_step = 0
     LOGSTEPSIZE = 10
-    CHECK_STEP_SIZE = 128
 
     # TODO: how do I determine how "long" to go here... I think the 'right'
     # answer is dependent on the losses (train and val), but I think there is a
     # short answer as well.
-    for e in range(hp_cdict["epochs"]):  #
-        logger.debug(f"epoch: {e}")
-        # TODO: this needs to be driven by the directive, not just a walkthrough
+
+    # TODO: this needs to be driven by the directive, not just a walkthrough
+    obj_ds_to_epoch = {}
+    obj_ds_to_training = {}
+    # initialize to True
+    is_training = True
+    while is_training:
         for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
-            print(f"===== {cur_optimizer_name} ====")
+            # TODO: currently a single optimizer is run and then the other is run..
+            # this is not really the way we'd like to approach this.
+
             # loss
             # opt_name :loss :main_obj :ds_name :split_name :loss_name:desc_name
             # opt_name :metric :main_obj: ds_name :split_name :metric_name
@@ -572,12 +582,32 @@ def train_model(
                         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
                     )
                 cur_train_iter = cur_ds_iter_dict["train"]
+
+                # NOTE: := ?
                 cur_batch = get_next_batch(cur_train_iter)
                 if not cur_batch:
-                    ds_to_epoch[cur_ds_name]["train"] += 1
-                    iter_dict[cur_ds_name]["train"] = re_init_iter(
-                        cur_ds_name, "train", ds_dict
+                    obj_ds_to_epoch = update_epoch_dict(
+                        obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
                     )
+                    update_is_training_dict(
+                        obj_ds_to_training, cur_objective, cur_ds_name, "train"
+                    )
+                    logger.debug(
+                        f"epoch {cur_objective} - {cur_ds_name} {'train'}: {obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}"
+                    )
+                    if (
+                        obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
+                        >= hp_cdict["epochs"]
+                    ):
+                        is_training = is_still_training(obj_ds_to_training)
+                        # TODO: there is likely a better way to handle the case
+                        # where we have reached the 'set' number of epochs for
+                        # this problem
+
+                    dataset_iter_dict[cur_ds_name]["train"] = re_init_iter(
+                        cur_ds_name, "train", dataset_dict
+                    )
+                    break
 
                 grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
 
@@ -633,27 +663,30 @@ def train_model(
             # NOTE: do we need to combine predictions here at all?
             # TODO: consider running metrics while extracting batches for
             # training
-            for cur_objective in metrics_objective_names:
-                # could make hash of this
-                cur_in_conf = objectives_dict[cur_objective]["in_config"]
-                # {
-                #     "type": "supervised",
-                #     "options": {"prediction": "dense_out", "target": "target_v"},
-                #     "dataset": "abalone",
-                # }
-                # cur_ds_name = cur_in_conf["dataset"]
-                metric_conf = objectives_dict[cur_objective]["metrics"]
-                # {'meanabsoluteerror': {'train': "tf.metric", 'val':
-                # "tf.metric"}}
-                for metric_name, split_to_metric in metric_conf.items():
-                    if "train" in split_to_metric.keys():
-                        metric_obj = split_to_metric["train"]
 
-                        # TODO: hardcoded
-                        if cur_in_conf["type"] == "supervised":
-                            preds = obj_to_grads[cur_objective]["predictions"]
-                            y_batch = obj_to_grads[cur_objective]["y_batch"]
-                            metric_obj.update_state(y_batch, preds)
+            # this is a hacky way of seeing if training on a batch was run
+            if obj_to_grads:
+                for cur_objective in metrics_objective_names:
+                    # could make hash of this
+                    cur_in_conf = objectives_dict[cur_objective]["in_config"]
+                    # {
+                    #     "type": "supervised",
+                    #     "options": {"prediction": "dense_out", "target": "target_v"},
+                    #     "dataset": "abalone",
+                    # }
+                    # cur_ds_name = cur_in_conf["dataset"]
+                    metric_conf = objectives_dict[cur_objective]["metrics"]
+                    # {'meanabsoluteerror': {'train': "tf.metric", 'val':
+                    # "tf.metric"}}
+                    for metric_name, split_to_metric in metric_conf.items():
+                        if "train" in split_to_metric.keys():
+                            metric_obj = split_to_metric["train"]
+
+                            # TODO: hardcoded
+                            if cur_in_conf["type"] == "supervised":
+                                preds = obj_to_grads[cur_objective]["predictions"]
+                                y_batch = obj_to_grads[cur_objective]["y_batch"]
+                                metric_obj.update_state(y_batch, preds)
 
             update_metrics_dict = update_metrics_tracking(
                 metrics_objective_names,
@@ -666,33 +699,12 @@ def train_model(
 
             update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
 
-            print("*****" * 8)
-            print(
-                f"cur_steps: {opt_to_steps[cur_optimizer_name]} ---- {opt_to_steps[cur_optimizer_name] / CHECK_STEP_SIZE} ---- {opt_to_val_runs[cur_optimizer_name]} == {opt_to_steps[cur_optimizer_name] / CHECK_STEP_SIZE >= opt_to_val_runs[cur_optimizer_name]}"
-            )
-            print(update_dict)
-
             # one pass of training (a batch from each objective) with the
             # current optimizer
 
-            if (opt_to_steps[cur_optimizer_name] / CHECK_STEP_SIZE) >= opt_to_val_runs[
-                cur_optimizer_name
-            ]:
-                opt_to_val_runs[cur_optimizer_name] += 1
+    return_dict = {"tracker": main_tracker_dict}
 
-            # stopping to prevent endlessly iterating
-            if opt_to_val_runs[cur_optimizer_name] > 2:
-                break
-
-        # TODO: this is a particularly nasty, imperfect, stop-gap. but is
-        # helpful for development for the moment.
-        else:
-            continue
-
-        # DO VALIDATION SET
-        break
-
-    sys.exit()
+    return return_dict
 
     #
 
@@ -873,5 +885,3 @@ def train_model(
     #     "joint": joint_dict_tracker,
     #     "metrics": metric_trackers,
     # }
-
-    return return_dict

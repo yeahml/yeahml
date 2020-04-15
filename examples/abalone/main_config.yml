@@ -105,7 +105,7 @@ hyper_parameters:
   #   options:
   #     learning_rate: 0.001
   #     beta_1: 0.92
-  epochs: 50
+  epochs: 10
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
