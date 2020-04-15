@@ -296,9 +296,16 @@ def get_next_batch(ds_iter):
     try:
         batch = next(ds_iter)
     except StopIteration:
-        # raise StopIteration
-        raise ValueError("current dataset is out..")
+        batch = None
     return batch
+
+
+def convert_to_iter(tf_ds):
+    return tf_ds.repeat(1).__iter__()
+
+
+def re_init_iter(ds_name, split_name, ds_dict):
+    return convert_to_iter(ds_dict[ds_name][split_name])
 
 
 def convert_to_endless_iterator(ds_dict):
@@ -306,7 +313,8 @@ def convert_to_endless_iterator(ds_dict):
     for ds_name, ds_name_conf in ds_dict.items():
         iter_dict[ds_name] = {}
         for split_name, tf_ds in ds_name_conf.items():
-            iter_dict[ds_name][split_name] = tf_ds.repeat(-1).__iter__()
+            # only loop once
+            iter_dict[ds_name][split_name] = convert_to_iter(tf_ds)
     return iter_dict
 
 
@@ -389,6 +397,36 @@ def update_loss_tracking(
     return update_dict
 
 
+def create_ds_to_epoch_dict(dataset_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Create dictionary for keeping track of how many times we've iterated a dataset
+    
+    Parameters
+    ----------
+    dataset_dict : Dict[str, Any]
+        [description]
+        e.g.
+            {
+                "abalone": {
+                    "train": "<BatchDataset shapes: ((None, 2, 1), (None, 1, 1)), types: (tf.float64, tf.int64)>",
+                    "val": "<BatchDataset shapes: ((None, 2, 1), (None, 1, 1)), types: (tf.float64, tf.int64)>",
+            }}
+    
+    Returns
+    -------
+    Dict[str, Any]
+        dictionary of dataset and split to number of passes over the entire
+        dataset
+        e.g.
+            {'abalone': {'train': 0, 'val': 0}}
+    """
+    ds_to_epoch_dict = {}
+    for ds_name, name_ds_dict in dataset_dict.items():
+        ds_to_epoch_dict[ds_name] = {}
+        for split_name in name_ds_dict.keys():
+            ds_to_epoch_dict[ds_name][split_name] = 0
+    return ds_to_epoch_dict
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
@@ -440,6 +478,9 @@ def train_model(
     opt_to_app_grads_fn = {}
     opt_to_steps = {}
     opt_to_val_runs = {}
+    ds_to_epoch = create_ds_to_epoch_dict(dataset_dict)
+    print(ds_to_epoch)
+    sys.exit("yep")
     for cur_optimizer_name, _ in optimizers_dict.items():
         # opt_name_to_gradient_fn[cur_optimizer_name] = get_apply_grad_fn()
         # TODO: check config to see which fn to get supervised/etc
@@ -530,8 +571,13 @@ def train_model(
                     raise ValueError(
                         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
                     )
-                cur_train_ds = cur_ds_iter_dict["train"]
-                cur_batch = get_next_batch(cur_train_ds)
+                cur_train_iter = cur_ds_iter_dict["train"]
+                cur_batch = get_next_batch(cur_train_iter)
+                if not cur_batch:
+                    ds_to_epoch[cur_ds_name]["train"] += 1
+                    iter_dict[cur_ds_name]["train"] = re_init_iter(
+                        cur_ds_name, "train", ds_dict
+                    )
 
                 grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
 
