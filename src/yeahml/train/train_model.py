@@ -419,7 +419,7 @@ def update_is_training_dict(
         obj_ds_to_training = {objective_name: {dataset_name: {split_name: True}}}
 
 
-def is_still_training(obj_ds_to_training):
+def determine_if_training(obj_ds_to_training):
 
     # if a single is_training is found return True, else they are all false,
     # return false
@@ -444,6 +444,49 @@ def combine_gradients(obj_to_grads):
         else:
             combined_gradients += grad_dict["gradients"]
     return combined_gradients
+
+
+def update_model_params(apply_grads_fn, obj_to_grads, model, cur_tf_optimizer):
+    # combine gradients and use optimizer to update model. apply contraints to
+    # model variables
+    combined_gradients = combine_gradients(obj_to_grads)
+
+    # apply gradients to the model
+    apply_grads_fn(model, combined_gradients, cur_tf_optimizer)
+
+    # apply constraints
+    for variable in model.variables:
+        if variable.constraint is not None:
+            variable.assign(variable.constraint(variable))
+
+
+def update_metric_objects(
+    metrics_objective_names, objectives_dict, obj_to_grads, split_name
+):
+
+    # NOTE: do we need to combine predictions here at all?
+
+    for cur_objective in metrics_objective_names:
+        # could make hash of this
+        cur_in_conf = objectives_dict[cur_objective]["in_config"]
+        # {
+        #     "type": "supervised",
+        #     "options": {"prediction": "dense_out", "target": "target_v"},
+        #     "dataset": "abalone",
+        # }
+        # cur_ds_name = cur_in_conf["dataset"]
+        metric_conf = objectives_dict[cur_objective]["metrics"]
+        # {'meanabsoluteerror': {'train': "tf.metric", 'val':
+        # "tf.metric"}}
+        for metric_name, split_to_metric in metric_conf.items():
+            if split_name in split_to_metric.keys():
+                metric_obj = split_to_metric[split_name]
+
+                # TODO: hardcoded
+                if cur_in_conf["type"] == "supervised":
+                    preds = obj_to_grads[cur_objective]["predictions"]
+                    y_batch = obj_to_grads[cur_objective]["y_batch"]
+                    metric_obj.update_state(y_batch, preds)
 
 
 def train_model(
@@ -550,7 +593,7 @@ def train_model(
             #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
             # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
             get_grads_fn = opt_to_get_grads_fn[cur_optimizer_name]
-            app_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
+            apply_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
 
             HIST_LOGGED = False  # will update for each optimizer
             logger.debug(f"START - optimizing {cur_optimizer_name}")
@@ -609,7 +652,7 @@ def train_model(
                         obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
                         >= hp_cdict["epochs"]
                     ):
-                        is_training = is_still_training(obj_ds_to_training)
+                        is_training = determine_if_training(obj_ds_to_training)
                         # TODO: there is likely a better way to handle the case
                         # where we have reached the 'set' number of epochs for
                         # this problem
@@ -652,41 +695,13 @@ def train_model(
 
             # TODO: this is a hacky way of seeing if training on a batch was run
             if obj_to_grads:
-                combined_gradients = combine_gradients(obj_to_grads)
+                update_model_params(
+                    apply_grads_fn, obj_to_grads, model, cur_tf_optimizer
+                )
 
-                # apply gradients to the model
-                app_grads_fn(model, combined_gradients, cur_tf_optimizer)
-
-                # apply constraints
-                for variable in model.variables:
-                    if variable.constraint is not None:
-                        variable.assign(variable.constraint(variable))
-
-                # Training metrics -- can this be abstracted to a fn for reuse for
-                # each ds split?
-                # NOTE: do we need to combine predictions here at all?
-
-                for cur_objective in metrics_objective_names:
-                    # could make hash of this
-                    cur_in_conf = objectives_dict[cur_objective]["in_config"]
-                    # {
-                    #     "type": "supervised",
-                    #     "options": {"prediction": "dense_out", "target": "target_v"},
-                    #     "dataset": "abalone",
-                    # }
-                    # cur_ds_name = cur_in_conf["dataset"]
-                    metric_conf = objectives_dict[cur_objective]["metrics"]
-                    # {'meanabsoluteerror': {'train': "tf.metric", 'val':
-                    # "tf.metric"}}
-                    for metric_name, split_to_metric in metric_conf.items():
-                        if "train" in split_to_metric.keys():
-                            metric_obj = split_to_metric["train"]
-
-                            # TODO: hardcoded
-                            if cur_in_conf["type"] == "supervised":
-                                preds = obj_to_grads[cur_objective]["predictions"]
-                                y_batch = obj_to_grads[cur_objective]["y_batch"]
-                                metric_obj.update_state(y_batch, preds)
+                update_metric_objects(
+                    metrics_objective_names, objectives_dict, obj_to_grads, "train"
+                )
 
             update_metrics_dict = update_metrics_tracking(
                 metrics_objective_names,
@@ -705,7 +720,17 @@ def train_model(
             # TODO: Validation
             # loss
             # for cur_objective in loss_objective_names:
-            #     pass
+            #     cur_in_conf = objectives_dict[cur_objective]["in_config"]
+            #     loss_conf = objectives_dict[cur_objective]["loss"]
+
+            #     cur_ds_name = cur_in_conf["dataset"]
+            #     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
+            #     print(cur_ds_iter_dict)
+            # if "train" not in cur_ds_iter_dict.keys():
+            #     raise ValueError(
+            #         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
+            #     )
+            # cur_train_iter = cur_ds_iter_dict["valid"]
 
             # metrics
             # for cur_objective in metrics_objective_names:
