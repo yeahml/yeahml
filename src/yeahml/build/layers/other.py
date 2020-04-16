@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-from yeahml.helper import fmt_tensor_info
-
 
 def build_embedding_layer(opts: dict, name: str, logger, g_logger):
     if not name:
@@ -41,7 +39,7 @@ def build_embedding_layer(opts: dict, name: str, logger, g_logger):
     )
 
     logger.debug(f"tensor ob embedding_lookup: {out}")
-    g_logger.info(f"{fmt_tensor_info(out)}")
+    g_logger.info(f"{out}")
     logger.debug(f"[End] building: {name}")
 
     # TODO: VIZUALIZING EMBEDDINGS - https://www.tensorflow.org/guide/embedding
@@ -76,7 +74,7 @@ def build_batch_normalization_layer(opts: dict, name: str, logger, g_logger):
     )
 
     logger.debug(f"tensor ob batch_norm: {name}")
-    g_logger.info(f"{fmt_tensor_info(out)}")
+    g_logger.info(f"{out}")
     logger.debug(f"[End] building: {name}")
 
     return out
@@ -87,7 +85,7 @@ def build_flatten_layer(opts: dict, name: str, logger, g_logger):
     out = tf.keras.layers.Flatten()
 
     logger.debug(f"tensor ob batch_norm: {name}")
-    g_logger.info(f"{fmt_tensor_info(out)}")
+    g_logger.info(f"{out}")
     logger.debug(f"[End] building: {name}")
 
     return out
