@@ -1,10 +1,8 @@
 import pathlib
-import sys
 from typing import Any, Dict
 
 import tensorflow as tf
 
-from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.objectives import get_objectives
@@ -13,7 +11,6 @@ from yeahml.train.setup.paths import (
     create_model_training_paths,
     get_tb_writers,
 )
-from yeahml.train.setup.tracker.loss import update_loss_trackers
 from yeahml.train.setup.tracker.metric import (
     create_metric_trackers,
     update_metric_trackers,
@@ -435,6 +432,20 @@ def is_still_training(obj_ds_to_training):
         return False
 
 
+def combine_gradients(obj_to_grads):
+    # TODO: need to research how best to combine the gradients here...
+    # combine all gradients. This portion (with in the optimizer loop)
+    # will combine the gradients as if it were trained jointly
+    combined_gradients = None
+    for obj_name, grad_dict in obj_to_grads.items():
+        # TODO: we could add scaling/weighting here
+        if not combined_gradients:
+            combined_gradients = grad_dict["gradients"]
+        else:
+            combined_gradients += grad_dict["gradients"]
+    return combined_gradients
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
@@ -512,8 +523,8 @@ def train_model(
 
     # TODO: create list order of directives to loop through
     logger.debug("START - iterating epochs dataset")
-    all_train_step = 0
-    LOGSTEPSIZE = 10
+    # all_train_step = 0
+    # LOGSTEPSIZE = 10
 
     # TODO: how do I determine how "long" to go here... I think the 'right'
     # answer is dependent on the losses (train and val), but I think there is a
@@ -565,7 +576,6 @@ def train_model(
                     metrics_objective_names.append(cur_objective)
 
             # TODO: reset losses
-            all_grads = None
 
             obj_to_grads = {}
             # TODO: the losses should be grouped by the ds used so that we only
@@ -640,32 +650,22 @@ def train_model(
                 )
                 loss_update_dict[cur_objective] = update_dict
 
-            # TODO: need to research how best to combine the gradients here...
-            # combine all gradients. This portion (with in the optimizer loop)
-            # will combine the gradients as if it were trained jointly
-            all_grads = None
-            for obj_name, grad_dict in obj_to_grads.items():
-                # TODO: we could add scaling/weighting here
-                if not all_grads:
-                    all_grads = grad_dict["gradients"]
-                else:
-                    all_grads += grad_dict["gradients"]
-
-            # apply gradients to the model
-            app_grads_fn(model, grad_dict["gradients"], cur_tf_optimizer)
-
-            # apply constraints
-            for variable in model.variables:
-                if variable.constraint is not None:
-                    variable.assign(variable.constraint(variable))
-
-            # TODO: run metrics
-            # NOTE: do we need to combine predictions here at all?
-            # TODO: consider running metrics while extracting batches for
-            # training
-
-            # this is a hacky way of seeing if training on a batch was run
+            # TODO: this is a hacky way of seeing if training on a batch was run
             if obj_to_grads:
+                combined_gradients = combine_gradients(obj_to_grads)
+
+                # apply gradients to the model
+                app_grads_fn(model, combined_gradients, cur_tf_optimizer)
+
+                # apply constraints
+                for variable in model.variables:
+                    if variable.constraint is not None:
+                        variable.assign(variable.constraint(variable))
+
+                # Training metrics -- can this be abstracted to a fn for reuse for
+                # each ds split?
+                # NOTE: do we need to combine predictions here at all?
+
                 for cur_objective in metrics_objective_names:
                     # could make hash of this
                     cur_in_conf = objectives_dict[cur_objective]["in_config"]
@@ -701,6 +701,15 @@ def train_model(
 
             # one pass of training (a batch from each objective) with the
             # current optimizer
+
+            # TODO: Validation
+            # loss
+            # for cur_objective in loss_objective_names:
+            #     pass
+
+            # metrics
+            # for cur_objective in metrics_objective_names:
+            #     pass
 
     return_dict = {"tracker": main_tracker_dict}
 
