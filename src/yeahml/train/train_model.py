@@ -143,41 +143,41 @@ def get_apply_grad_fn():
     return apply_grad
 
 
-def get_apply_grad_fn_v1():
-
-    # https://github.com/tensorflow/tensorflow/issues/27120
-    # this allows the model to continue to be trained on multiple calls
+def get_validation_step_fn():
     @tf.function
-    def apply_grad(model, x_batch, y_batch, loss_fns, optimizer):
-        with tf.GradientTape() as tape:
-            prediction = model(x_batch, training=True)
+    def get_preds(model, batch, loss_fns):
+        # supervised implies a x, and y.. however, this maybe should change to a
+        # dict indexing
+        if not isinstance(loss_fns, list):
+            loss_fns = [loss_fns]
 
-            # TODO: apply mask?
-            full_losses = []
-            for loss_fn in loss_fns:
-                loss = loss_fn(y_batch, prediction)
+        x_batch, y_batch = batch
+        prediction = model(x_batch, training=False)
 
-                # TODO: custom weighting for training could be applied here
-                # weighted_losses = loss * weights_per_instance
-                main_loss = tf.reduce_mean(loss)
-                # model.losses contains the kernel/bias constraints/regularizers
-                cur_loss = tf.add_n([main_loss] + model.losses)
-                # full_loss = tf.add_n(full_loss, cur_loss)
-                full_losses.append(cur_loss)
-                # create joint loss for current optimizer
-                # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
-            final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
+        # TODO: apply mask?
+        full_losses = []
+        for loss_fn in loss_fns:
+            loss = loss_fn(y_batch, prediction)
 
-        # TODO: maybe we should be able to specify which params to be optimized
-        # by specific optimizers
-        grads = tape.gradient(final_loss, model.trainable_variables)
+            # TODO: custom weighting for training could be applied here
+            # weighted_losses = loss * weights_per_instance
+            main_loss = tf.reduce_mean(loss)
+            # model.losses contains the kernel/bias constraints/regularizers
+            cur_loss = tf.add_n([main_loss] + model.losses)
+            # full_loss = tf.add_n(full_loss, cur_loss)
+            full_losses.append(cur_loss)
+            # create joint loss for current optimizer
+            # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
+        final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
 
-        # NOTE: any gradient adjustments would happen here
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        return {
+            "predictions": prediction,
+            "final_loss": final_loss,
+            "losses": loss,
+            "y_batch": y_batch,
+        }
 
-        return prediction, final_loss, full_losses
-
-    return apply_grad
+    return get_preds
 
 
 @tf.function
@@ -489,6 +489,57 @@ def update_metric_objects(
                     metric_obj.update_state(y_batch, preds)
 
 
+def validation(
+    model,
+    loss_objective_names,
+    metrics_objective_names,
+    cur_val_iter,
+    cur_val_fn,
+    opt_tracker_dict,
+    cur_objective,
+    cur_ds_name,
+):
+    print(f"validation on {cur_objective} with {cur_ds_name}")
+
+    # cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name]["val"]
+    # loss
+    # for cur_objective in loss_objective_names:
+    #     cur_in_conf = objectives_dict[cur_objective]["in_config"]
+    #     loss_conf = objectives_dict[cur_objective]["loss"]
+
+    #     cur_ds_name = cur_in_conf["dataset"]
+    #     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
+    #     print(cur_ds_iter_dict)
+    # if "train" not in cur_ds_iter_dict.keys():
+    #     raise ValueError(
+    #         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
+    #     )
+    # cur_train_iter = cur_ds_iter_dict["valid"]
+    # update_dict = update_loss_tracking(
+    #                 grad_dict,
+    #                 cur_loss_conf_desc,
+    #                 cur_loss_tracker_dict,
+    #                 opt_to_steps[cur_optimizer_name],
+    #             )
+
+    # metrics
+    # for cur_objective in metrics_objective_names:
+    #     pass
+
+    # update_metric_objects(
+    #     metrics_objective_names, objectives_dict, obj_to_grads, "train"
+    # )
+
+    # update_metrics_dict = update_metrics_tracking(
+    #         metrics_objective_names,
+    #         objectives_dict,
+    #         opt_tracker_dict,
+    #         obj_to_grads,
+    #         opt_to_steps[cur_optimizer_name],
+    #         "train",
+    #     )
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
@@ -536,6 +587,7 @@ def train_model(
     # opt_name_to_gradient_fn = {}
     # get_apply_grad_fn
     # get_get_supervised_grads_fn
+    opt_to_validation_fn = {}
     opt_to_get_grads_fn = {}
     opt_to_app_grads_fn = {}
     opt_to_steps = {}
@@ -545,6 +597,7 @@ def train_model(
         # TODO: check config to see which fn to get supervised/etc
         opt_to_get_grads_fn[cur_optimizer_name] = get_get_supervised_grads_fn()
         opt_to_app_grads_fn[cur_optimizer_name] = get_apply_grad_fn()
+        opt_to_validation_fn[cur_optimizer_name] = get_validation_step_fn()
         opt_to_steps[cur_optimizer_name] = 0
         opt_to_val_runs[cur_optimizer_name] = 1
 
@@ -639,6 +692,7 @@ def train_model(
                 # NOTE: := ?
                 cur_batch = get_next_batch(cur_train_iter)
                 if not cur_batch:
+                    # have reached the end of the dataset
                     obj_ds_to_epoch = update_epoch_dict(
                         obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
                     )
@@ -660,6 +714,27 @@ def train_model(
                     dataset_iter_dict[cur_ds_name]["train"] = re_init_iter(
                         cur_ds_name, "train", dataset_dict
                     )
+
+                    # perform validation after each pass through the training
+                    # dataset
+                    # NOTE: the location of this 'validation' may change
+                    # TODO: there is an error here where the first objective
+                    # will be validated on the last epoch and then one more
+                    # time.
+                    # TODO: ensure the metrics are reset
+                    cur_val_iter = cur_ds_iter_dict["val"]
+                    cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
+                    validation(
+                        model,
+                        loss_objective_names,
+                        metrics_objective_names,
+                        cur_val_iter,
+                        cur_val_fn,
+                        opt_tracker_dict,
+                        cur_objective,
+                        cur_ds_name,
+                    )
+
                     break
 
                 grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
@@ -716,25 +791,6 @@ def train_model(
 
             # one pass of training (a batch from each objective) with the
             # current optimizer
-
-            # TODO: Validation
-            # loss
-            # for cur_objective in loss_objective_names:
-            #     cur_in_conf = objectives_dict[cur_objective]["in_config"]
-            #     loss_conf = objectives_dict[cur_objective]["loss"]
-
-            #     cur_ds_name = cur_in_conf["dataset"]
-            #     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
-            #     print(cur_ds_iter_dict)
-            # if "train" not in cur_ds_iter_dict.keys():
-            #     raise ValueError(
-            #         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
-            #     )
-            # cur_train_iter = cur_ds_iter_dict["valid"]
-
-            # metrics
-            # for cur_objective in metrics_objective_names:
-            #     pass
 
     return_dict = {"tracker": main_tracker_dict}
 
