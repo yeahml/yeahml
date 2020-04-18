@@ -50,6 +50,8 @@ now it is "working" as I hoped.
   epoch param so that if we want to only run ~n more epochs from the notebook we
   can
 - I'll also need to ensure the tracking dict is persisted.
+
+- could keep note of all extra tricky batches/instances after n epochs.
 """
 
 
@@ -324,6 +326,7 @@ def update_metrics_tracking(
     num_train_instances,
     ds_split_name,
 ):
+    # update Tracker and reset tf object
     # NOTE: presently there can only be one loss coming in so the order is not
     # important
 
@@ -350,6 +353,7 @@ def update_metrics_tracking(
             if ds_split_name in split_to_metric.keys():
                 metric_obj = split_to_metric[ds_split_name]
                 result = metric_obj.result().numpy()
+                metric_obj.reset_states()
                 cur_update = metric_tracker.update(
                     step=num_train_instances, value=result
                 )
@@ -358,7 +362,7 @@ def update_metrics_tracking(
     return update_dict
 
 
-def update_loss_tracking(
+def update_loss_tracking_reset_tf(
     grad_dict, track_desc_dict, cur_loss_tracker_dict, num_train_instances
 ):
     # Update Tracker and reset tf states
@@ -387,7 +391,7 @@ def update_loss_tracking(
 
             desc_tf_obj.update_state(losses)
             tf_desc_val = desc_tf_obj.result().numpy()
-            # desc_tf_obj.reset_states()
+            desc_tf_obj.reset_states()
 
             cur_update = desc_tracker.update(
                 step=num_train_instances, value=tf_desc_val
@@ -493,6 +497,7 @@ def update_metric_objects(
 
 
 def update_tf_val_losses(pred_dict, track_desc_dict):
+    # the state is not reset here
     # TODO: need to ensure (outside this function) that the predictions are the
     # same shape as the y_batch such that we don't have a broadcasting issue
     for _, desc_dict in track_desc_dict.items():
@@ -502,10 +507,11 @@ def update_tf_val_losses(pred_dict, track_desc_dict):
             losses = pred_dict["losses"]
 
             desc_tf_obj.update_state(losses)
-            tf_desc_val = desc_tf_obj.result().numpy()
+            # tf_desc_val = desc_tf_obj.result().numpy()
 
 
 def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_instances):
+    # update Tracker and reset tf states
 
     update_dict = {}
     for loss_name, desc_dict in cur_loss_conf.items():
@@ -514,6 +520,7 @@ def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_ins
             desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
 
             tf_desc_val = desc_tf_obj.result().numpy()
+            desc_tf_obj.reset_states()
 
             cur_update = desc_tracker.update(
                 step=num_train_instances, value=tf_desc_val
@@ -539,6 +546,7 @@ def update_tf_val_metrics(val_preds_dict, metrics_conf, val_name, cur_metrics_ty
 def update_val_metrics_trackers(
     metrics_conf, cur_metric_tracker_dict, val_name, num_train_instances
 ):
+    # update Tracker, reset tf states
     update_dict = {}
 
     for metric_name, split_to_metric in metrics_conf.items():
@@ -547,6 +555,7 @@ def update_val_metrics_trackers(
         if val_name in split_to_metric.keys():
             metric_obj = split_to_metric[val_name]
             result = metric_obj.result().numpy()
+            metric_obj.reset_states()
             cur_update = metric_tracker.update(step=num_train_instances, value=result)
             update_dict[metric_name] = cur_update
 
@@ -588,14 +597,10 @@ def validation(
 
         # iterate batches
         cur_batch = get_next_batch(cur_val_iter)
-        j = 0
-        while cur_batch:
-            j += 1
-            val_dict = cur_val_fn(model, cur_batch, loss_conf["object"])
 
-            # print(tf.squeeze(val_dict["predictions"].numpy()))
-            if j > 3:
-                sys.exit()
+        while cur_batch:
+
+            val_dict = cur_val_fn(model, cur_batch, loss_conf["object"])
             # {"predictions": prediction,
             # "final_loss": final_loss,
             # "losses": loss,
@@ -609,7 +614,9 @@ def validation(
             cur_batch = get_next_batch(cur_val_iter)
 
         # reinitialize validation iterator
-        dataset_iter_dict[val_name] = re_init_iter(cur_ds_name, val_name, dataset_dict)
+        dataset_iter_dict[cur_ds_name][val_name] = re_init_iter(
+            cur_ds_name, val_name, dataset_dict
+        )
 
         # update trackers
         cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name][
@@ -855,7 +862,7 @@ def train_model(
                 # NOTE: the steps here aren't accurate (due to note above about)
                 # using the same batches for objectives/losses that specify the
                 # same datasets
-                update_dict = update_loss_tracking(
+                update_dict = update_loss_tracking_reset_tf(
                     grad_dict,
                     cur_loss_conf_desc,
                     cur_loss_tracker_dict,
