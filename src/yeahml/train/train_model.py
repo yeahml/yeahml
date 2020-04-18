@@ -505,7 +505,6 @@ def update_tf_val_losses(pred_dict, track_desc_dict):
 
         for desc_name, desc_tf_obj in desc_dict.items():
             losses = pred_dict["losses"]
-
             desc_tf_obj.update_state(losses)
             # tf_desc_val = desc_tf_obj.result().numpy()
 
@@ -646,6 +645,8 @@ def train_model(
 
     # TODO: option to reinitialize model?
 
+    YML_TRACK_UPDATE = 30
+
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
     meta_cdict: Dict[str, Any] = config_dict["meta"]
@@ -731,6 +732,7 @@ def train_model(
     obj_ds_to_training = {}
     # initialize to True
     is_training = True
+    num_training_ops = 0
     while is_training:
         for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
             # TODO: currently a single optimizer is run and then the other is run..
@@ -844,6 +846,7 @@ def train_model(
                 # TODO: see note above about ensuring the same batch is used for
                 # losses with the same dataset specified
                 opt_to_steps[cur_optimizer_name] += cur_batch[0].shape[0]
+                num_training_ops += 1
                 # grad_dict contains {
                 #     "gradients": grads,
                 #     "predictions": prediction,
@@ -862,15 +865,26 @@ def train_model(
                 # NOTE: the steps here aren't accurate (due to note above about)
                 # using the same batches for objectives/losses that specify the
                 # same datasets
-                update_dict = update_loss_tracking_reset_tf(
-                    grad_dict,
-                    cur_loss_conf_desc,
-                    cur_loss_tracker_dict,
-                    opt_to_steps[cur_optimizer_name],
-                )
-                loss_update_dict[cur_objective] = update_dict
+                # TODO: HERE
+                # update_dict = update_loss_tracking_reset_tf(
+                #     grad_dict,
+                #     cur_loss_conf_desc,
+                #     cur_loss_tracker_dict,
+                #     opt_to_steps[cur_optimizer_name],
+                # )
+                update_tf_val_losses(grad_dict, cur_loss_conf_desc)
+
+                if num_training_ops % YML_TRACK_UPDATE == 0:
+                    cur_loss_update = update_val_loss_trackers(
+                        cur_loss_conf_desc,
+                        cur_loss_tracker_dict,
+                        opt_to_steps[cur_optimizer_name],
+                    )
+
+                    loss_update_dict[cur_objective] = cur_loss_update
 
             # TODO: this is a hacky way of seeing if training on a batch was run
+            update_metrics_dict = None
             if obj_to_grads:
                 update_model_params(
                     apply_grads_fn, obj_to_grads, model, cur_tf_optimizer
@@ -880,14 +894,15 @@ def train_model(
                     metrics_objective_names, objectives_dict, obj_to_grads, "train"
                 )
 
-            update_metrics_dict = update_metrics_tracking(
-                metrics_objective_names,
-                objectives_dict,
-                opt_tracker_dict,
-                obj_to_grads,
-                opt_to_steps[cur_optimizer_name],
-                "train",
-            )
+                if num_training_ops % YML_TRACK_UPDATE == 0:
+                    update_metrics_dict = update_metrics_tracking(
+                        metrics_objective_names,
+                        objectives_dict,
+                        opt_tracker_dict,
+                        obj_to_grads,
+                        opt_to_steps[cur_optimizer_name],
+                        "train",
+                    )
 
             update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
 

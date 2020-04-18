@@ -78,13 +78,13 @@ optimize:
     "main_opt":
       type: 'adam'
       options:
-        learning_rate: 0.0001
+        learning_rate: 0.00002
         beta_1: 0.91 
       objectives: ["main_obj"]
     "second_opt":
       type: 'adam'
       options:
-        learning_rate: 0.0001
+        learning_rate: 0.00002
         beta_1: 0.91 
       objectives: ["second_obj"]
   directive:
@@ -105,7 +105,7 @@ hyper_parameters:
   #   options:
   #     learning_rate: 0.001
   #     beta_1: 0.92
-  epochs: 10
+  epochs: 20
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
