@@ -1,6 +1,7 @@
 import pathlib
 from typing import Any, Dict
 
+import sys
 import tensorflow as tf
 
 from yeahml.log.yf_logging import config_logger  # custom logging
@@ -288,7 +289,7 @@ def get_next_batch(ds_iter):
     # TODO: this should accept the ds_dict and ds_iter so that if we reach the
     # we can recreate the ds_iter -- this will allow us to keep track of number
     # of passes for each dataset. When we do this, we'll also have to drop the
-    # `convert_to_endless_iterator` function --- it will be included here
+    # `convert_to_single_pass_iterator` function --- it will be included here
     # instead.
     try:
         batch = next(ds_iter)
@@ -305,7 +306,7 @@ def re_init_iter(ds_name, split_name, ds_dict):
     return convert_to_iter(ds_dict[ds_name][split_name])
 
 
-def convert_to_endless_iterator(ds_dict):
+def convert_to_single_pass_iterator(ds_dict):
     iter_dict = {}
     for ds_name, ds_name_conf in ds_dict.items():
         iter_dict[ds_name] = {}
@@ -360,6 +361,7 @@ def update_metrics_tracking(
 def update_loss_tracking(
     grad_dict, track_desc_dict, cur_loss_tracker_dict, num_train_instances
 ):
+    # Update Tracker and reset tf states
     # NOTE: presently there can only be one loss coming in so the order is not
     # important
     assert (
@@ -385,6 +387,7 @@ def update_loss_tracking(
 
             desc_tf_obj.update_state(losses)
             tf_desc_val = desc_tf_obj.result().numpy()
+            # desc_tf_obj.reset_states()
 
             cur_update = desc_tracker.update(
                 step=num_train_instances, value=tf_desc_val
@@ -489,55 +492,145 @@ def update_metric_objects(
                     metric_obj.update_state(y_batch, preds)
 
 
+def update_tf_val_losses(pred_dict, track_desc_dict):
+    # TODO: need to ensure (outside this function) that the predictions are the
+    # same shape as the y_batch such that we don't have a broadcasting issue
+    for _, desc_dict in track_desc_dict.items():
+        #  _ = loss_name
+
+        for desc_name, desc_tf_obj in desc_dict.items():
+            losses = pred_dict["losses"]
+
+            desc_tf_obj.update_state(losses)
+            tf_desc_val = desc_tf_obj.result().numpy()
+
+
+def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_instances):
+
+    update_dict = {}
+    for loss_name, desc_dict in cur_loss_conf.items():
+        update_dict[loss_name] = {}
+        for desc_name, desc_tf_obj in desc_dict.items():
+            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
+
+            tf_desc_val = desc_tf_obj.result().numpy()
+
+            cur_update = desc_tracker.update(
+                step=num_train_instances, value=tf_desc_val
+            )
+            update_dict[loss_name][desc_name] = cur_update
+
+    return update_dict
+
+
+def update_tf_val_metrics(val_preds_dict, metrics_conf, val_name, cur_metrics_type):
+
+    for metric_name, split_to_metric in metrics_conf.items():
+        if val_name in split_to_metric.keys():
+            metric_tf_obj = split_to_metric[val_name]
+
+            # TODO: hardcoded - some may not be a prediction/ground truth
+            if cur_metrics_type == "supervised":
+                preds = val_preds_dict["predictions"]
+                y_batch = val_preds_dict["y_batch"]
+                metric_tf_obj.update_state(y_batch, preds)
+
+
+def update_val_metrics_trackers(
+    metrics_conf, cur_metric_tracker_dict, val_name, num_train_instances
+):
+    update_dict = {}
+
+    for metric_name, split_to_metric in metrics_conf.items():
+        metric_tracker = cur_metric_tracker_dict[metric_name]
+        update_dict[metric_name] = {}
+        if val_name in split_to_metric.keys():
+            metric_obj = split_to_metric[val_name]
+            result = metric_obj.result().numpy()
+            cur_update = metric_tracker.update(step=num_train_instances, value=result)
+            update_dict[metric_name] = cur_update
+
+    return update_dict
+
+
 def validation(
     model,
     loss_objective_names,
     metrics_objective_names,
-    cur_val_iter,
+    dataset_iter_dict,
     cur_val_fn,
     opt_tracker_dict,
     cur_objective,
     cur_ds_name,
+    dataset_dict,
+    num_train_instances,
+    objectives_dict,
 ):
-    print(f"validation on {cur_objective} with {cur_ds_name}")
+    val_name = "val"
 
-    # cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name]["val"]
-    # loss
-    # for cur_objective in loss_objective_names:
-    #     cur_in_conf = objectives_dict[cur_objective]["in_config"]
-    #     loss_conf = objectives_dict[cur_objective]["loss"]
+    cur_update = {}
+    for cur_objective in loss_objective_names:
+        cur_in_conf = objectives_dict[cur_objective]["in_config"]
+        cur_ds_name = cur_in_conf["dataset"]
+        cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
+        if val_name not in cur_ds_iter_dict.keys():
+            raise ValueError(
+                f"{cur_in_conf['dataset']} does not have a '{val_name}' dataset"
+            )
+        cur_val_iter = cur_ds_iter_dict[val_name]
 
-    #     cur_ds_name = cur_in_conf["dataset"]
-    #     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
-    #     print(cur_ds_iter_dict)
-    # if "train" not in cur_ds_iter_dict.keys():
-    #     raise ValueError(
-    #         f"{cur_in_conf['dataset']} does not have a 'train' dataset"
-    #     )
-    # cur_train_iter = cur_ds_iter_dict["valid"]
-    # update_dict = update_loss_tracking(
-    #                 grad_dict,
-    #                 cur_loss_conf_desc,
-    #                 cur_loss_tracker_dict,
-    #                 opt_to_steps[cur_optimizer_name],
-    #             )
+        # loss
+        loss_conf = objectives_dict[cur_objective]["loss"]
+        cur_loss_conf = loss_conf["track"][val_name]
 
-    # metrics
-    # for cur_objective in metrics_objective_names:
-    #     pass
+        # metrics
+        metrics_conf = objectives_dict[cur_objective]["metrics"]
 
-    # update_metric_objects(
-    #     metrics_objective_names, objectives_dict, obj_to_grads, "train"
-    # )
+        # iterate batches
+        cur_batch = get_next_batch(cur_val_iter)
+        j = 0
+        while cur_batch:
+            j += 1
+            val_dict = cur_val_fn(model, cur_batch, loss_conf["object"])
 
-    # update_metrics_dict = update_metrics_tracking(
-    #         metrics_objective_names,
-    #         objectives_dict,
-    #         opt_tracker_dict,
-    #         obj_to_grads,
-    #         opt_to_steps[cur_optimizer_name],
-    #         "train",
-    #     )
+            # print(tf.squeeze(val_dict["predictions"].numpy()))
+            if j > 3:
+                sys.exit()
+            # {"predictions": prediction,
+            # "final_loss": final_loss,
+            # "losses": loss,
+            # "y_batch": y_batch,}
+
+            # update tf objects
+            update_tf_val_losses(val_dict, cur_loss_conf)
+            update_tf_val_metrics(val_dict, metrics_conf, val_name, cur_in_conf["type"])
+
+            # next batch until end
+            cur_batch = get_next_batch(cur_val_iter)
+
+        # reinitialize validation iterator
+        dataset_iter_dict[val_name] = re_init_iter(cur_ds_name, val_name, dataset_dict)
+
+        # update trackers
+        cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name][
+            val_name
+        ]
+        cur_loss_update = update_val_loss_trackers(
+            cur_loss_conf, cur_loss_tracker_dict, num_train_instances
+        )
+
+        cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
+            cur_ds_name
+        ][val_name]
+        cur_metrics_update = update_val_metrics_trackers(
+            metrics_conf, cur_metric_tracker_dict, val_name, num_train_instances
+        )
+
+        cur_update[cur_objective] = {
+            "loss": cur_loss_update,
+            "metrics": cur_metrics_update,
+        }
+    return cur_update
 
 
 def train_model(
@@ -615,7 +708,7 @@ def train_model(
         datasets_dict=dataset_dict,
     )
 
-    dataset_iter_dict = convert_to_endless_iterator(dataset_dict)
+    dataset_iter_dict = convert_to_single_pass_iterator(dataset_dict)
 
     # TODO: create list order of directives to loop through
     logger.debug("START - iterating epochs dataset")
@@ -722,17 +815,19 @@ def train_model(
                     # will be validated on the last epoch and then one more
                     # time.
                     # TODO: ensure the metrics are reset
-                    cur_val_iter = cur_ds_iter_dict["val"]
                     cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
-                    validation(
+                    cur_val_update = validation(
                         model,
                         loss_objective_names,
                         metrics_objective_names,
-                        cur_val_iter,
+                        dataset_iter_dict,
                         cur_val_fn,
                         opt_tracker_dict,
                         cur_objective,
                         cur_ds_name,
+                        dataset_dict,
+                        opt_to_steps[cur_optimizer_name],
+                        objectives_dict,
                     )
 
                     break
