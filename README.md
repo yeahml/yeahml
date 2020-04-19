@@ -1,11 +1,15 @@
 # YeahML
 
-YeahML is a prototype framework for creating ML models using configuration files (yaml or json).
+YeahML is a prototype framework for creating ML models using configuration files
+(yaml or json).
 
-Please note: this is a work in progress and may change dramatically. I would
-appreciate help developing+thinking through this project. If you are interested,
-please reach out via an issue or on twitter
-[@Jack_Burdick](https://twitter.com/Jack_Burdick)
+Please note: 
+- This is a personal project and is a work in progress and may change
+  dramatically
+- I would appreciate help developing+thinking through this project. If you are
+  interested, please reach out via an issue or PR
+- The current implementation unbearably slow (almost to the point of unusable),
+  but presently I'm focused on cleaning up the base to be more readable/correct.
 
 ## Overview
 
@@ -39,8 +43,15 @@ train_dict = yml.train_model(model, yml_config)
 
 # note: if you can also pass an already created tf_dataset
 # e.g.
-ds_tuple = (ds_dict["train"], ds_dict["val"])
-train_dict = yml.train_model(model, yml_config, ds_tuple)
+# train_dict = yml.train_model(model, yml_config, ds_dict)
+# where ds_dict contains may look like:
+# ds_dict = {
+#   "ds_name":{
+#     "train": <tf.dataset>, 
+#     "val": <tf.dataset>, 
+#     "test": <tf.dataset>
+#     }
+#   }
 
 ######################################################
 # evaluate graph -- can specify parameters to use, or will load the 
@@ -117,6 +128,7 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
+        dataset: 'abalone'
 
 data:
   in:
@@ -138,6 +150,8 @@ optimize:
         learning_rate: 0.0001
         beta_1: 0.91 
       objectives: ["main"]
+  directive:
+    instructions: "main_opt"
 
 hyper_parameters:
   epochs: 30
