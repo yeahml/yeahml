@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple
 
+SINGLE_OP_DEF = "+"
 ACCEPTED_OPTERATORS = {"&": "joint", "|": "alternate", ",": "sequential"}
 
 """
@@ -8,7 +9,7 @@ instruction/training "recipe" directly, with options specifying more advanced fe
 """
 
 
-def _create_instrution_bounds(instructions: str) -> List[Tuple[int, int]]:
+def _create_instruction_bounds(instructions: str) -> List[Tuple[int, int]]:
     """converts an instruction string into a list of bounds containing the 
     index of the opening and closing parenthesis
     
@@ -101,10 +102,16 @@ def _create_instruction_order_dict(
     """
 
     instruct_dict = {}
-    for i, step in enumerate(instruction_bounds):
-        cur_instruction_string = instructions[step[0] + 1 : step[1]]
-        name_key = f"YEAHML_{i}"  # TODO: a hash would be more elegant?
-        instruct_dict[name_key] = cur_instruction_string
+
+    if instruction_bounds:
+        for i, step in enumerate(instruction_bounds):
+            cur_instruction_string = instructions[step[0] + 1 : step[1]]
+            name_key = f"YEAHML_{i}"  # TODO: a hash would be more elegant?
+            instruct_dict[name_key] = cur_instruction_string
+    else:
+        # there are no bounds, wrap entire string
+        name_key = "YEAHML_0"
+        instruct_dict[name_key] = instructions
 
     return instruct_dict
 
@@ -164,29 +171,37 @@ def _parse_instruction_dict(
                 pass
 
         if not op_indexes:
-            raise ValueError(f"no opperations were found in {instruct_str}")
-
-        optimizer_names = []
-        for i, op_i in enumerate(op_indexes):
-            if i == 0:
-                # set to -1 because we index by +1 in .append()
-                prev_i = -1
+            if len(instruction_dict) == 1:
+                split_on_space = instruct_str.split(" ")
+                if len(split_on_space) == 1:
+                    parsed_instructions[key_name]["operation"] = SINGLE_OP_DEF
+                    parsed_instructions[key_name]["optimizers"] = instruct_str
             else:
-                prev_i = op_indexes[i - 1]
+                raise ValueError(f"no operations were found in {instruct_str}")
+        else:
+            optimizer_names = []
+            for i, op_i in enumerate(op_indexes):
+                if i == 0:
+                    # set to -1 because we index by +1 in .append()
+                    prev_i = -1
+                else:
+                    prev_i = op_indexes[i - 1]
 
-            # obtain +1 beyond the prev instruction
-            optimizer_names.append(instruct_str[prev_i + 1 : op_i])
-        optimizer_names.append(instruct_str[op_i + 1 :])
+                # obtain +1 beyond the prev instruction
+                optimizer_names.append(instruct_str[prev_i + 1 : op_i])
+            optimizer_names.append(instruct_str[op_i + 1 :])
 
-        # strip `(` and `)`
-        optimizer_names = [name.lstrip("( ").rstrip(" )") for name in optimizer_names]
-        parsed_instructions[key_name]["optimizers"] = optimizer_names
+            # strip `(` and `)`
+            optimizer_names = [
+                name.lstrip("( ").rstrip(" )") for name in optimizer_names
+            ]
+            parsed_instructions[key_name]["optimizers"] = optimizer_names
 
-        if not len(set(op_types)) == 1:
-            raise ValueError(
-                f"op types {set(op_types)} were discovered but only a single type is allowed"
-            )
-        parsed_instructions[key_name]["operation"] = op_types[0]
+            if not len(set(op_types)) == 1:
+                raise ValueError(
+                    f"operation types {set(op_types)} were discovered but only a single type is allowed for a particular instruction"
+                )
+            parsed_instructions[key_name]["operation"] = op_types[0]
 
     return parsed_instructions
 
@@ -299,7 +314,7 @@ def parse_instructions(instructions: str) -> Dict[str, Dict[str, Any]]:
     ), f"number of `(` and `)` parens not equal `(`: {l_paren}, `)`: {r_paren}"
 
     # chain of functions to parse individual operations
-    instruction_bounds = _create_instrution_bounds(instructions)
+    instruction_bounds = _create_instruction_bounds(instructions)
     instruction_dict = _create_instruction_order_dict(instructions, instruction_bounds)
     nested_instructs = _create_nested_instructs(instruction_dict)
     parsed_instructions = _parse_instruction_dict(nested_instructs)
