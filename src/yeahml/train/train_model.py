@@ -1,7 +1,6 @@
 import pathlib
 from typing import Any, Dict
 
-import sys
 import tensorflow as tf
 
 from yeahml.log.yf_logging import config_logger  # custom logging
@@ -61,6 +60,8 @@ implemented error -- presently the training loop is driven by the
 optimizers (and as a result all objectives that have matching in_configs).
 meaning, if a metric does not have a matching in_config, it will not be
 evaluated.
+
+# TODO: random -- check for nans in loss values
 
 TODO: build best loss dict
 
@@ -183,107 +184,10 @@ def get_validation_step_fn():
     return get_preds
 
 
-@tf.function
-def train_step(
-    model,
-    x_batch_train,
-    y_batch_train,
-    cur_tf_optimizer,
-    l2o_objects,
-    l2o_loss_record_train,
-    joint_loss_record_train,
-    metric_objs_train,
-    model_apply_grads_fn,
-):
-
-    # for i,loss_fn in enumerate(loss_fns):
-    prediction, final_loss, full_losses = model_apply_grads_fn(
-        model, x_batch_train, y_batch_train, l2o_objects, cur_tf_optimizer
-    )
-
-    # from HOML2: NOTE: I'm not sure this belongs here anymore...
-    for variable in model.variables:
-        if variable.constraint is not None:
-            variable.assign(variable.constraint(variable))
-
-    # TODO: only track the mean of the grouped loss
-    for loss_rec_name, loss_rec_objects in l2o_loss_record_train.items():
-        for i, o in enumerate(loss_rec_objects):
-            o.update_state(full_losses[i])
-
-    # NOTE: this could support min/max/mean etc.
-    for joint_rec_name, join_rec_obj in joint_loss_record_train.items():
-        join_rec_obj.update_state(final_loss)
-
-    # TODO: ensure pred, gt order
-    for train_metric in metric_objs_train:
-        train_metric.update_state(y_batch_train, prediction)
-
-
-@tf.function
-def val_step(
-    model,
-    x_batch,
-    y_batch,
-    l2o_objects,
-    l2o_loss_record_val,
-    joint_loss_record_val,
-    metric_objs_val,
-):
-
-    prediction = model(x_batch, training=False)
-
-    # TODO: apply mask?
-    full_losses = []
-    for loss_fn in l2o_objects:
-        loss = loss_fn(y_batch, prediction)
-
-        # TODO: custom weighting for training could be applied here
-        # weighted_losses = loss * weights_per_instance
-        main_loss = tf.reduce_mean(loss)
-        # model.losses contains the kernel/bias constraints/regularizers
-        cur_loss = tf.add_n([main_loss] + model.losses)
-        # full_loss = tf.add_n(full_loss, cur_loss)
-        full_losses.append(cur_loss)
-        # create joint loss for current optimizer
-        # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
-    final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
-
-    for loss_rec_name, loss_rec_objects in l2o_loss_record_val.items():
-        for i, o in enumerate(loss_rec_objects):
-            o.update_state(full_losses[i])
-
-    # NOTE: this could support min/max/mean etc.
-    for joint_rec_name, join_rec_obj in joint_loss_record_val.items():
-        join_rec_obj.update_state(final_loss)
-
-    # TODO: ensure pred, gt order
-    for val_metric in metric_objs_val:
-        val_metric.update_state(y_batch, prediction)
-
-
 def log_model_params(tr_writer, g_train_step, model):
     with tr_writer.as_default():
         for v in model.variables:
             tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
-
-
-def _reset_metric_collection(metric_objects):
-    # NOTE: I'm not 100% this is always a list
-    if isinstance(metric_objects, list):
-        for metric_object in metric_objects:
-            metric_object.reset_states()
-    else:
-        metric_objects.reset_states()
-
-
-def _reset_loss_records(loss_dict):
-    for name, mets in loss_dict.items():
-        if isinstance(mets, list):
-            for metric_object in mets:
-                metric_object.reset_states()
-        else:
-            mets.reset_states()
 
 
 def get_next_batch(ds_iter):
@@ -358,45 +262,6 @@ def update_metrics_tracking(
                     step=num_train_instances, value=result
                 )
                 update_dict[cur_objective][metric_name] = cur_update
-
-    return update_dict
-
-
-def update_loss_tracking_reset_tf(
-    grad_dict, track_desc_dict, cur_loss_tracker_dict, num_train_instances
-):
-    # Update Tracker and reset tf states
-    # NOTE: presently there can only be one loss coming in so the order is not
-    # important
-    assert (
-        track_desc_dict.keys() == cur_loss_tracker_dict.keys()
-    ), f"tracker and loss description keys don't match loss:{track_desc_dict.keys()}, tracker:{cur_loss_tracker_dict.keys()}"
-    assert (
-        len(track_desc_dict.keys()) == 1
-    ), f"there are more than one loss objects to track: {track_desc_dict.keys()}, presently one one is allowed"
-
-    # TODO: need to ensure (outside this function) that the predictions are the
-    # same shape as the y_batch such that we don't have a broadcasting issue
-
-    # I'm not 100% sure the indexing of losses here...
-
-    # update the tf description (e.g. mean) as well as the Tracker
-
-    update_dict = {}
-    for loss_name, desc_dict in track_desc_dict.items():
-        update_dict[loss_name] = {}
-        for desc_name, desc_tf_obj in desc_dict.items():
-            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
-            losses = grad_dict["losses"]
-
-            desc_tf_obj.update_state(losses)
-            tf_desc_val = desc_tf_obj.result().numpy()
-            desc_tf_obj.reset_states()
-
-            cur_update = desc_tracker.update(
-                step=num_train_instances, value=tf_desc_val
-            )
-            update_dict[loss_name][desc_name] = cur_update
 
     return update_dict
 
@@ -506,7 +371,6 @@ def update_tf_val_losses(pred_dict, track_desc_dict):
         for desc_name, desc_tf_obj in desc_dict.items():
             losses = pred_dict["losses"]
             desc_tf_obj.update_state(losses)
-            # tf_desc_val = desc_tf_obj.result().numpy()
 
 
 def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_instances):
@@ -866,12 +730,6 @@ def train_model(
                 # using the same batches for objectives/losses that specify the
                 # same datasets
                 # TODO: HERE
-                # update_dict = update_loss_tracking_reset_tf(
-                #     grad_dict,
-                #     cur_loss_conf_desc,
-                #     cur_loss_tracker_dict,
-                #     opt_to_steps[cur_optimizer_name],
-                # )
                 update_tf_val_losses(grad_dict, cur_loss_conf_desc)
 
                 if num_training_ops % YML_TRACK_UPDATE == 0:
@@ -909,186 +767,63 @@ def train_model(
             # one pass of training (a batch from each objective) with the
             # current optimizer
 
+    # TODO: I think the 'joint' should likely be the optimizer name, not the
+    # combination of losses name, this would also simplify the creation of these
+
     return_dict = {"tracker": main_tracker_dict}
 
     return return_dict
 
-    #
+    # # TODO: add to tensorboard
+    # if all_train_step % LOGSTEPSIZE == 0:
+    #     log_model_params(tr_writer, all_train_step, model)
+    #     HIST_LOGGED = True
+    # logger.debug(f"END iterating training dataset- epoch: {e}")
 
-    #         ##############################################################
-    #         # get losses (optimizer specific)
-    #         opt_instructs = optimizer_to_loss_name_map[cur_optimizer_name]
-    #         # opt_instructs = {'ls_to_opt': {'names':[], 'objects': [], in_conf:{}}}
-    #         losses_to_optimize_d = opt_instructs["losses_to_optimize"]
-    #         l2o_names = losses_to_optimize_d["names"]
-    #         l2o_objects = losses_to_optimize_d["objects"]
-    #         l2o_loss_record_train = losses_to_optimize_d["record"]["train"]
-    #         l2o_loss_record_val = losses_to_optimize_d["record"]["val"]
-    #         joint_loss_record_train = losses_to_optimize_d["joint_record"]["train"]
-    #         joint_loss_record_val = losses_to_optimize_d["joint_record"]["val"]
-    #         joint_loss_name = losses_to_optimize_d["joint_name"]
+    # # TODO: adjust
+    # train_best_joint_update = record_joint_losses(
+    #     "train",
+    #     "epoch",
+    #     e,
+    #     joint_dict_tracker,
+    #     joint_loss_name,
+    #     joint_loss_record_train,
+    # )
 
-    #         # get metrics
-    #         metric_collection = in_hash_to_metrics_config[
-    #             make_hash(opt_instructs["in_conf"])
-    #         ]
-    #         metric_names = metric_collection["metric_order"]
-    #         metric_objs_train = metric_collection["objects"]["train"]
-    #         metric_objs_val = metric_collection["objects"]["val"]
+    # TODO: tensorboard
+    # with tr_writer.as_default():
+    #     tf.summary.scalar("loss", cur_train_loss_, step=e)
+    #     for i, name in enumerate(metric_order):
+    #         cur_train_metric_fn = train_metric_fns[i]
+    #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
 
-    #         _reset_metric_collection(metric_objs_train)
-    #         _reset_metric_collection(metric_objs_val)
+    # # This may not be the place to log these...
+    # if not HIST_LOGGED:
+    #     log_model_params(tr_writer, all_train_step, model)
+    #     HIST_LOGGED = True
 
-    #         # reset states of loss records
-    #         _reset_loss_records(l2o_loss_record_train)
-    #         _reset_loss_records(l2o_loss_record_val)
-    #         _reset_loss_records(joint_loss_record_train)
-    #         _reset_loss_records(joint_loss_record_val)
+    # logger.debug(f"START iterating validation dataset - epoch: {e}")
+    # # iterate validation after iterating entire training.. this will/should
+    # # change to update on a set frequency -- also, maybe we don't want to
+    # # run the "full" validation, only a (random) subset?
 
-    #         # TODO: ASSUMPTION: running a full loop over the dataset
-    #         # run full loop on dataset
-    #         logger.debug(f"START iterating training dataset - epoch: {e}")
-    #         for step, (x_batch_train, y_batch_train) in enumerate(train_ds):
-    #             all_train_step += 1
+    # TODO: save best params with update dict and save params
+    # accordingly
+    # TODO: use early_stopping:epochs and early_stopping:warmup
+    # if cur_val_loss_ < best_val_loss:
+    #     if e == 0:
+    #         # on the first time params are saved, try to save the model
+    #         model.save(save_model_path)
+    #         logger.debug(f"model saved to: {save_model_path}")
+    #     best_val_loss = cur_val_loss_
+    #     model.save_weights(save_best_param_path)
 
-    #             # TODO: random -- check for nans in loss values
+    #     logger.debug(f"best params saved: val loss:
+    #     {cur_val_loss_:.4f}")
 
-    #             # track values
-    #             # TODO: pass trackers here
-    #             train_step(
-    #                 model,
-    #                 x_batch_train,
-    #                 y_batch_train,
-    #                 cur_tf_optimizer,
-    #                 l2o_objects,
-    #                 l2o_loss_record_train,
-    #                 joint_loss_record_train,
-    #                 metric_objs_train,
-    #                 cur_apply_grad_fn,
-    #             )
-    #             # add number of instances that have gone through the model for training
-    #             opt_to_steps[cur_optimizer_name] += x_batch_train.shape[0]
-
-    #             if all_train_step % LOGSTEPSIZE == 0:
-    #                 log_model_params(tr_writer, all_train_step, model)
-    #                 HIST_LOGGED = True
-
-    #         logger.debug(f"END iterating training dataset- epoch: {e}")
-
-    #         # TODO: add to tensorboard
-
-    #         train_loss_updates = update_loss_trackers(
-    #             "train",
-    #             opt_to_steps[cur_optimizer_name],
-    #             loss_trackers,
-    #             l2o_names,
-    #             l2o_loss_record_train,
-    #         )
-
-    #         train_best_met_update = update_metric_trackers(
-    #             "train",
-    #             opt_to_steps[cur_optimizer_name],
-    #             metric_trackers,
-    #             metric_names,
-    #             metric_objs_train,
-    #         )
-
-    #         # TODO: adjust
-    #         train_best_joint_update = record_joint_losses(
-    #             "train",
-    #             "epoch",
-    #             e,
-    #             joint_dict_tracker,
-    #             joint_loss_name,
-    #             joint_loss_record_train,
-    #         )
-
-    #         # TODO: tensorboard
-    #         # with tr_writer.as_default():
-    #         #     tf.summary.scalar("loss", cur_train_loss_, step=e)
-    #         #     for i, name in enumerate(metric_order):
-    #         #         cur_train_metric_fn = train_metric_fns[i]
-    #         #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
-
-    #         # This may not be the place to log these...
-    #         if not HIST_LOGGED:
-    #             log_model_params(tr_writer, all_train_step, model)
-    #             HIST_LOGGED = True
-
-    #         # iterate validation after iterating entire training.. this will/should
-    #         # change to update on a set frequency -- also, maybe we don't want to
-    #         # run the "full" validation, only a (random) subset?
-    #         logger.debug(f"START iterating validation dataset - epoch: {e}")
-
-    #         # iterate validation after iterating entire training.. this will/should
-    #         # change to update on a set frequency -- also, maybe we don't want to
-    #         # run the "full" validation, only a (random) subset?
-    #         for step, (x_batch_val, y_batch_val) in enumerate(val_ds):
-    #             val_step(
-    #                 model,
-    #                 x_batch_val,
-    #                 y_batch_val,
-    #                 l2o_objects,
-    #                 l2o_loss_record_val,
-    #                 joint_loss_record_val,
-    #                 metric_objs_val,
-    #             )
-
-    #         logger.debug(f"END iterating validation dataset - epoch: {e}")
-
-    #         train_loss_updates = update_loss_trackers(
-    #             "val",
-    #             opt_to_steps[cur_optimizer_name],
-    #             loss_trackers,
-    #             l2o_names,
-    #             l2o_loss_record_val,
-    #         )
-
-    #         val_best_joint_update = record_joint_losses(
-    #             "val",
-    #             "epoch",
-    #             e,
-    #             joint_dict_tracker,
-    #             joint_loss_name,
-    #             joint_loss_record_val,
-    #         )
-
-    #         val_best_met_update = update_metric_trackers(
-    #             "val",
-    #             opt_to_steps[cur_optimizer_name],
-    #             metric_trackers,
-    #             metric_names,
-    #             metric_objs_val,
-    #         )
-
-    #         # TODO: save best params with update dict and save params
-    #         # accordingly
-    #         # TODO: use early_stopping:epochs and early_stopping:warmup
-    #         # if cur_val_loss_ < best_val_loss:
-    #         #     if e == 0:
-    #         #         # on the first time params are saved, try to save the model
-    #         #         model.save(save_model_path)
-    #         #         logger.debug(f"model saved to: {save_model_path}")
-    #         #     best_val_loss = cur_val_loss_
-    #         #     model.save_weights(save_best_param_path)
-
-    #         #     logger.debug(f"best params saved: val loss:
-    #         #     {cur_val_loss_:.4f}")
-
-    #         # TODO: log epoch results
-    #         # logger.debug()
-
-    #         # TODO: tensorboard
-    #         # with v_writer.as_default():
-    #         #     tf.summary.scalar("loss", cur_val_loss_, step=e)
-    #         #     for i, name in enumerate(metric_order):
-    #         #         cur_val_metric_fn = val_metric_fns[i]
-    #         #         tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
-
-    # # TODO: I think the 'joint' should likely be the optimizer name, not the
-    # # combination of losses name, this would also simplify the creation of these
-    # return_dict = {
-    #     "loss": loss_trackers,
-    #     "joint": joint_dict_tracker,
-    #     "metrics": metric_trackers,
-    # }
+    # TODO: tensorboard
+    # with v_writer.as_default():
+    #     tf.summary.scalar("loss", cur_val_loss_, step=e)
+    #     for i, name in enumerate(metric_order):
+    #         cur_val_metric_fn = val_metric_fns[i]
+    #         tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
