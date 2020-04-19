@@ -680,6 +680,7 @@ def train_model(
                     dataset_iter_dict[cur_ds_name]["train"] = re_init_iter(
                         cur_ds_name, "train", dataset_dict
                     )
+                    # print(f"e: {obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}")
 
                     # perform validation after each pass through the training
                     # dataset
