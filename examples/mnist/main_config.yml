@@ -72,7 +72,7 @@ optimize:
     instructions: "main_opt"
 
 hyper_parameters:
-  epochs: 5
+  epochs: 3
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
@@ -86,3 +86,12 @@ hyper_parameters:
 model:
   path: './model_config.yml'
 
+# current config (3 epochs)
+# '''
+# CPU times: user 3min 17s, sys: 18.3 s, total: 3min 35s
+# Wall time: 1min 28s
+# '''
+# '''
+# CPU times: user 3min 6s, sys: 16.7 s, total: 3min 23s
+# Wall time: 1min 21s
+# '''

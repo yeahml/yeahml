@@ -27,6 +27,8 @@ The core implementation is as follows:
 ### Example in code
 
 ```python
+import yeahml as yml
+
 ######################################################
 # create+validate configuration file
 yml_config = yml.create_configs("./main_config.yml")
