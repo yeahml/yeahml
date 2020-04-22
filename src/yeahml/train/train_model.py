@@ -3,6 +3,8 @@ from typing import Any, Dict
 
 import tensorflow as tf
 
+import random
+
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.objectives import get_objectives
@@ -522,6 +524,42 @@ def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
     return cur_train_iter
 
 
+def select_objective(loss_objective_names):
+    if len(loss_objective_names) == 1:
+        select = loss_objective_names[0]
+    else:
+        # naive approach
+        ind = random.randint(0, len(loss_objective_names) - 1)
+        select = loss_objective_names[ind]
+
+    return select
+
+
+def select_objective(loss_objective_names):
+    if len(loss_objective_names) == 1:
+        select = loss_objective_names[0]
+    else:
+        # naive approach
+        ind = random.randint(0, len(loss_objective_names) - 1)
+        select = loss_objective_names[ind]
+
+    return select
+
+
+def select_optimizer(optimizer_dict):
+    keys = list(optimizer_dict.keys())
+    if len(keys) == 1:
+        key = keys[0]
+        val = optimizer_dict[key]
+    else:
+        # naive approach
+        ind = random.randint(0, len(keys) - 1)
+        key = keys[ind]
+        val = optimizer_dict[key]
+
+    return (key, val)
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
@@ -529,7 +567,6 @@ def train_model(
     # TODO: option to reinitialize model?
 
     YML_TRACK_UPDATE = 30
-    profiling = False
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -638,188 +675,182 @@ def train_model(
     # NOTE: consider changing is_training to `switch_optimizer`
 
     while is_training:
-        for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
-            optimize_optimizer = True
-            # apply_current_optimizer is used to remain using a single optimizer
-            logger.debug(f"START - optimizing {cur_optimizer_name}")
-            # TODO: currently a single optimizer is run and then the other is run..
-            # this is not really the way we'd like to approach this.
+        cur_optimizer_name, cur_optimizer_config = select_optimizer(optimizers_dict)
+        logger.info(f"optimizer: {cur_optimizer_name}")
+        optimize_optimizer = True
+        # apply_current_optimizer is used to remain using a single optimizer
+        logger.debug(f"START - optimizing {cur_optimizer_name}")
+        # TODO: currently a single optimizer is run and then the other is run..
+        # this is not really the way we'd like to approach this.
 
-            # loss
-            # opt_name :loss :main_obj :ds_name :split_name :loss_name:desc_name
-            # opt_name :metric :main_obj: ds_name :split_name :metric_name
-            opt_tracker_dict = main_tracker_dict[cur_optimizer_name]
+        # loss
+        # opt_name :loss :main_obj :ds_name :split_name :loss_name:desc_name
+        # opt_name :metric :main_obj: ds_name :split_name :metric_name
+        opt_tracker_dict = main_tracker_dict[cur_optimizer_name]
 
-            # NOTE: if there are multiple objectives, they will be trained *jointly*
-            # cur_optimizer_config:
-            #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
-            # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
-            get_grads_fn = opt_to_get_grads_fn[cur_optimizer_name]
-            apply_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
+        # NOTE: if there are multiple objectives, they will be trained *jointly*
+        # cur_optimizer_config:
+        #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
+        # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
+        get_grads_fn = opt_to_get_grads_fn[cur_optimizer_name]
+        apply_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
 
-            HIST_LOGGED = False  # will update for each optimizer
+        HIST_LOGGED = False  # will update for each optimizer
 
-            # get optimizer
-            cur_tf_optimizer = cur_optimizer_config["optimizer"]
+        # get optimizer
+        cur_tf_optimizer = cur_optimizer_config["optimizer"]
 
-            # TODO: these should really be grouped by the in config (likely by
-            # creating a hash) this allows us to group objectives by what
-            # dataset their using so that we can reuse the same batch.
-            # NOTE: for now, I'm saving the prediction and gt (if supervised) in
-            # the grad_dict
-            loss_objective_names = opt_to_loss_objectives[cur_optimizer_name]
-            metrics_objective_names = opt_to_metrics_objectives[cur_optimizer_name]
+        # TODO: these should really be grouped by the in config (likely by
+        # creating a hash) this allows us to group objectives by what
+        # dataset their using so that we can reuse the same batch.
+        # NOTE: for now, I'm saving the prediction and gt (if supervised) in
+        # the grad_dict
+        loss_objective_names = opt_to_loss_objectives[cur_optimizer_name]
+        metrics_objective_names = opt_to_metrics_objectives[cur_optimizer_name]
 
-            obj_to_grads = {}
-            # TODO: the losses should be grouped by the ds used so that we only
-            # obtain+run the batch once+ensuring it's the same batch
-            loss_update_dict = {}
-            while optimize_optimizer:
-                for cur_objective in loss_objective_names:
-                    optimize_objective = True
-                    while optimize_objective:
-                        # TODO: next step -- optimize_objective = True
-                        # each loss may be being optimized by data from different datasets
-                        cur_ds_name = objectives_dict[cur_objective]["in_config"][
-                            "dataset"
-                        ]
-                        loss_conf = objectives_dict[cur_objective]["loss"]
+        obj_to_grads = {}
+        # TODO: the losses should be grouped by the ds used so that we only
+        # obtain+run the batch once+ensuring it's the same batch
+        loss_update_dict = {}
+        while optimize_optimizer:
+            cur_objective = select_objective(loss_objective_names)
+            logger.info(f"objective: {cur_objective}")
+            optimize_objective = True
 
-                        cur_train_iter = get_train_iter(
-                            dataset_iter_dict, cur_ds_name, "train"
-                        )
+            # TODO: next step -- optimize_objective = True
+            # each loss may be being optimized by data from different datasets
+            cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
+            loss_conf = objectives_dict[cur_objective]["loss"]
 
-                        # NOTE: := ?
-                        cur_batch = get_next_batch(cur_train_iter)
-                        if not cur_batch:
-                            # dataset pass is complete
-                            obj_ds_to_epoch = update_epoch_dict(
-                                obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
-                            )
-                            update_is_training_dict(
-                                obj_ds_to_training, cur_objective, cur_ds_name, "train"
-                            )
+            cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
 
-                            if (
-                                obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
-                                >= hp_cdict["epochs"]
-                            ):
-                                is_training = determine_if_training(obj_ds_to_training)
-                                if not is_training:
-                                    optimize_optimizer = False
-                                    optimize_objective = False
+            while optimize_objective:
+                cur_batch = get_next_batch(cur_train_iter)
+                if not cur_batch:
+                    # dataset pass is complete
+                    obj_ds_to_epoch = update_epoch_dict(
+                        obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
+                    )
+                    update_is_training_dict(
+                        obj_ds_to_training, cur_objective, cur_ds_name, "train"
+                    )
 
-                                # TODO: there is likely a better way to handle the case
-                                # where we have reached the 'set' number of epochs for
-                                # this problem
+                    if (
+                        obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
+                        >= hp_cdict["epochs"]
+                    ):
+                        # this objective is done. see if they're all done
+                        is_training = determine_if_training(obj_ds_to_training)
+                        logger.info(f"is_training: {is_training}")
+                        # TODO: determine whether to move to the next objective
+                        # NOTE: currently, move to the next objective
+                        if not is_training:
+                            optimize_optimizer = False
+                            optimize_objective = False
 
-                            dataset_iter_dict[cur_ds_name]["train"] = re_init_iter(
-                                cur_ds_name, "train", dataset_dict
-                            )
+                        # TODO: there is likely a better way to handle the case
+                        # where we have reached the 'set' number of epochs for
+                        # this problem
 
-                            logger.debug(
-                                f"epoch {cur_objective} - {cur_ds_name} {'train'}: {obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}"
-                            )
+                    # once the original dict is depleted, it is not
+                    # reinitialized here
+                    cur_train_iter = re_init_iter(cur_ds_name, "train", dataset_dict)
 
-                            # perform validation after each pass through the training
-                            # dataset
-                            # NOTE: the location of this 'validation' may change
-                            # TODO: there is an error here where the first objective
-                            # will be validated on the last epoch and then one more
-                            # time.
-                            # TODO: ensure the metrics are reset
-                            cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
-                            cur_val_update = validation(
-                                model,
-                                loss_objective_names,
-                                metrics_objective_names,
-                                dataset_iter_dict,
-                                cur_val_fn,
-                                opt_tracker_dict,
-                                cur_objective,
-                                cur_ds_name,
-                                dataset_dict,
-                                opt_to_steps[cur_optimizer_name],
-                                objectives_dict,
-                            )
+                    logger.info(
+                        f"epoch {cur_objective} - {cur_ds_name} {'train'}: {obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}"
+                    )
 
-                            # stop_profiler()
-                            break
-                        grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
-                        # grad_dict contains {
-                        #     "gradients": grads,
-                        #     "predictions": prediction,
-                        #     "final_loss": final_loss,
-                        #     "losses": loss,
-                        # }
+                    # perform validation after each pass through the training
+                    # dataset
+                    # NOTE: the location of this 'validation' may change
+                    # TODO: there is an error here where the first objective
+                    # will be validated on the last epoch and then one more
+                    # time.
+                    # TODO: ensure the metrics are reset
+                    cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
+                    cur_val_update = validation(
+                        model,
+                        loss_objective_names,
+                        metrics_objective_names,
+                        dataset_iter_dict,
+                        cur_val_fn,
+                        opt_tracker_dict,
+                        cur_objective,
+                        cur_ds_name,
+                        dataset_dict,
+                        opt_to_steps[cur_optimizer_name],
+                        objectives_dict,
+                    )
+                    logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
+                else:
 
-                        # TODO: see note above about ensuring the same batch is used for
-                        # losses with the same dataset specified
-                        opt_to_steps[cur_optimizer_name] += cur_batch[0].shape[0]
-                        num_training_ops += 1
-                        # if num_training_ops > 5:
-                        #     start_profiler(profile_path, profiling)
-                        # elif num_training_ops > 10:
-                        #     stop_profiler()
+                    grad_dict = get_grads_fn(model, cur_batch, loss_conf["object"])
+                    # grad_dict contains {
+                    #     "gradients": grads,
+                    #     "predictions": prediction,
+                    #     "final_loss": final_loss,
+                    #     "losses": loss,
+                    # }
 
-                        obj_to_grads[cur_objective] = grad_dict
+                    # TODO: see note above about ensuring the same batch is used for
+                    # losses with the same dataset specified
+                    opt_to_steps[cur_optimizer_name] += cur_batch[0].shape[0]
+                    num_training_ops += 1
+                    # if num_training_ops > 5:
+                    #     start_profiler(profile_path, profiling)
+                    # elif num_training_ops > 10:
+                    #     stop_profiler()
 
-                        # update Tracker
+                    # TODO: currently this only stores the last grad dict
+                    obj_to_grads[cur_objective] = grad_dict
+
+                    # NOTE: the steps here aren't accurate (due to note above about)
+                    # using the same batches for objectives/losses that specify the
+                    # same datasets
+                    cur_loss_conf_desc = loss_conf["track"]["train"]
+                    update_tf_loss_descriptions(grad_dict, cur_loss_conf_desc)
+
+                    # update Tracker
+                    if num_training_ops % YML_TRACK_UPDATE == 0:
                         cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][
                             cur_ds_name
                         ]["train"]
-                        cur_loss_conf_desc = loss_conf["track"]["train"]
+                        cur_loss_update = update_val_loss_trackers(
+                            cur_loss_conf_desc,
+                            cur_loss_tracker_dict,
+                            opt_to_steps[cur_optimizer_name],
+                        )
 
-                        # NOTE: the steps here aren't accurate (due to note above about)
-                        # using the same batches for objectives/losses that specify the
-                        # same datasets
-                        # TODO: HERE
-                        update_tf_loss_descriptions(grad_dict, cur_loss_conf_desc)
+                        loss_update_dict[cur_objective] = cur_loss_update
 
-                        if num_training_ops % YML_TRACK_UPDATE == 0:
-                            cur_loss_update = update_val_loss_trackers(
-                                cur_loss_conf_desc,
-                                cur_loss_tracker_dict,
-                                opt_to_steps[cur_optimizer_name],
-                            )
+                    # TODO: this is a hacky way of seeing if training on a batch was run
+                    update_metrics_dict = None
+                    if obj_to_grads:
+                        update_model_params(
+                            apply_grads_fn, obj_to_grads, model, cur_tf_optimizer
+                        )
 
-                            loss_update_dict[cur_objective] = cur_loss_update
-
-                        # TODO: determine whether to move to the next objective
-                        # NOTE: currently, move to the next objective
-                        optimize_objective = False
-
-                # TODO: this is a hacky way of seeing if training on a batch was run
-                update_metrics_dict = None
-                if obj_to_grads:
-                    update_model_params(
-                        apply_grads_fn, obj_to_grads, model, cur_tf_optimizer
-                    )
-
-                    update_metric_objects(
-                        metrics_objective_names, objectives_dict, obj_to_grads, "train"
-                    )
-
-                    if num_training_ops % YML_TRACK_UPDATE == 0:
-                        update_metrics_dict = update_metrics_tracking(
+                        update_metric_objects(
                             metrics_objective_names,
                             objectives_dict,
-                            opt_tracker_dict,
                             obj_to_grads,
-                            opt_to_steps[cur_optimizer_name],
                             "train",
                         )
 
+                        if num_training_ops % YML_TRACK_UPDATE == 0:
+                            update_metrics_dict = update_metrics_tracking(
+                                metrics_objective_names,
+                                objectives_dict,
+                                opt_tracker_dict,
+                                obj_to_grads,
+                                opt_to_steps[cur_optimizer_name],
+                                "train",
+                            )
+
                 update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
 
-                # TODO: make decision as to whether we should go to the next
-                # optimizer
-                # NOTE: make+use the "joint_dict" here?
-                if len(optimizers_dict) == 1:
-                    optimize_optimizer = False
-
-            # one pass of training (a batch from each objective) with the
-            # current optimizer
+        # one pass of training (a batch from each objective) with the
+        # current optimizer
 
     # TODO: I think the 'joint' should likely be the optimizer name, not the
     # combination of losses name, this would also simplify the creation of these
