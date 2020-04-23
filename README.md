@@ -8,7 +8,7 @@ Please note:
   dramatically
 - I would appreciate help developing+thinking through this project. If you are
   interested, please reach out via an issue or PR
-- The current implementation unbearably slow (almost to the point of unusable),
+- The current implementation is unbearably slow (roughly ~50+% slower),
   but presently I'm focused on cleaning up the base to be more readable/correct.
 
 ## Overview

@@ -279,7 +279,8 @@ def update_epoch_dict(
     try:
         obj_ds_to_epoch[objective_name][dataset_name][split_name] += 1
     except KeyError:
-        tmp_dict = {objective_name: {dataset_name: {split_name: 0}}}
+        # begin at 1 since it is initialized after being run
+        tmp_dict = {objective_name: {dataset_name: {split_name: 1}}}
         obj_ds_to_epoch = {**obj_ds_to_epoch, **tmp_dict}
     return obj_ds_to_epoch
 
@@ -363,16 +364,13 @@ def update_metric_objects(
                     metric_obj.update_state(y_batch, preds)
 
 
-def update_tf_loss_descriptions(pred_dict, track_desc_dict):
+def update_tf_loss_descriptions(pred_dict, tf_train_loss_descs_to_update):
     # the state is not reset here
     # TODO: need to ensure (outside this function) that the predictions are the
     # same shape as the y_batch such that we don't have a broadcasting issue
-    for _, desc_dict in track_desc_dict.items():
-        #  _ = loss_name
-
-        for desc_name, desc_tf_obj in desc_dict.items():
-            losses = pred_dict["losses"]
-            desc_tf_obj.update_state(losses)
+    for tf_desc_obj in tf_train_loss_descs_to_update:
+        losses = pred_dict["losses"]
+        tf_desc_obj.update_state(losses)
 
 
 def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_instances):
@@ -455,7 +453,8 @@ def validation(
 
         # loss
         loss_conf = objectives_dict[cur_objective]["loss"]
-        cur_loss_conf = loss_conf["track"][val_name]
+
+        tf_val_loss_descs_to_update = _get_losses_to_update(loss_conf, val_name)
 
         # metrics
         metrics_conf = objectives_dict[cur_objective]["metrics"]
@@ -472,7 +471,7 @@ def validation(
             # "y_batch": y_batch,}
 
             # update tf objects
-            update_tf_loss_descriptions(val_dict, cur_loss_conf)
+            update_tf_loss_descriptions(val_dict, tf_val_loss_descs_to_update)
             update_tf_val_metrics(val_dict, metrics_conf, val_name, cur_in_conf["type"])
 
             # next batch until end
@@ -488,7 +487,7 @@ def validation(
             val_name
         ]
         cur_loss_update = update_val_loss_trackers(
-            cur_loss_conf, cur_loss_tracker_dict, num_train_instances
+            loss_conf["track"][val_name], cur_loss_tracker_dict, num_train_instances
         )
 
         cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
@@ -560,13 +559,23 @@ def select_optimizer(optimizer_dict):
     return (key, val)
 
 
+def _get_losses_to_update(loss_conf, ds_split):
+    tf_train_loss_descs_to_update = []
+    for _, desc_dict in loss_conf["track"][ds_split].items():
+        #  _ = loss_name
+        for _, desc_tf_obj in desc_dict.items():
+            # _ = desc_name
+            tf_train_loss_descs_to_update.append(desc_tf_obj)
+    return tf_train_loss_descs_to_update
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
 
     # TODO: option to reinitialize model?
 
-    YML_TRACK_UPDATE = 30
+    YML_TRACK_UPDATE = 50
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -721,6 +730,7 @@ def train_model(
             # each loss may be being optimized by data from different datasets
             cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
             loss_conf = objectives_dict[cur_objective]["loss"]
+            tf_train_loss_descs_to_update = _get_losses_to_update(loss_conf, "train")
 
             cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
 
@@ -807,8 +817,9 @@ def train_model(
                     # NOTE: the steps here aren't accurate (due to note above about)
                     # using the same batches for objectives/losses that specify the
                     # same datasets
-                    cur_loss_conf_desc = loss_conf["track"]["train"]
-                    update_tf_loss_descriptions(grad_dict, cur_loss_conf_desc)
+                    update_tf_loss_descriptions(
+                        grad_dict, tf_train_loss_descs_to_update
+                    )
 
                     # update Tracker
                     if num_training_ops % YML_TRACK_UPDATE == 0:
@@ -816,7 +827,7 @@ def train_model(
                             cur_ds_name
                         ]["train"]
                         cur_loss_update = update_val_loss_trackers(
-                            cur_loss_conf_desc,
+                            loss_conf["track"]["train"],
                             cur_loss_tracker_dict,
                             opt_to_steps[cur_optimizer_name],
                         )

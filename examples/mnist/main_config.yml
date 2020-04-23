@@ -72,7 +72,7 @@ optimize:
     instructions: "main_opt"
 
 hyper_parameters:
-  epochs: 3
+  epochs: 5
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
