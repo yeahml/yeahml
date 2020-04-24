@@ -649,6 +649,85 @@ def train_model(
         opt_to_loss_objectives[cur_optimizer_name] = loss_objective_names
         opt_to_metrics_objectives[cur_optimizer_name] = metrics_objective_names
 
+    # group and gather all loss objects
+
+    grouped_objs = {}
+    for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
+        grouped_objs[cur_optimizer_name] = {}
+        loss_objective_names = opt_to_loss_objectives[cur_optimizer_name]
+        metric_objective_names = opt_to_metrics_objectives[cur_optimizer_name]
+
+        loss_objects = []
+        descs = []
+        for loss_objective_name in loss_objective_names:
+            # e.g. "main_obj"
+            loss_objects.append(objectives_dict[loss_objective_name]["loss"]["object"])
+            desc_objs_per_split = []
+            split_names = []
+            for split_name, split_conf in objectives_dict[loss_objective_name]["loss"][
+                "track"
+            ].items():
+                # e.g. "train"
+                split_names.append(split_name)
+
+                assert (
+                    len(split_conf) == 1
+                ), f"only 1 description allowed for {loss_objective_name}, not {desc_conf.keys()}"
+                cur_desc_conf = list(split_conf.values())[0]
+
+                if cur_desc_conf:
+                    assert (
+                        len(cur_desc_conf) == 1
+                    ), f"only 1 description allowed for {loss_objective_name}, not {cur_desc_conf.keys()}"
+                    desc_objs_per_split.append((list(cur_desc_conf.values())[0]))
+                else:
+                    desc_objs_per_split.append((None))
+            descs.append((split_names, desc_objs_per_split))
+
+        # loss and loss description object
+        grouped_objs[cur_optimizer_name]["loss"] = {}
+        grouped_objs[cur_optimizer_name]["loss"]["objects"] = loss_objects
+        grouped_objs[cur_optimizer_name]["loss"]["track"] = {}
+        for split_names, split_track_objs in descs:
+            for i, split_name in enumerate(split_names):
+                grouped_objs[cur_optimizer_name]["loss"]["track"][
+                    split_name
+                ] = split_track_objs[i]
+                split_track_objs[i]
+
+        # mets = []
+        # for metric_objective_name in metric_objective_names:
+        #     for _, metric_conf in objectives_dict[metric_objective_name][
+        #         "metrics"
+        #     ].items():
+        #         # _ = metric name
+        #         split_names = []
+        #         split_objects = []
+        #         for split_name, tf_met_objs in metric_conf.items():
+        #             split_names.append(split_name)
+        #             split_objects.append(tf_met_obj)
+        #         print(split_objects)
+        #         print("****" * 8)
+        #         mets.append((split_names, split_objects))
+
+        # grouped_objs[cur_optimizer_name]["metrics"] = {}
+        # for met_name, met_conf in mets:
+        #     # print(met_conf)
+        #     # print("****" * 8)
+        #     for split_names, split_objects in met_conf:
+        #         # print(split_objects)
+        #         print("****" * 8)
+        #     # for i, split_name in enumerate(split_names):
+        #     #     cur_objs =
+        #     #     grouped_objs[cur_optimizer_name]["metrics"][split_name] =
+
+    print(grouped_objs)
+    sys.exit()
+    # TODO: create map of objective to loss
+    # objective_loss = TF_LOSS
+    # objective_loss_desc = None | tf_obj
+    # objective_metrics
+
     # TODO: training_directive may be empty.
     # {
     #     "YEAHML_1": {"optimizers": ["YEAHML_0", "second_opt"], "operation": "&"},
