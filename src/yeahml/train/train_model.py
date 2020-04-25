@@ -109,7 +109,8 @@ def get_get_supervised_grads_fn():
 
                 # TODO: need to verify this
                 tf_desc_obj = loss_descs_to_update[i]
-                tf_desc_obj.update_state(loss)
+                if tf_desc_obj:
+                    tf_desc_obj.update_state(loss)
 
                 # TODO: custom weighting for training could be applied here
                 # weighted_losses = loss * weights_per_instance
@@ -173,7 +174,8 @@ def get_validation_step_fn():
 
             # TODO: need to verify this
             tf_desc_obj = loss_descs_to_update[i]
-            tf_desc_obj.update_state(loss)
+            if tf_desc_obj:
+                tf_desc_obj.update_state(loss)
 
             # TODO: custom weighting for training could be applied here
             # weighted_losses = loss * weights_per_instance
