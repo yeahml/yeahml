@@ -1,9 +1,8 @@
 import pathlib
+import random
 from typing import Any, Dict
 
 import tensorflow as tf
-
-import random
 
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.setup.datasets import get_datasets
@@ -576,6 +575,7 @@ def train_model(
     # TODO: option to reinitialize model?
 
     YML_TRACK_UPDATE = 50
+    LOG_PARAM_UPDATE = 30
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -625,6 +625,8 @@ def train_model(
     # used to determine which objectives to obtain to calculate metrics
     opt_to_metrics_objectives = {}
 
+    log_model_params(tr_writer, 0, model)
+
     for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
 
         # TODO: check config to see which fn to get supervised/etc
@@ -663,7 +665,6 @@ def train_model(
     # TODO: create list order of directives to loop through
     logger.debug("START - iterating epochs dataset")
     # all_train_step = 0
-    # LOGSTEPSIZE = 10
 
     # TODO: how do I determine how "long" to go here... I think the 'right'
     # answer is dependent on the losses (train and val), but I think there is a
@@ -713,8 +714,6 @@ def train_model(
         # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
         get_grads_fn = opt_to_get_grads_fn[cur_optimizer_name]
         apply_grads_fn = opt_to_app_grads_fn[cur_optimizer_name]
-
-        HIST_LOGGED = False  # will update for each optimizer
 
         # TODO: these should really be grouped by the in config (likely by
         # creating a hash) this allows us to group objectives by what
@@ -818,6 +817,10 @@ def train_model(
                         objectives_dict,
                     )
                     logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
+
+                    # log params used during validation in other location
+                    log_model_params(v_writer, num_training_ops, model)
+
                     # TODO: has run entire ds -- for now, time to break out of
                     # this ds eventually, something smarter will need to be done
                     # here in the training loop, not just after an epoch
@@ -856,6 +859,11 @@ def train_model(
                     # update_tf_loss_descriptions(
                     #     grad_dict, tf_train_loss_descs_to_update
                     # )
+                    # # TODO: add to tensorboard
+
+                    # create histograms of model parameters
+                    if num_training_ops % LOG_PARAM_UPDATE == 0:
+                        log_model_params(tr_writer, num_training_ops, model)
 
                     # update Tracker
                     if num_training_ops % YML_TRACK_UPDATE == 0:
@@ -905,10 +913,6 @@ def train_model(
 
     return return_dict
 
-    # # TODO: add to tensorboard
-    # if all_train_step % LOGSTEPSIZE == 0:
-    #     log_model_params(tr_writer, all_train_step, model)
-    #     HIST_LOGGED = True
     # logger.debug(f"END iterating training dataset- epoch: {e}")
 
     # # TODO: adjust
@@ -927,11 +931,6 @@ def train_model(
     #     for i, name in enumerate(metric_order):
     #         cur_train_metric_fn = train_metric_fns[i]
     #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
-
-    # # This may not be the place to log these...
-    # if not HIST_LOGGED:
-    #     log_model_params(tr_writer, all_train_step, model)
-    #     HIST_LOGGED = True
 
     # logger.debug(f"START iterating validation dataset - epoch: {e}")
     # # iterate validation after iterating entire training.. this will/should
