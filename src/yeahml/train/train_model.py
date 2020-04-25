@@ -299,26 +299,18 @@ def update_epoch_dict(
     return obj_ds_to_epoch
 
 
-def update_is_training_dict(
-    obj_ds_to_training, objective_name, dataset_name, split_name
-):
-    try:
-        obj_ds_to_training[objective_name][dataset_name][split_name] = False
-    except KeyError:
-        obj_ds_to_training = {objective_name: {dataset_name: {split_name: True}}}
-
-
-def determine_if_training(obj_ds_to_training):
+def determine_if_training(opt_obj_ds_to_training):
 
     # if a single is_training is found return True, else they are all false,
     # return false
-    for obj_name, obj_to_training in obj_ds_to_training.items():
-        for ds_name, ds_to_training in obj_to_training.items():
-            for split_name, is_training in ds_to_training.items():
-                if is_training:
-                    return True
-    else:
-        return False
+    for opt_name, opt_to_training in opt_obj_ds_to_training.items():
+        for obj_name, obj_to_training in opt_to_training.items():
+            for ds_name, ds_to_training in obj_to_training.items():
+                for split_name, is_training in ds_to_training.items():
+                    if is_training:
+                        return True
+
+    return False
 
 
 def combine_gradients(obj_to_grads):
@@ -553,18 +545,18 @@ def select_objective(loss_objective_names):
     return select
 
 
-def select_optimizer(optimizer_dict):
-    keys = list(optimizer_dict.keys())
-    if len(keys) == 1:
-        key = keys[0]
-        val = optimizer_dict[key]
-    else:
-        # naive approach
-        ind = random.randint(0, len(keys) - 1)
-        key = keys[ind]
-        val = optimizer_dict[key]
+def select_optimizer(list_of_opt_names):
 
-    return (key, val)
+    if len(list_of_opt_names) == 1:
+        selected_opt_name = list_of_opt_names[0]
+    else:
+        if len(list_of_opt_names) == 0:
+            raise ValueError(f"trying to select optimizer from no optimizers")
+        # naive approach
+        ind = random.randint(0, len(list_of_opt_names) - 1)
+        selected_opt_name = list_of_opt_names[ind]
+
+    return selected_opt_name
 
 
 def _get_losses_to_update(loss_conf, ds_split):
@@ -678,7 +670,7 @@ def train_model(
     # short answer as well.
 
     # TODO: this needs to be driven by the directive, not just a walkthrough
-    obj_ds_to_epoch, obj_ds_to_training = {}, {}
+    obj_ds_to_epoch = {}
 
     # initialize to True
     is_training = True
@@ -686,12 +678,26 @@ def train_model(
     # a core issue here is that we're doing this entire loop for a single batch
     # NOTE: consider changing is_training to `switch_optimizer`
 
+    # dictionary to keep track of what optimizers are still training on what datasets
+    opt_obj_ds_to_training = {}
+    for opt_name, opt_conf in optimizers_dict.items():
+        opt_obj_ds_to_training[opt_name] = {}
+        loss_objective_names = opt_to_loss_objectives[opt_name]
+        for ln in loss_objective_names:
+            opt_obj_ds_to_training[opt_name][ln] = {}
+            ds_name = objectives_dict[ln]["in_config"]["dataset"]
+            # init all to True
+            # currently there is only one ds per objective
+            opt_obj_ds_to_training[opt_name][ln][ds_name] = {"train": True}
+
+    list_of_optimizers = list(optimizers_dict.keys())
+
     while is_training:
-        cur_optimizer_name, cur_optimizer_config = select_optimizer(optimizers_dict)
+        cur_optimizer_name = select_optimizer(list_of_optimizers)
+        cur_optimizer_config = optimizers_dict[cur_optimizer_name]
         logger.info(f"optimizer: {cur_optimizer_name}")
         optimize_optimizer = True
         # apply_current_optimizer is used to remain using a single optimizer
-        logger.debug(f"START - optimizing {cur_optimizer_name}")
 
         # get optimizer
         cur_tf_optimizer = cur_optimizer_config["optimizer"]
@@ -738,24 +744,40 @@ def train_model(
             while optimize_objective:
                 cur_batch = get_next_batch(cur_train_iter)
                 if not cur_batch:
+
                     # dataset pass is complete
                     obj_ds_to_epoch = update_epoch_dict(
                         obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
-                    )
-                    update_is_training_dict(
-                        obj_ds_to_training, cur_objective, cur_ds_name, "train"
                     )
 
                     if (
                         obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
                         >= hp_cdict["epochs"]
                     ):
+
+                        # update this particular combination to false -
+                        # eventually this logic will be "smarter" i.e. not
+                        # based entirely on number of epochs.
+                        opt_obj_ds_to_training[cur_optimizer_name][cur_objective][
+                            cur_ds_name
+                        ]["train"] = False
+
                         # this objective is done. see if they're all done
-                        is_training = determine_if_training(obj_ds_to_training)
+                        is_training = determine_if_training(opt_obj_ds_to_training)
+
+                        # TODO: this isn't the "best" way to handle this,
+                        # ideally, we would decided (in an intelligent way) when
+                        # we're done training a group of objectives by
+                        # evaluating the loss curves
+                        list_of_optimizers.remove(cur_optimizer_name)
+                        logger.info(
+                            f"{cur_optimizer_name} removed from list of opt. remaining: {list_of_optimizers}"
+                        )
                         logger.info(f"is_training: {is_training}")
                         # TODO: determine whether to move to the next objective
                         # NOTE: currently, move to the next objective
                         if not is_training:
+                            # need to break from all loops
                             optimize_optimizer = False
                             optimize_objective = False
 
@@ -763,9 +785,11 @@ def train_model(
                         # where we have reached the 'set' number of epochs for
                         # this problem
 
-                    # once the original dict is depleted, it is not
-                    # reinitialized here
+                    # the original dict is updated here in case another dataset
+                    # needs to use the datset iter -- this could likely be
+                    # optimized, but the impact would be minimal right now
                     cur_train_iter = re_init_iter(cur_ds_name, "train", dataset_dict)
+                    dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
 
                     logger.info(
                         f"epoch {cur_objective} - {cur_ds_name} {'train'}:"
@@ -794,6 +818,11 @@ def train_model(
                         objectives_dict,
                     )
                     logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
+                    # TODO: has run entire ds -- for now, time to break out of
+                    # this ds eventually, something smarter will need to be done
+                    # here in the training loop, not just after an epoch
+                    optimize_objective = False
+
                 else:
 
                     grad_dict = get_grads_fn(
@@ -865,7 +894,7 @@ def train_model(
                             )
 
                 update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
-
+            optimize_optimizer = False
         # one pass of training (a batch from each objective) with the
         # current optimizer
 

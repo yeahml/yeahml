@@ -35,7 +35,7 @@ performance:
     second_obj:
       loss: 
         type: 'MAE'
-        track: "mean"
+        track: ["mean"]
         #options:
       metric:
         type: ["meanabsoluteerror"]

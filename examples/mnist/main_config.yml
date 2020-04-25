@@ -19,7 +19,7 @@ performance:
         # each loss can only be one loss
         # TODO: support custom losses
         type: 'sparse_categorical_crossentropy'
-        track: "mean"
+        track: "mean" # for now, only one description allowed
         #options:
       metric:
         # there can be many metrics
@@ -85,13 +85,3 @@ hyper_parameters:
 
 model:
   path: './model_config.yml'
-
-# current config (3 epochs)
-# '''
-# CPU times: user 3min 17s, sys: 18.3 s, total: 3min 35s
-# Wall time: 1min 28s
-# '''
-# '''
-# CPU times: user 3min 6s, sys: 16.7 s, total: 3min 23s
-# Wall time: 1min 21s
-# '''
