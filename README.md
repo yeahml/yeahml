@@ -171,11 +171,8 @@ model:
 A basic model config (where the path to this file is specified above by (`model:path`) may look similar to the following:
 
 ```yaml
-meta:
-  name: "model_a"
-  name_override: True
-  activation:
-    type: 'elu' # defines default information
+
+name: "model_a"
 
 layers:
   dense_1:

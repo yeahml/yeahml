@@ -7,11 +7,8 @@ def create_model_run_path(full_exp_path):
     # save run specific information
     exp_time = time.strftime("run_%Y_%m_%d-%H_%M_%S")
 
-    # experiment/model
-    model_path = full_exp_path.joinpath("model")
-
     # model/experiment_time
-    model_run_path = model_path.joinpath(exp_time)
+    model_run_path = full_exp_path.joinpath(exp_time)
     model_run_path.mkdir(parents=True, exist_ok=True)
 
     return model_run_path

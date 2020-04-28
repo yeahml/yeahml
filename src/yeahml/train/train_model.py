@@ -593,15 +593,17 @@ def train_model(
         pathlib.Path(meta_cdict["yeahml_dir"])
         .joinpath(meta_cdict["data_name"])
         .joinpath(meta_cdict["experiment_name"])
+        .joinpath(model_cdict["name"])
     )
-    logger = config_logger(full_exp_path, log_cdict, "train")
-    logger.info("-> START training graph")
 
     # build paths and obtain tb writers
     model_run_path = create_model_run_path(full_exp_path)
     # profile_path = model_run_path.joinpath("tf_logs").joinpath("profile")
     save_model_path, save_best_param_path = create_model_training_paths(model_run_path)
     tr_writer, v_writer = get_tb_writers(model_run_path)
+    log_model_params(tr_writer, 0, model)
+
+    logger = config_logger(model_run_path, log_cdict, "train")
 
     # get datasets
     # train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
@@ -624,8 +626,6 @@ def train_model(
     opt_to_loss_objectives = {}
     # used to determine which objectives to obtain to calculate metrics
     opt_to_metrics_objectives = {}
-
-    log_model_params(tr_writer, 0, model)
 
     for cur_optimizer_name, cur_optimizer_config in optimizers_dict.items():
 
@@ -663,8 +663,6 @@ def train_model(
     dataset_iter_dict = convert_to_single_pass_iterator(dataset_dict)
 
     # TODO: create list order of directives to loop through
-    logger.debug("START - iterating epochs dataset")
-    # all_train_step = 0
 
     # TODO: how do I determine how "long" to go here... I think the 'right'
     # answer is dependent on the losses (train and val), but I think there is a
@@ -693,11 +691,12 @@ def train_model(
 
     list_of_optimizers = list(optimizers_dict.keys())
 
+    logger.info("START - training")
     while is_training:
         cur_optimizer_name = select_optimizer(list_of_optimizers)
         cur_optimizer_config = optimizers_dict[cur_optimizer_name]
         logger.info(f"optimizer: {cur_optimizer_name}")
-        optimize_optimizer = True
+        continue_optimizer = True
         # apply_current_optimizer is used to remain using a single optimizer
 
         # get optimizer
@@ -727,12 +726,12 @@ def train_model(
         # TODO: the losses should be grouped by the ds used so that we only
         # obtain+run the batch once+ensuring it's the same batch
         loss_update_dict, update_metrics_dict = {}, {}
-        while optimize_optimizer:
+        while continue_optimizer:
             cur_objective = select_objective(loss_objective_names)
             logger.info(f"objective: {cur_objective}")
-            optimize_objective = True
+            continue_objective = True
 
-            # TODO: next step -- optimize_objective = True
+            # TODO: next step -- continue_objective = True
             # each loss may be being optimized by data from different datasets
             cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
             loss_conf = objectives_dict[cur_objective]["loss"]
@@ -740,7 +739,7 @@ def train_model(
 
             cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
 
-            while optimize_objective:
+            while continue_objective:
                 cur_batch = get_next_batch(cur_train_iter)
                 if not cur_batch:
 
@@ -777,8 +776,8 @@ def train_model(
                         # NOTE: currently, move to the next objective
                         if not is_training:
                             # need to break from all loops
-                            optimize_optimizer = False
-                            optimize_objective = False
+                            continue_optimizer = False
+                            continue_objective = False
 
                         # TODO: there is likely a better way to handle the case
                         # where we have reached the 'set' number of epochs for
@@ -802,6 +801,14 @@ def train_model(
                     # will be validated on the last epoch and then one more
                     # time.
                     # TODO: ensure the metrics are reset
+                    #  iterate validation after iterating entire training..
+                    # this will/should change to update on a set frequency --
+                    # also, maybe we don't want to run the "full" validation,
+                    # only a (random) subset?
+
+                    logger.debug(
+                        f"START iterating validation - epoch: {opt_to_steps[cur_optimizer_name]}"
+                    )
                     cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
                     cur_val_update = validation(
                         model,
@@ -824,7 +831,7 @@ def train_model(
                     # TODO: has run entire ds -- for now, time to break out of
                     # this ds eventually, something smarter will need to be done
                     # here in the training loop, not just after an epoch
-                    optimize_objective = False
+                    continue_objective = False
 
                 else:
 
@@ -902,7 +909,7 @@ def train_model(
                             )
 
                 update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
-            optimize_optimizer = False
+            continue_optimizer = False
         # one pass of training (a batch from each objective) with the
         # current optimizer
 
@@ -931,11 +938,6 @@ def train_model(
     #     for i, name in enumerate(metric_order):
     #         cur_train_metric_fn = train_metric_fns[i]
     #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
-
-    # logger.debug(f"START iterating validation dataset - epoch: {e}")
-    # # iterate validation after iterating entire training.. this will/should
-    # # change to update on a set frequency -- also, maybe we don't want to
-    # # run the "full" validation, only a (random) subset?
 
     # TODO: save best params with update dict and save params
     # accordingly

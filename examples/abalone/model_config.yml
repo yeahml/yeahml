@@ -1,8 +1,10 @@
-meta:
-  name: "model_a"
-  name_override: True
-  activation:
-    type: 'elu'
+# meta:
+  # name: "model_a"
+  # activation:
+  #   type: 'elu'
+
+name: "model_a"
+start_fresh: True
 
 # TODO: it could be assumed that if only one layer in is defined in main, that
 # it could be the `in_name` to the first layer.

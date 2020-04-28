@@ -1,10 +1,16 @@
 #!/usr/bin/env python
-
+import os
+import shutil
+from pathlib import Path
 from typing import Any, Dict, List
 
 from yeahml.config.data.parse_data import format_data_config
 from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
+from yeahml.config.helper import (
+    create_exp_dir,
+    extract_dict_from_path,
+    get_raw_dict_from_string,
+)
 from yeahml.config.hyper_parameters.parse_hyper_parameters import (
     format_hyper_parameters_config,
 )
@@ -95,6 +101,36 @@ def primary_config(main_path: str) -> dict:
         else:
             raise ValueError(f"config type {config_type} is not yet implemented")
         config_dict[config_type] = formatted_config
+
+    # TODO: this should probably be made once and stored? in the :meta?
+    exp_root_dir = (
+        Path(config_dict["meta"]["yeahml_dir"])
+        .joinpath(config_dict["meta"]["data_name"])
+        .joinpath(config_dict["meta"]["experiment_name"])
+    )
+
+    try:
+        override_yml_dir = config_dict["meta"]["start_fresh"]
+    except KeyError:
+        # leave existing model information
+        override_yml_dir = False
+
+    if os.path.exists(exp_root_dir):
+        if override_yml_dir:
+            shutil.rmtree(exp_root_dir)
+    if not os.path.exists(exp_root_dir):
+        Path(exp_root_dir).mkdir(parents=True, exist_ok=True)
+
+    # create_exp_dir(exp_root_dir, wipe_dirs=override_yml_dir)
+
+    model_root_dir = exp_root_dir.joinpath(config_dict["model"]["name"])
+    try:
+        override_model_dir = config_dict["model"]["start_fresh"]
+    except KeyError:
+        # leave existing model information
+        override_model_dir = False
+
+    create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
 
     return config_dict
 

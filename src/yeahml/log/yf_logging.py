@@ -1,5 +1,5 @@
 import logging
-import os
+from pathlib import Path
 from typing import Any
 
 
@@ -22,13 +22,11 @@ def _get_level(level_str: str) -> Any:
 
 
 # I'm not convinced this is the best way to accomplish creating loggers
-def config_logger(log_dir_str: str, log_cdict: dict, log_type: str) -> Any:
+def config_logger(full_exp_path: str, log_cdict: dict, log_type: str) -> Any:
 
     # formatting
     c_fmt = logging.Formatter(log_cdict["console"]["format_str"])
     f_fmt = logging.Formatter(log_cdict["file"]["format_str"])
-    # logging.Formatter(log_cdict["log_g_str"])
-    # logging.Formatter(log_cdict["log_p_str"])
 
     ACCEPTED_LOGGERS = ["build", "train", "eval", "graph", "preds"]
     if log_type not in ACCEPTED_LOGGERS:
@@ -40,9 +38,13 @@ def config_logger(log_dir_str: str, log_cdict: dict, log_type: str) -> Any:
     cur_logger.propagate = False
     cur_logger.setLevel(_get_level("DEBUG"))  # set base to lowest level
     stream_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler(
-        os.path.join(log_dir_str, "yf_logs", f"{log_type}.log")
-    )
+
+    # set file path
+    log_base_path = Path(full_exp_path).joinpath("yeahml_logs")
+    log_base_path.mkdir(parents=True, exist_ok=True)
+    log_full_path = log_base_path.joinpath(f"{log_type}.log")
+
+    file_handler = logging.FileHandler(str(log_full_path))
     stream_handler.setLevel(_get_level(log_cdict["console"]["level"].upper()))
     file_handler.setLevel(_get_level(log_cdict["file"]["level"].upper()))
     stream_handler.setFormatter(c_fmt)

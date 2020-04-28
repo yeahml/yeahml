@@ -190,7 +190,10 @@ class categorical(default_config):
         if to_lower is None:
             self.to_lower = True
         else:
-            self.to_lower = to_lower
+            if isinstance(to_lower, bool):
+                self.to_lower = to_lower
+            else:
+                raise ValueError(f"to_lower is not type {type(bool)}")
 
     # call fn with fn_args
     def __call__(self, cur_value=None):
@@ -208,7 +211,7 @@ class categorical(default_config):
             # NOTE: convert all to lowercase
             val = cur_value
 
-        if self.to_lower and val:
+        if self.to_lower and val and isinstance(val, str):
             val = val.lower()
 
         if val:

@@ -1,17 +1,14 @@
-from yeahml.build.components.optimizer import return_available_optimizers
-
 from yeahml.config.default.types.base_types import (
-    numeric,
     categorical,
     list_of_categorical,
+    numeric,
 )
-
-from yeahml.config.default.types.param_types import optional_config, parameter_config
-from yeahml.config.default.types.compound.data import data_in_spec, data_set_name_dict
-from yeahml.config.default.types.compound.layer import layers_config
-from yeahml.config.default.types.compound.performance import performances_config
-from yeahml.config.default.types.compound.optimizer import optimizers_parser
+from yeahml.config.default.types.compound.data import data_set_name_dict
 from yeahml.config.default.types.compound.directive import instruct_parser
+from yeahml.config.default.types.compound.layer import layers_config
+from yeahml.config.default.types.compound.optimizer import optimizers_parser
+from yeahml.config.default.types.compound.performance import performances_config
+from yeahml.config.default.types.param_types import optional_config
 
 # meta
 # TODO: set accepted options for `trace_level`
@@ -31,6 +28,7 @@ meta = {
         "experiment_name": categorical(
             default_value=None, required=True, is_type=str, to_lower=False
         ),
+        "start_fresh": categorical(default_value=False, required=False, is_type=bool),
         # random seed
         "rand_seed": numeric(default_value=None, required=False, is_type=int),
         # tracing
@@ -190,7 +188,9 @@ performance = {"performance": {"objectives": performances_config()}}
 model = {
     "model": {
         # directory
-        "layers": layers_config()  # could add a check that the location exists
+        "name": categorical(default_value=None, required=True, is_type=str),
+        "start_fresh": categorical(default_value=False, required=False, is_type=bool),
+        "layers": layers_config(),  # could add a check that the location exists
     }
 }
 

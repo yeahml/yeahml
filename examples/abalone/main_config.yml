@@ -1,6 +1,7 @@
 meta:
   data_name: 'abalone'
   experiment_name: 'trial_00'
+  start_fresh: True
   # TODO: information on when to save params, currently only best params saved
 logging:
   console:

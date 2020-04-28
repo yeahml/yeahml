@@ -1,6 +1,7 @@
 meta:
   data_name: 'mnist'
   experiment_name: 'trial_00'
+  start_fresh: False
   # TODO: information on when to save params, currently only best params saved
 logging:
   console:

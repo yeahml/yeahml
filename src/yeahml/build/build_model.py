@@ -247,6 +247,7 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
         Path(meta_cdict["yeahml_dir"])
         .joinpath(meta_cdict["data_name"])
         .joinpath(meta_cdict["experiment_name"])
+        .joinpath(model_cdict["name"])
     )
     logger = config_logger(full_exp_path, log_cdict, "build")
     logger.info("-> START building graph")
@@ -256,11 +257,6 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     except KeyError:
         reset_graph()
 
-    full_exp_path = (
-        Path(meta_cdict["yeahml_dir"])
-        .joinpath(meta_cdict["data_name"])
-        .joinpath(meta_cdict["experiment_name"])
-    )
     # g_logger = config_logger(full_exp_path, log_cdict, "graph")
 
     # configure/build all layers and save in lookup table

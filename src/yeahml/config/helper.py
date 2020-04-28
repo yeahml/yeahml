@@ -8,29 +8,17 @@ import yaml
 
 
 def create_exp_dir(root_dir: str, wipe_dirs: bool):
-    if wipe_dirs:
-        if os.path.exists(root_dir):
+
+    if os.path.exists(root_dir):
+        if wipe_dirs:
             shutil.rmtree(root_dir)
+        else:
+            raise ValueError(
+                f"a model experiment directory currently exists at {root_dir}. If you wish to override the current model, you can use meta:start_fresh: True"
+            )
 
     if not os.path.exists(root_dir):
         pathlib.Path(root_dir).mkdir(parents=True, exist_ok=True)
-
-
-def create_standard_dirs(root_dir: str, dirs_to_make: list, wipe_dirs: bool):
-    if wipe_dirs:
-        if os.path.exists(root_dir):
-            shutil.rmtree(root_dir)
-    if not os.path.exists(root_dir):
-        pathlib.Path(root_dir).mkdir(parents=True, exist_ok=True)
-
-    new_dirs = {}
-    for dir_path in dirs_to_make:
-        full_path = os.path.join(root_dir, dir_path)
-        if not os.path.exists(full_path):
-            pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
-        new_dirs[dir_path] = full_path
-
-    return new_dirs
 
 
 def parse_yaml_from_path(path: str) -> dict:
