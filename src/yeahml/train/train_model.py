@@ -100,7 +100,9 @@ def get_get_supervised_grads_fn():
         x_batch, y_batch = batch
         with tf.GradientTape() as tape:
             prediction = model(x_batch, training=True)
-            prediction = prediction[cur_objective_index]
+            if isinstance(cur_objective_index, int):
+                prediction = prediction[cur_objective_index]
+
 
             # TODO: apply mask?
             full_losses = []
@@ -723,7 +725,7 @@ def train_model(
         # TODO: this is hardcoded to assume supervised
         objective_to_output_index = {}
         for obj_name, obj_dict in objectives_dict.items():
-            objective_to_output_index[obj_name] = 0
+            objective_to_output_index[obj_name] = None
 
     list_of_optimizers = list(optimizers_dict.keys())
 
