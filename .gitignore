@@ -8,6 +8,7 @@ __pycache__/
 ######## Examples
 examples/abalone/yeahml
 examples/mnist/yeahml
+examples/handwritten/yeahml
 
 src/yeahml/*/\.mypy_cache/3\.6/
 
@@ -17,3 +18,5 @@ src/yeahml/*/\.mypy_cache/3\.6/
 src/yeahml\.egg-info/
 
 htmlcov/
+
+

@@ -515,7 +515,14 @@ def create_configs(main_path: str) -> dict:
             output_order.append(name)
     if not output_order:
         raise ValueError("no outputs have been specified for the model")
+
     # TODO: maybe this should be a dictionary
+    # TODO: this is a sneaky way + band-aid of ensuring we don't specify inputs
+    # if they are named the same -- in reality this does not address the root
+    # issue, that is that we should be able to allow some intermediate layers to
+    # accept input from either layer_a or layer_b, not only layer_a
+    input_order = list(set(input_order))
+
     config_dict["model_io"] = {"inputs": input_order, "outputs": output_order}
 
     # validate graph

@@ -91,7 +91,7 @@ def get_get_supervised_grads_fn():
     # https://github.com/tensorflow/tensorflow/issues/27120
     # this allows the model to continue to be trained on multiple calls
     @tf.function
-    def get_grad(model, batch, loss_fns, loss_descs_to_update):
+    def get_grad(model, batch, loss_fns, cur_objective_index, loss_descs_to_update):
         # supervised implies a x, and y.. however, this maybe should change to a
         # dict indexing
         if not isinstance(loss_fns, list):
@@ -100,6 +100,7 @@ def get_get_supervised_grads_fn():
         x_batch, y_batch = batch
         with tf.GradientTape() as tape:
             prediction = model(x_batch, training=True)
+            prediction = prediction[cur_objective_index]
 
             # TODO: apply mask?
             full_losses = []
@@ -147,6 +148,9 @@ def get_apply_grad_fn():
     @tf.function
     def apply_grad(model, grads, optimizer):
 
+        # NOTE: this will throw an error for params that aren't updated by a
+        # specific task
+
         # NOTE: any gradient adjustments would happen here
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
@@ -157,7 +161,7 @@ def get_apply_grad_fn():
 
 def get_validation_step_fn():
     @tf.function
-    def get_preds(model, batch, loss_fns, loss_descs_to_update):
+    def get_preds(model, batch, loss_fns, cur_objective_index, loss_descs_to_update):
         # supervised implies a x, and y.. however, this maybe should change to a
         # dict indexing
         if not isinstance(loss_fns, list):
@@ -165,6 +169,7 @@ def get_validation_step_fn():
 
         x_batch, y_batch = batch
         prediction = model(x_batch, training=False)
+        prediction = prediction[cur_objective_index]
 
         # TODO: apply mask?
         full_losses = []
@@ -433,12 +438,14 @@ def validation(
     cur_ds_name,
     dataset_dict,
     num_train_instances,
+    objective_to_output_index,
     objectives_dict,
 ):
     val_name = "val"
 
     cur_update = {}
     for cur_objective in loss_objective_names:
+        cur_obj_output_index = objective_to_output_index[cur_objective]
         cur_in_conf = objectives_dict[cur_objective]["in_config"]
         cur_ds_name = cur_in_conf["dataset"]
         cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
@@ -462,7 +469,11 @@ def validation(
         while cur_batch:
 
             val_dict = cur_val_fn(
-                model, cur_batch, loss_conf["object"], tf_val_loss_descs_to_update
+                model,
+                cur_batch,
+                loss_conf["object"],
+                cur_obj_output_index,
+                tf_val_loss_descs_to_update,
             )
             # {"predictions": prediction,
             # "final_loss": final_loss,
@@ -677,7 +688,8 @@ def train_model(
     # a core issue here is that we're doing this entire loop for a single batch
     # NOTE: consider changing is_training to `switch_optimizer`
 
-    # dictionary to keep track of what optimizers are still training on what datasets
+    # dictionary to keep track of what optimizers are still training on what
+    # datasets
     opt_obj_ds_to_training = {}
     for opt_name, opt_conf in optimizers_dict.items():
         opt_obj_ds_to_training[opt_name] = {}
@@ -688,6 +700,23 @@ def train_model(
             # init all to True
             # currently there is only one ds per objective
             opt_obj_ds_to_training[opt_name][ln][ds_name] = {"train": True}
+
+    # TODO: this is hardcoded for supervised settings
+    # tf.keras models output the model outputs in a list, we need to get the
+    # of each prediction we care about from that output to use in the loss
+    # function
+    # NOTE: I'm not sure how I feel about this -- is it better to have multiple
+    # "tf.models" that share params (is that even possible) -- or is it better
+    # to do this where it is one "tf.model"?
+    MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
+    objective_to_output_index = {}
+    for obj_name, obj_dict in objectives_dict.items():
+        try:
+            pred_name = obj_dict["in_config"]["options"]["prediction"]
+            out_index = MODEL_OUTPUT_ORDER.index(pred_name)
+            objective_to_output_index[obj_name] = out_index
+        except KeyError:
+            pass
 
     list_of_optimizers = list(optimizers_dict.keys())
 
@@ -821,6 +850,7 @@ def train_model(
                         cur_ds_name,
                         dataset_dict,
                         opt_to_steps[cur_optimizer_name],
+                        objective_to_output_index,
                         objectives_dict,
                     )
                     logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
@@ -839,6 +869,7 @@ def train_model(
                         model,
                         cur_batch,
                         loss_conf["object"],
+                        objective_to_output_index[cur_objective],
                         tf_train_loss_descs_to_update,
                     )
                     # grad_dict contains {

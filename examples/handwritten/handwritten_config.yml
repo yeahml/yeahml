@@ -1,0 +1,115 @@
+meta:
+  data_name: 'V00' # TODO: this isn't really useful other than to create
+  # directories
+  experiment_name: 'trial_00'
+  start_fresh: True
+  # TODO: information on when to save params, currently only best params saved
+logging:
+  console:
+    level: 'info'
+    format_str: null
+  file:
+    level: 'ERROR'
+    format_str: null
+  graph_spec: True
+
+performance:
+  objectives:
+    # each objective can be a loss, a metric, or a combination of both
+    mnist_objective:
+      loss:
+        # each loss can only be one loss
+        # TODO: support custom losses
+        type: "sparse_categorical_crossentropy"
+        track: "mean" # for now, only one description allowed
+        #options:
+      metric:
+        # there can be many metrics
+        # TODO: support custom metrics
+        type: ["SparseCategoricalAccuracy"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "mnist_pred"
+          target: "mnist_target"
+        dataset: "mnist"
+    fashion_mnist_objective:
+      loss:
+        # each loss can only be one loss
+        # TODO: support custom losses
+        type: "sparse_categorical_crossentropy"
+        track: "mean" # for now, only one description allowed
+        #options:
+      metric:
+        # there can be many metrics
+        # TODO: support custom metrics
+        type: ["SparseCategoricalAccuracy"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "fashion_mnist_pred"
+          target: "fashion_mnist_target"
+        dataset: "fashion_mnist"
+
+
+# TODO: this section needs to be redone
+data:
+  datasets:
+    "mnist":
+      in:
+        image_in:
+          shape: [28,28,1]
+          dtype: 'float32' # this is a cast
+        mnist_target:
+          shape: [1,1]
+          dtype: 'int32'
+          label: True
+      split:
+        names: ["train", "val"]
+    "fashion_mnist":
+      in:
+        image_in: # same as above -- the real solution is to allow some layers
+        # to have multiple inputs of the same shape
+          shape: [28,28,1]
+          dtype: 'float32' # this is a cast
+        fashion_mnist_target:
+          shape: [1,1]
+          dtype: 'int32'
+          label: True
+      split:
+        names: ["train", "val"]
+
+optimize:
+  # NOTE: multiple losses by the same optimizer, are currently only modeled
+  # jointly, if we wish to model the losses separately (sequentially or
+  # alternating), then we would want to use a second optimizer
+  optimizers:
+    "mnist_opt":
+      type: 'adam'
+      options:
+        learning_rate: 0.0001
+      objectives: ["mnist_objective"]
+    "fashion_mnist_opt":
+      type: 'adam'
+      options:
+        learning_rate: 0.0001
+      objectives: ["fashion_mnist_objective"]
+  directive:
+    instructions: "mnist_objective"
+
+hyper_parameters:
+  epochs: 5
+  dataset:
+    # TODO: I would like to make this logic more abstract
+    # I think the only options that should be applied here are "batch" and "shuffle"
+    batch: 16
+    shuffle_buffer: 128 # this should be grouped with batchsize
+  # other:
+  #   earlystopping:
+  #     type: 'earlystopping'
+  #     options:
+
+model:
+  path: './model_config.yml'
