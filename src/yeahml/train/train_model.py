@@ -708,15 +708,22 @@ def train_model(
     # NOTE: I'm not sure how I feel about this -- is it better to have multiple
     # "tf.models" that share params (is that even possible) -- or is it better
     # to do this where it is one "tf.model"?
-    MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
-    objective_to_output_index = {}
-    for obj_name, obj_dict in objectives_dict.items():
-        try:
-            pred_name = obj_dict["in_config"]["options"]["prediction"]
-            out_index = MODEL_OUTPUT_ORDER.index(pred_name)
-            objective_to_output_index[obj_name] = out_index
-        except KeyError:
-            pass
+    if isinstance(model.output, list):
+        MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
+        objective_to_output_index = {}
+        for obj_name, obj_dict in objectives_dict.items():
+            try:
+                pred_name = obj_dict["in_config"]["options"]["prediction"]
+                out_index = MODEL_OUTPUT_ORDER.index(pred_name)
+                objective_to_output_index[obj_name] = out_index
+            except KeyError:
+                # TODO: perform check later
+                objective_to_output_index[obj_name] = None
+    else:
+        # TODO: this is hardcoded to assume supervised
+        objective_to_output_index = {}
+        for obj_name, obj_dict in objectives_dict.items():
+            objective_to_output_index[obj_name] = 0
 
     list_of_optimizers = list(optimizers_dict.keys())
 
