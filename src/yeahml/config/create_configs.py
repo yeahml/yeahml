@@ -423,7 +423,11 @@ def _extract_all_nodes_from_paths(path_lists):
     # there's likely a cleaner way to do this
     nodes = set()
     for v in path_lists:
-        if isinstance(v, tuple):
+        if isinstance(v, list):
+            # nested list of paths
+            ret_nodes = _extract_all_nodes_from_paths(v)
+            nodes = nodes | ret_nodes
+        elif isinstance(v, tuple):
             # tuple = ((number, [node_a, node_b, etc...]), out_name)
             ex_nodes = v[0][1]
             for n in ex_nodes:
@@ -466,9 +470,10 @@ def static_analysis(config_dict: dict) -> dict:
     subgraphs = create_subgraphs(config_dict, graph_dict)
 
     # exhaust generator and convert, extract list [[path_lists]]
-    path_lists = list(_extract_paths(subgraphs))[0]
+    path_lists = list(_extract_paths(subgraphs))
     # ensure all values in the graph dict appear in the paths
     nodes_in_path = _extract_all_nodes_from_paths(path_lists)
+
     for n, nd in graph_dict.items():
         if not nd.label:
             # labels don't need to be checked since they aren't built
