@@ -1,14 +1,14 @@
 meta:
-  data_name: 'abalone'
-  experiment_name: 'trial_00'
+  data_name: "abalone"
+  experiment_name: "trial_00"
   start_fresh: True
   # TODO: information on when to save params, currently only best params saved
 logging:
   console:
-    level: 'info'
+    level: "info"
     format_str: null
   file:
-    level: 'ERROR'
+    level: "ERROR"
     format_str: null
   graph_spec: True
 
@@ -19,7 +19,7 @@ performance:
       loss:
         # each loss can only be one loss
         # TODO: support custom losses
-        type: 'MSE'
+        type: "MSE"
         track: ["mean"] # only mean is supported currently
         #options:
       metric:
@@ -32,10 +32,10 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
-        dataset: 'abalone' # TODO: this could be infered if only one dataset is used?
+        dataset: "abalone" # TODO: this could be infered if only one dataset is used?
     second_obj:
-      loss: 
-        type: 'MAE'
+      loss:
+        type: "MAE"
         track: ["mean"]
         #options:
       metric:
@@ -46,7 +46,7 @@ performance:
         options:
           prediction: "dense_out"
           target: "target_v"
-        dataset: 'abalone'
+        dataset: "abalone"
 
 # TODO: this section needs to be redone
 # TODO: this section should have different names for different datasets
@@ -55,11 +55,11 @@ data:
     "abalone":
       in:
         feature_a:
-          shape: [2,1]
-          dtype: 'float64'
+          shape: [2, 1]
+          dtype: "float64"
         target_v:
-          shape: [1,1]
-          dtype: 'int32'
+          shape: [1, 1]
+          dtype: "int32"
           label: True
       split:
         names: ["train", "val"]
@@ -73,20 +73,20 @@ optimize:
   #     type: 'adam'
   #     options:
   #       learning_rate: 0.0001
-  #       beta_1: 0.91 
+  #       beta_1: 0.91
   #     objectives: ["main_obj", "second_obj"]
   optimizers:
     "main_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.00002
-        beta_1: 0.91 
+        beta_1: 0.91
       objectives: ["main_obj"]
     "second_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.00002
-        beta_1: 0.91 
+        beta_1: 0.91
       objectives: ["second_obj"]
   directive:
     # (a|b): alternate, (a&b): joint, (a,b): sequential
@@ -118,5 +118,4 @@ hyper_parameters:
   #     options:
 
 model:
-  path: './model_config.yml'
-
+  path: "./model_config.yml"

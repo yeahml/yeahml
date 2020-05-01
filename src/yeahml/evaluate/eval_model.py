@@ -33,6 +33,9 @@ def eval_model(
     dataset: Any = None,
     weights_path: str = "",
 ) -> Dict[str, Any]:
+    raise NotImplementedError(
+        "this functionality is currently broken and needs to be updated"
+    )
 
     # TODO: it also be possible to use this without passing the model?
 

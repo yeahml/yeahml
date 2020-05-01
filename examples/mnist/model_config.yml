@@ -5,14 +5,14 @@ start_fresh: True
 # it could be the `in_name` to the first layer.
 layers:
   conv_1:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       padding: "same"
-    in_name: 'x_image'
+    in_name: "x_image"
   conv_2_downsample:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
@@ -20,37 +20,38 @@ layers:
       padding: "same"
     # in_name: 'feature_a'
   conv_3:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       strides: 1
       padding: "same"
   conv_4_downsample:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       strides: 2
       padding: "same"
   flatten_1:
-    type: 'flatten'
+    type: "flatten"
   dense_1:
-    type: 'dense'
+    type: "dense"
     options:
       units: 128
       activation:
-        type: 'elu'
-  dense_1:
-    type: 'dense'
+        type: "elu"
+  # TODO: check for duplicate layer names
+  dense_2:
+    type: "dense"
     options:
       units: 32
       activation:
-        type: 'elu'
+        type: "elu"
   y_pred:
-    type: 'dense'
+    type: "dense"
     options:
       units: 10
       activation:
-        type: 'softmax'
+        type: "softmax"
     endpoint: True

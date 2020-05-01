@@ -1,15 +1,15 @@
 meta:
-  data_name: 'V00' # TODO: this isn't really useful other than to create
+  data_name: "V00" # TODO: this isn't really useful other than to create
   # directories
-  experiment_name: 'trial_00'
+  experiment_name: "trial_00"
   start_fresh: True
   # TODO: information on when to save params, currently only best params saved
 logging:
   console:
-    level: 'info'
+    level: "info"
     format_str: null
   file:
-    level: 'ERROR'
+    level: "ERROR"
     format_str: null
   graph_spec: True
 
@@ -71,42 +71,41 @@ performance:
           target: "kmnist_target"
         dataset: "kmnist"
 
-
 # TODO: this section needs to be redone
 data:
   datasets:
     "mnist":
       in:
         image_in:
-          shape: [28,28,1]
-          dtype: 'float32' # this is a cast
+          shape: [28, 28, 1]
+          dtype: "float32" # this is a cast
         mnist_target:
-          shape: [1,1]
-          dtype: 'int32'
+          shape: [1, 1]
+          dtype: "int32"
           label: True
       split:
         names: ["train", "val"]
     "fashion_mnist":
       in:
         image_in: # same as above -- the real solution is to allow some layers
-        # to have multiple inputs of the same shape
-          shape: [28,28,1]
-          dtype: 'float32' # this is a cast
+          # to have multiple inputs of the same shape
+          shape: [28, 28, 1]
+          dtype: "float32" # this is a cast
         fashion_mnist_target:
-          shape: [1,1]
-          dtype: 'int32'
+          shape: [1, 1]
+          dtype: "int32"
           label: True
       split:
         names: ["train", "val"]
     "kmnist":
       in:
         image_in: # same as above -- the real solution is to allow some layers
-        # to have multiple inputs of the same shape
-          shape: [28,28,1]
-          dtype: 'float32' # this is a cast
+          # to have multiple inputs of the same shape
+          shape: [28, 28, 1]
+          dtype: "float32" # this is a cast
         kmnist_target:
-          shape: [1,1]
-          dtype: 'int32'
+          shape: [1, 1]
+          dtype: "int32"
           label: True
       split:
         names: ["train", "val"]
@@ -117,17 +116,17 @@ optimize:
   # alternating), then we would want to use a second optimizer
   optimizers:
     "mnist_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.0001
       objectives: ["mnist_objective"]
     "fashion_mnist_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.0001
       objectives: ["fashion_mnist_objective"]
     "kmnist_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.0001
       objectives: ["kmnist_objective"]
@@ -147,4 +146,4 @@ hyper_parameters:
   #     options:
 
 model:
-  path: './model_config.yml'
+  path: "./model_config.yml"

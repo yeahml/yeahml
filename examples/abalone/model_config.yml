@@ -1,7 +1,7 @@
 # meta:
-  # name: "model_a"
-  # activation:
-  #   type: 'elu'
+# name: "model_a"
+# activation:
+#   type: 'elu'
 
 name: "model_a"
 start_fresh: True
@@ -10,53 +10,53 @@ start_fresh: True
 # it could be the `in_name` to the first layer.
 layers:
   flatten_1:
-    type: 'flatten'
-    in_name: 'feature_a'
+    type: "flatten"
+    in_name: "feature_a"
   dense_1:
-    type: 'dense'
+    type: "dense"
     options:
       units: 16
     # in_name: 'feature_a'
   dense_2:
-    type: 'dense'
+    type: "dense"
     options:
       units: 8
       activation:
-        type: 'elu'
+        type: "elu"
   dense_2b:
-    type: 'dense'
+    type: "dense"
     options:
       units: 8
       activation:
-        type: 'elu'
-    in_name: 'dense_1'
+        type: "elu"
+    in_name: "dense_1"
   concat_1:
-    type: 'concatenate'
-    in_name: ['dense_2', 'dense_2b']
+    type: "concatenate"
+    in_name: ["dense_2", "dense_2b"]
   dense_3a:
-    type: 'dense'
+    type: "dense"
     options:
       units: 8
       activation:
-        type: 'elu'
+        type: "elu"
   dense_3b:
-    type: 'dense'
+    type: "dense"
     options:
       units: 8
       activation:
-        type: 'elu'
-    in_name: 'dense_2'
+        type: "elu"
+    in_name: "dense_2"
   concat_3:
-    type: 'concatenate'
-    in_name: ['dense_3a', 'dense_3b']
+    type: "concatenate"
+    in_name: ["dense_3a", "dense_3b"]
   dense_out:
-    type: 'dense'
+    type: "dense"
     options:
       units: 1
       activation:
-        type: 'linear'
+        type: "linear"
   reshape_out:
-    type: 'reshape'
+    type: "reshape"
     options:
       target_shape: 1,1
     endpoint: True

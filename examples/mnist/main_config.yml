@@ -1,14 +1,14 @@
 meta:
-  data_name: 'mnist'
-  experiment_name: 'trial_00'
+  data_name: "mnist"
+  experiment_name: "trial_00"
   start_fresh: False
   # TODO: information on when to save params, currently only best params saved
 logging:
   console:
-    level: 'info'
+    level: "info"
     format_str: null
   file:
-    level: 'ERROR'
+    level: "ERROR"
     format_str: null
   graph_spec: True
 
@@ -19,7 +19,7 @@ performance:
       loss:
         # each loss can only be one loss
         # TODO: support custom losses
-        type: 'sparse_categorical_crossentropy'
+        type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
       metric:
@@ -32,7 +32,7 @@ performance:
         options:
           prediction: "y_pred"
           target: "y_target"
-        dataset: 'mnist'
+        dataset: "mnist"
     # second_obj:
     #   metric:
     #     type: ["TopKCategoricalAccuracy", "TopKCategoricalAccuracy"]
@@ -50,11 +50,11 @@ data:
     "mnist":
       in:
         x_image:
-          shape: [28,28,1]
-          dtype: 'float32' # this is a cast
+          shape: [28, 28, 1]
+          dtype: "float32" # this is a cast
         y_target:
-          shape: [1,1]
-          dtype: 'int32'
+          shape: [1, 1]
+          dtype: "int32"
           label: True
       split:
         names: ["train", "val"]
@@ -65,7 +65,7 @@ optimize:
   # alternating), then we would want to use a second optimizer
   optimizers:
     "main_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.0001
       objectives: ["main_obj"]
@@ -85,4 +85,4 @@ hyper_parameters:
   #     options:
 
 model:
-  path: './model_config.yml'
+  path: "./model_config.yml"

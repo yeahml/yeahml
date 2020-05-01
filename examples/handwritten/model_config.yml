@@ -6,14 +6,14 @@ start_fresh: True
 layers:
   # backbone
   conv_1:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       padding: "same"
-    in_name: 'image_in'
+    in_name: "image_in"
   conv_2_downsample:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
@@ -21,75 +21,75 @@ layers:
       padding: "same"
     # in_name: 'feature_a'
   conv_3:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       strides: 1
       padding: "same"
   conv_4_downsample:
-    type: 'conv2d'
+    type: "conv2d"
     options:
       filters: 8
       kernel_size: 3
       strides: 2
       padding: "same"
   flatten_1:
-    type: 'flatten'
+    type: "flatten"
   dense_1:
-    type: 'dense'
+    type: "dense"
     options:
       units: 128
       activation:
-        type: 'elu'
+        type: "elu"
 
   # mnist head
   dense_mnist:
-    type: 'dense'
+    type: "dense"
     options:
       units: 32
       activation:
-        type: 'elu'
-    in_name: 'dense_1'
+        type: "elu"
+    in_name: "dense_1"
   mnist_pred:
-    type: 'dense'
+    type: "dense"
     options:
       units: 10
       activation:
-        type: 'softmax'
+        type: "softmax"
     in_name: "dense_mnist"
     endpoint: True
-  
+
   # fashion
   dense_fashion_mnist:
-    type: 'dense'
+    type: "dense"
     options:
       units: 32
       activation:
-        type: 'elu'
-    in_name: 'dense_1'
+        type: "elu"
+    in_name: "dense_1"
   fashion_mnist_pred:
-    type: 'dense'
+    type: "dense"
     options:
       units: 10
       activation:
-        type: 'softmax'
+        type: "softmax"
     in_name: "dense_fashion_mnist"
     endpoint: True
 
   # kmnist
   dense_kmnist:
-    type: 'dense'
+    type: "dense"
     options:
       units: 32
       activation:
-        type: 'elu'
-    in_name: 'dense_1'
+        type: "elu"
+    in_name: "dense_1"
   kmnist_pred:
-    type: 'dense'
+    type: "dense"
     options:
       units: 10
       activation:
-        type: 'softmax'
+        type: "softmax"
     in_name: "dense_kmnist"
     endpoint: True
