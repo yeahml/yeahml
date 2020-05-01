@@ -31,3 +31,6 @@ from yeahml.train.train_model import train_model
 
 # evaluate
 from yeahml.evaluate.eval_model import eval_model
+
+# visualize training
+from yeahml.visualize.tracker import basic_plot_tracker

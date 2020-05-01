@@ -16,7 +16,8 @@ class Tracker:
             raise TypeError(f"{to_track} must be a list of strings or string")
 
         self.values = None
-        self.steps = None
+        self.steps = None  # TODO: this should be "~objective step"
+        self.global_step = None
 
         # if not step_description:
         #     raise ValueError(f"must specify a step_description")
@@ -30,20 +31,24 @@ class Tracker:
             if obj == "max":
                 self.max = None
                 self.step_at_max = None
+                self.global_step_at_max = None
             elif obj == "min":
                 self.min = None
                 self.step_at_min = None
+                self.global_step_at_min = None
             else:
                 raise ValueError(f"{obj} is not an accepted description to track")
 
-    def update(self, step, value):
+    def update(self, value, step, global_step):
         updated = {}
-        if self.steps and self.values:
+        if self.steps and self.values and self.global_step:
             self.steps.append(step)
             self.values.append(value)
+            self.global_step.append(global_step)
         else:
             self.steps = [step]
             self.values = [value]
+            self.global_step = [global_step]
         try:
             cur_max = self.max
             updated["max"] = False
@@ -52,10 +57,12 @@ class Tracker:
                     updated["max"] = True
                     self.max = value
                     self.step_at_max = step
+                    self.global_step_at_max = step
             else:
                 updated["max"] = True
                 self.max = value
                 self.step_at_max = step
+                self.global_step_at_max = step
         except AttributeError:
             pass
 
@@ -67,10 +74,12 @@ class Tracker:
                     updated["min"] = True
                     self.min = value
                     self.step_at_min = step
+                    self.global_step_at_min = step
             else:
                 updated["min"] = True
                 self.min = value
                 self.step_at_min = step
+                self.global_step_at_min = step
         except AttributeError:
             pass
 

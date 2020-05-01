@@ -103,7 +103,6 @@ def get_get_supervised_grads_fn():
             if isinstance(cur_objective_index, int):
                 prediction = prediction[cur_objective_index]
 
-
             # TODO: apply mask?
             full_losses = []
             for i, loss_fn in enumerate(loss_fns):
@@ -250,6 +249,7 @@ def update_metrics_tracking(
     opt_tracker_dict,
     obj_to_grads,
     num_train_instances,
+    num_training_ops,
     ds_split_name,
 ):
     # update Tracker and reset tf object
@@ -281,7 +281,7 @@ def update_metrics_tracking(
                 result = metric_obj.result().numpy()
                 metric_obj.reset_states()
                 cur_update = metric_tracker.update(
-                    step=num_train_instances, value=result
+                    value=result, step=num_train_instances, global_step=num_training_ops
                 )
                 update_dict[cur_objective][metric_name] = cur_update
 
@@ -377,7 +377,9 @@ def update_metric_objects(
                     metric_obj.update_state(y_batch, preds)
 
 
-def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_instances):
+def update_val_loss_trackers(
+    cur_loss_conf, cur_loss_tracker_dict, num_train_instances, num_training_ops
+):
     # update Tracker and reset tf states
 
     update_dict = {}
@@ -390,7 +392,9 @@ def update_val_loss_trackers(cur_loss_conf, cur_loss_tracker_dict, num_train_ins
             desc_tf_obj.reset_states()
 
             cur_update = desc_tracker.update(
-                step=num_train_instances, value=tf_desc_val
+                value=tf_desc_val,
+                step=num_train_instances,
+                global_step=num_training_ops,
             )
             update_dict[loss_name][desc_name] = cur_update
 
@@ -411,7 +415,11 @@ def update_tf_val_metrics(val_preds_dict, metrics_conf, val_name, cur_metrics_ty
 
 
 def update_val_metrics_trackers(
-    metrics_conf, cur_metric_tracker_dict, val_name, num_train_instances
+    metrics_conf,
+    cur_metric_tracker_dict,
+    val_name,
+    num_train_instances,
+    num_training_ops,
 ):
     # update Tracker, reset tf states
     update_dict = {}
@@ -423,7 +431,9 @@ def update_val_metrics_trackers(
             metric_obj = split_to_metric[val_name]
             result = metric_obj.result().numpy()
             metric_obj.reset_states()
-            cur_update = metric_tracker.update(step=num_train_instances, value=result)
+            cur_update = metric_tracker.update(
+                value=result, step=num_train_instances, global_step=num_training_ops
+            )
             update_dict[metric_name] = cur_update
 
     return update_dict
@@ -440,6 +450,7 @@ def validation(
     cur_ds_name,
     dataset_dict,
     num_train_instances,
+    num_training_ops,
     objective_to_output_index,
     objectives_dict,
 ):
@@ -499,14 +510,21 @@ def validation(
             val_name
         ]
         cur_loss_update = update_val_loss_trackers(
-            loss_conf["track"][val_name], cur_loss_tracker_dict, num_train_instances
+            loss_conf["track"][val_name],
+            cur_loss_tracker_dict,
+            num_train_instances,
+            num_training_ops,
         )
 
         cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
             cur_ds_name
         ][val_name]
         cur_metrics_update = update_val_metrics_trackers(
-            metrics_conf, cur_metric_tracker_dict, val_name, num_train_instances
+            metrics_conf,
+            cur_metric_tracker_dict,
+            val_name,
+            num_train_instances,
+            num_training_ops,
         )
 
         cur_update[cur_objective] = {
@@ -587,8 +605,8 @@ def train_model(
 
     # TODO: option to reinitialize model?
 
-    YML_TRACK_UPDATE = 50
-    LOG_PARAM_UPDATE = 30
+    YML_TRACK_UPDATE = 30
+    LOG_PARAM_UPDATE = 20
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -859,6 +877,7 @@ def train_model(
                         cur_ds_name,
                         dataset_dict,
                         opt_to_steps[cur_optimizer_name],
+                        num_training_ops,
                         objective_to_output_index,
                         objectives_dict,
                     )
@@ -921,6 +940,7 @@ def train_model(
                             loss_conf["track"]["train"],
                             cur_loss_tracker_dict,
                             opt_to_steps[cur_optimizer_name],
+                            num_training_ops,
                         )
 
                         loss_update_dict[cur_objective] = cur_loss_update
@@ -945,6 +965,7 @@ def train_model(
                                 opt_tracker_dict,
                                 obj_to_grads,
                                 opt_to_steps[cur_optimizer_name],
+                                num_training_ops,
                                 "train",
                             )
 

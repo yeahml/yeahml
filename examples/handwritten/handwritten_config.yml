@@ -52,6 +52,24 @@ performance:
           prediction: "fashion_mnist_pred"
           target: "fashion_mnist_target"
         dataset: "fashion_mnist"
+    kmnist_objective:
+      loss:
+        # each loss can only be one loss
+        # TODO: support custom losses
+        type: "sparse_categorical_crossentropy"
+        track: "mean" # for now, only one description allowed
+        #options:
+      metric:
+        # there can be many metrics
+        # TODO: support custom metrics
+        type: ["SparseCategoricalAccuracy"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "kmnist_pred"
+          target: "kmnist_target"
+        dataset: "kmnist"
 
 
 # TODO: this section needs to be redone
@@ -80,6 +98,18 @@ data:
           label: True
       split:
         names: ["train", "val"]
+    "kmnist":
+      in:
+        image_in: # same as above -- the real solution is to allow some layers
+        # to have multiple inputs of the same shape
+          shape: [28,28,1]
+          dtype: 'float32' # this is a cast
+        kmnist_target:
+          shape: [1,1]
+          dtype: 'int32'
+          label: True
+      split:
+        names: ["train", "val"]
 
 optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled
@@ -96,6 +126,11 @@ optimize:
       options:
         learning_rate: 0.0001
       objectives: ["fashion_mnist_objective"]
+    "kmnist_opt":
+      type: 'adam'
+      options:
+        learning_rate: 0.0001
+      objectives: ["kmnist_objective"]
   directive:
     instructions: "mnist_objective"
 

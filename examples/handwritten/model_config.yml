@@ -51,13 +51,6 @@ layers:
       activation:
         type: 'elu'
     in_name: 'dense_1'
-  dense_fashion_mnist:
-    type: 'dense'
-    options:
-      units: 32
-      activation:
-        type: 'elu'
-    in_name: 'dense_1'
   mnist_pred:
     type: 'dense'
     options:
@@ -66,6 +59,15 @@ layers:
         type: 'softmax'
     in_name: "dense_mnist"
     endpoint: True
+  
+  # fashion
+  dense_fashion_mnist:
+    type: 'dense'
+    options:
+      units: 32
+      activation:
+        type: 'elu'
+    in_name: 'dense_1'
   fashion_mnist_pred:
     type: 'dense'
     options:
@@ -73,4 +75,21 @@ layers:
       activation:
         type: 'softmax'
     in_name: "dense_fashion_mnist"
+    endpoint: True
+
+  # kmnist
+  dense_kmnist:
+    type: 'dense'
+    options:
+      units: 32
+      activation:
+        type: 'elu'
+    in_name: 'dense_1'
+  kmnist_pred:
+    type: 'dense'
+    options:
+      units: 10
+      activation:
+        type: 'softmax'
+    in_name: "dense_kmnist"
     endpoint: True
