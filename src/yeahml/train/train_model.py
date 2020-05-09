@@ -1,10 +1,19 @@
 import pathlib
-import random
 from typing import Any, Dict
 
 import tensorflow as tf
 
 from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.train.gradients.gradients import (
+    get_apply_grad_fn,
+    get_get_supervised_grads_fn,
+    get_validation_step_fn,
+    update_model_params,
+)
+
+# select which task to optimize
+from yeahml.train.sample_tasks.objective import select_objective
+from yeahml.train.sample_tasks.optimizer import select_optimizer
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.paths import (
@@ -20,11 +29,21 @@ from yeahml.train.setup.tracker.tracker import (
     create_joint_dict_tracker,
     record_joint_losses,
 )
+from yeahml.train.update_progress.tf_objectives import (
+    update_metric_objects,
+    update_tf_val_metrics,
+)
+from yeahml.train.update_progress.tracker import (
+    update_metrics_tracking,
+    update_val_loss_trackers,
+    update_val_metrics_trackers,
+)
 
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
     get_optimizers,
 )
+
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 
@@ -85,126 +104,6 @@ particular optimizer (it will eval at the same time this optimizer is run)
 """
 
 
-# TODO: this is supervised
-def get_get_supervised_grads_fn():
-
-    # https://github.com/tensorflow/tensorflow/issues/27120
-    # this allows the model to continue to be trained on multiple calls
-    @tf.function
-    def get_grad(model, batch, loss_fns, cur_objective_index, loss_descs_to_update):
-        # supervised implies a x, and y.. however, this maybe should change to a
-        # dict indexing
-        if not isinstance(loss_fns, list):
-            loss_fns = [loss_fns]
-
-        x_batch, y_batch = batch
-        with tf.GradientTape() as tape:
-            prediction = model(x_batch, training=True)
-            if isinstance(cur_objective_index, int):
-                prediction = prediction[cur_objective_index]
-
-            # TODO: apply mask?
-            full_losses = []
-            for i, loss_fn in enumerate(loss_fns):
-                loss = loss_fn(y_batch, prediction)
-
-                # TODO: need to verify this
-                tf_desc_obj = loss_descs_to_update[i]
-                if tf_desc_obj:
-                    tf_desc_obj.update_state(loss)
-
-                # TODO: custom weighting for training could be applied here
-                # weighted_losses = loss * weights_per_instance
-                main_loss = tf.reduce_mean(loss)
-                # model.losses contains the kernel/bias constraints/regularizers
-                cur_loss = tf.add_n([main_loss] + model.losses)
-                # full_loss = tf.add_n(full_loss, cur_loss)
-                full_losses.append(cur_loss)
-                # create joint loss for current optimizer
-                # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
-            final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
-
-            # TODO: update joint loss/desc?
-
-        # TODO: maybe we should be able to specify which params to be optimized
-        # by specific optimizers
-        grads = tape.gradient(final_loss, model.trainable_variables)
-
-        return {
-            "gradients": grads,
-            "predictions": prediction,
-            "final_loss": final_loss,
-            "losses": loss,
-            "y_batch": y_batch,
-        }
-        # return grads, prediction, final_loss, full_losses
-
-    return get_grad
-
-
-def get_apply_grad_fn():
-
-    # https://github.com/tensorflow/tensorflow/issues/27120
-    # this allows the model to continue to be trained on multiple calls
-    @tf.function
-    def apply_grad(model, grads, optimizer):
-
-        # NOTE: this will throw an error for params that aren't updated by a
-        # specific task
-
-        # NOTE: any gradient adjustments would happen here
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
-
-        return
-
-    return apply_grad
-
-
-def get_validation_step_fn():
-    @tf.function
-    def get_preds(model, batch, loss_fns, cur_objective_index, loss_descs_to_update):
-        # supervised implies a x, and y.. however, this maybe should change to a
-        # dict indexing
-        if not isinstance(loss_fns, list):
-            loss_fns = [loss_fns]
-
-        x_batch, y_batch = batch
-        prediction = model(x_batch, training=False)
-        prediction = prediction[cur_objective_index]
-
-        # TODO: apply mask?
-        full_losses = []
-        for i, loss_fn in enumerate(loss_fns):
-            loss = loss_fn(y_batch, prediction)
-
-            # TODO: need to verify this
-            tf_desc_obj = loss_descs_to_update[i]
-            if tf_desc_obj:
-                tf_desc_obj.update_state(loss)
-
-            # TODO: custom weighting for training could be applied here
-            # weighted_losses = loss * weights_per_instance
-            main_loss = tf.reduce_mean(loss)
-            # model.losses contains the kernel/bias constraints/regularizers
-            cur_loss = tf.add_n([main_loss] + model.losses)
-            # full_loss = tf.add_n(full_loss, cur_loss)
-            full_losses.append(cur_loss)
-            # create joint loss for current optimizer
-            # e.g. final_loss = tf.reduce_mean(loss1 + loss2)
-        final_loss = tf.reduce_mean(tf.math.add_n(full_losses))
-
-        # TODO: update joint loss/desc?
-
-        return {
-            "predictions": prediction,
-            "final_loss": final_loss,
-            "losses": loss,
-            "y_batch": y_batch,
-        }
-
-    return get_preds
-
-
 def log_model_params(tr_writer, g_train_step, model):
     with tr_writer.as_default():
         for v in model.variables:
@@ -225,12 +124,12 @@ def get_next_batch(ds_iter):
     return batch
 
 
-def convert_to_iter(tf_ds):
+def _convert_to_iter(tf_ds):
     return tf_ds.repeat(1).__iter__()
 
 
 def re_init_iter(ds_name, split_name, ds_dict):
-    return convert_to_iter(ds_dict[ds_name][split_name])
+    return _convert_to_iter(ds_dict[ds_name][split_name])
 
 
 def convert_to_single_pass_iterator(ds_dict):
@@ -239,53 +138,8 @@ def convert_to_single_pass_iterator(ds_dict):
         iter_dict[ds_name] = {}
         for split_name, tf_ds in ds_name_conf.items():
             # only loop once
-            iter_dict[ds_name][split_name] = convert_to_iter(tf_ds)
+            iter_dict[ds_name][split_name] = _convert_to_iter(tf_ds)
     return iter_dict
-
-
-def update_metrics_tracking(
-    metrics_objective_names,
-    objectives_dict,
-    opt_tracker_dict,
-    obj_to_grads,
-    num_train_instances,
-    num_training_ops,
-    ds_split_name,
-):
-    # update Tracker and reset tf object
-    # NOTE: presently there can only be one loss coming in so the order is not
-    # important
-
-    # TODO: need to ensure (outside this function) that the predictions are the
-    # same shape as the y_batch such that we don't have a broadcasting issue
-
-    # I'm not 100% sure the indexing of losses here...
-
-    # update the tf description (e.g. mean) as well as the Tracker
-
-    update_dict = {}
-
-    for cur_objective in metrics_objective_names:
-        update_dict[cur_objective] = {}
-        cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
-        cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
-            cur_ds_name
-        ][ds_split_name]
-
-        metric_conf = objectives_dict[cur_objective]["metrics"]
-        for metric_name, split_to_metric in metric_conf.items():
-            metric_tracker = cur_metric_tracker_dict[metric_name]
-            update_dict[cur_objective][metric_name] = {}
-            if ds_split_name in split_to_metric.keys():
-                metric_obj = split_to_metric[ds_split_name]
-                result = metric_obj.result().numpy()
-                metric_obj.reset_states()
-                cur_update = metric_tracker.update(
-                    value=result, step=num_train_instances, global_step=num_training_ops
-                )
-                update_dict[cur_objective][metric_name] = cur_update
-
-    return update_dict
 
 
 def update_epoch_dict(
@@ -317,126 +171,6 @@ def determine_if_training(opt_obj_ds_to_training):
                         return True
 
     return False
-
-
-def combine_gradients(obj_to_grads):
-    # TODO: need to research how best to combine the gradients here...
-    # combine all gradients. This portion (with in the optimizer loop)
-    # will combine the gradients as if it were trained jointly
-    combined_gradients = None
-    for obj_name, grad_dict in obj_to_grads.items():
-        # TODO: we could add scaling/weighting here
-        if not combined_gradients:
-            combined_gradients = grad_dict["gradients"]
-        else:
-            combined_gradients += grad_dict["gradients"]
-    return combined_gradients
-
-
-# @tf.function
-def update_model_params(apply_grads_fn, obj_to_grads, model, cur_tf_optimizer):
-    # combine gradients and use optimizer to update model. apply contraints to
-    # model variables
-    combined_gradients = combine_gradients(obj_to_grads)
-
-    # apply gradients to the model
-    apply_grads_fn(model, combined_gradients, cur_tf_optimizer)
-
-    # apply constraints
-    for variable in model.variables:
-        if variable.constraint is not None:
-            variable.assign(variable.constraint(variable))
-
-
-def update_metric_objects(
-    metrics_objective_names, objectives_dict, obj_to_grads, split_name
-):
-
-    # NOTE: do we need to combine predictions here at all?
-
-    for cur_objective in metrics_objective_names:
-        # could make hash of this
-        cur_in_conf = objectives_dict[cur_objective]["in_config"]
-        # {
-        #     "type": "supervised",
-        #     "options": {"prediction": "dense_out", "target": "target_v"},
-        #     "dataset": "abalone",
-        # }
-        # cur_ds_name = cur_in_conf["dataset"]
-        metric_conf = objectives_dict[cur_objective]["metrics"]
-        # {'meanabsoluteerror': {'train': "tf.metric", 'val':
-        # "tf.metric"}}
-        for metric_name, split_to_metric in metric_conf.items():
-            if split_name in split_to_metric.keys():
-                metric_obj = split_to_metric[split_name]
-
-                # TODO: hardcoded
-                if cur_in_conf["type"] == "supervised":
-                    preds = obj_to_grads[cur_objective]["predictions"]
-                    y_batch = obj_to_grads[cur_objective]["y_batch"]
-                    metric_obj.update_state(y_batch, preds)
-
-
-def update_val_loss_trackers(
-    cur_loss_conf, cur_loss_tracker_dict, num_train_instances, num_training_ops
-):
-    # update Tracker and reset tf states
-
-    update_dict = {}
-    for loss_name, desc_dict in cur_loss_conf.items():
-        update_dict[loss_name] = {}
-        for desc_name, desc_tf_obj in desc_dict.items():
-            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
-
-            tf_desc_val = desc_tf_obj.result().numpy()
-            desc_tf_obj.reset_states()
-
-            cur_update = desc_tracker.update(
-                value=tf_desc_val,
-                step=num_train_instances,
-                global_step=num_training_ops,
-            )
-            update_dict[loss_name][desc_name] = cur_update
-
-    return update_dict
-
-
-def update_tf_val_metrics(val_preds_dict, metrics_conf, val_name, cur_metrics_type):
-
-    for metric_name, split_to_metric in metrics_conf.items():
-        if val_name in split_to_metric.keys():
-            metric_tf_obj = split_to_metric[val_name]
-
-            # TODO: hardcoded - some may not be a prediction/ground truth
-            if cur_metrics_type == "supervised":
-                preds = val_preds_dict["predictions"]
-                y_batch = val_preds_dict["y_batch"]
-                metric_tf_obj.update_state(y_batch, preds)
-
-
-def update_val_metrics_trackers(
-    metrics_conf,
-    cur_metric_tracker_dict,
-    val_name,
-    num_train_instances,
-    num_training_ops,
-):
-    # update Tracker, reset tf states
-    update_dict = {}
-
-    for metric_name, split_to_metric in metrics_conf.items():
-        metric_tracker = cur_metric_tracker_dict[metric_name]
-        update_dict[metric_name] = {}
-        if val_name in split_to_metric.keys():
-            metric_obj = split_to_metric[val_name]
-            result = metric_obj.result().numpy()
-            metric_obj.reset_states()
-            cur_update = metric_tracker.update(
-                value=result, step=num_train_instances, global_step=num_training_ops
-            )
-            update_dict[metric_name] = cur_update
-
-    return update_dict
 
 
 def validation(
@@ -553,42 +287,6 @@ def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
     return cur_train_iter
 
 
-def select_objective(loss_objective_names):
-    if len(loss_objective_names) == 1:
-        select = loss_objective_names[0]
-    else:
-        # naive approach
-        ind = random.randint(0, len(loss_objective_names) - 1)
-        select = loss_objective_names[ind]
-
-    return select
-
-
-def select_objective(loss_objective_names):
-    if len(loss_objective_names) == 1:
-        select = loss_objective_names[0]
-    else:
-        # naive approach
-        ind = random.randint(0, len(loss_objective_names) - 1)
-        select = loss_objective_names[ind]
-
-    return select
-
-
-def select_optimizer(list_of_opt_names):
-
-    if len(list_of_opt_names) == 1:
-        selected_opt_name = list_of_opt_names[0]
-    else:
-        if len(list_of_opt_names) == 0:
-            raise ValueError(f"trying to select optimizer from no optimizers")
-        # naive approach
-        ind = random.randint(0, len(list_of_opt_names) - 1)
-        selected_opt_name = list_of_opt_names[ind]
-
-    return selected_opt_name
-
-
 def _get_losses_to_update(loss_conf, ds_split):
     tf_train_loss_descs_to_update = []
     for _, desc_dict in loss_conf["track"][ds_split].items():
@@ -693,13 +391,13 @@ def train_model(
 
     dataset_iter_dict = convert_to_single_pass_iterator(dataset_dict)
 
-    # TODO: create list order of directives to loop through
-
-    # TODO: how do I determine how "long" to go here... I think the 'right'
-    # answer is dependent on the losses (train and val), but I think there is a
-    # short answer as well.
-
+    # TODO: create list order of directives to loop through -- I no longer know
+    # that this is the best approach -- that is, this should be adaptive  and
+    # learned during training and is related to  'how do I determine how "long"'
+    # to go here... I think the 'right' answer is dependent on the losses (train
+    # and val), but I think there is a short answer as well.
     # TODO: this needs to be driven by the directive, not just a walkthrough
+
     obj_ds_to_epoch = {}
 
     # initialize to True
