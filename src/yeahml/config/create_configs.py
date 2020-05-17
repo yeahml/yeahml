@@ -11,7 +11,8 @@ from yeahml.config.helper import (
     extract_dict_from_path,
     get_raw_dict_from_string,
 )
-from yeahml.config.model.parse_model import format_model_config
+from yeahml.config.model.config import IGNORE_HASH_KEYS
+from yeahml.config.model.util import make_hash
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
@@ -62,26 +63,15 @@ def primary_config(main_path: str) -> dict:
     # build dict containing configs
     config_dict = {}
     for config_type in CONFIG_KEYS:
+        # try block?
         raw_config = main_config_raw[config_type]
-        # if the main key has a "path" key, then extract from that path
         raw_config = maybe_extract_from_path(raw_config)
-        standard_parse = [
-            "meta",
-            "logging",
-            "performance",
-            "optimize",
-            "data",
-            "hyper_parameters",
-        ]
-        if config_type in standard_parse:
-            formatted_config = parse_default(
-                raw_config, DEFAULT_CONFIG[f"{config_type}"]
-            )
-        elif config_type == "model":
-            # formatted_config = format_model_config(raw_config, config_dict["meta"])
-            formatted_config = format_model_config(raw_config, DEFAULT_CONFIG["model"])
-        else:
-            raise ValueError(f"config type {config_type} is not yet implemented")
+
+        formatted_config = parse_default(raw_config, DEFAULT_CONFIG[f"{config_type}"])
+        if config_type == "model":
+            model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
+            formatted_config["model_hash"] = model_hash
+
         config_dict[config_type] = formatted_config
 
     # TODO: this should probably be made once and stored? in the :meta?

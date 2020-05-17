@@ -21,7 +21,6 @@ else:
 
 # Config
 from yeahml.config.create_configs import create_configs
-from yeahml.config import config
 
 # build model
 from yeahml.build.build_model import build_model
