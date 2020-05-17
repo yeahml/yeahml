@@ -1,27 +1,11 @@
 import json
 import os
-import pathlib
-import shutil
 from io import StringIO
 
 import yaml
 
 
-def create_exp_dir(root_dir: str, wipe_dirs: bool):
-
-    if os.path.exists(root_dir):
-        if wipe_dirs:
-            shutil.rmtree(root_dir)
-        else:
-            raise ValueError(
-                f"a model experiment directory currently exists at {root_dir}. If you wish to override the current model, you can use meta:start_fresh: True"
-            )
-
-    if not os.path.exists(root_dir):
-        pathlib.Path(root_dir).mkdir(parents=True, exist_ok=True)
-
-
-def parse_yaml_from_path(path: str) -> dict:
+def _parse_yaml_from_path(path: str) -> dict:
     # return python dict from yaml path
     try:
         with open(path, "r") as stream:
@@ -37,7 +21,7 @@ def parse_yaml_from_path(path: str) -> dict:
         )
 
 
-def parse_json_from_path(path: str) -> dict:
+def _parse_json_from_path(path: str) -> dict:
     try:
         with open(path, encoding="utf-8") as data_file:
             try:
@@ -52,14 +36,7 @@ def parse_json_from_path(path: str) -> dict:
         )
 
 
-def is_valid_path(cur_string: str) -> bool:
-    if os.path.exists(cur_string):
-        return True
-    else:
-        return False
-
-
-def is_yaml(cur_string: str) -> bool:
+def _is_yaml(cur_string: str) -> bool:
     if "\n" in cur_string or "\r" in cur_string:
         return True
     else:
@@ -67,16 +44,16 @@ def is_yaml(cur_string: str) -> bool:
 
 
 # TODO: will need to implement json logic as well
-def parse_yaml_string(ys):
+def _parse_yaml_string(ys):
     fd = StringIO(ys)
     dct = yaml.load(fd, Loader=yaml.FullLoader)
     return dct
 
 
 def get_raw_dict_from_string(cur_string: str) -> dict:
-    if is_yaml(cur_string):
-        raw_dict = parse_yaml_string(cur_string)
-    elif is_valid_path(cur_string):
+    if _is_yaml(cur_string):
+        raw_dict = _parse_yaml_string(cur_string)
+    elif os.path.exists(cur_string):
         raw_dict = extract_dict_from_path(cur_string)
     else:
         raise ValueError(
@@ -87,9 +64,9 @@ def get_raw_dict_from_string(cur_string: str) -> dict:
 
 def extract_dict_from_path(cur_path):
     if cur_path.endswith("yaml") or cur_path.endswith("yml"):
-        main_config_raw = parse_yaml_from_path(cur_path)
+        main_config_raw = _parse_yaml_from_path(cur_path)
     elif cur_path.endswith("json"):
-        main_config_raw = parse_json_from_path(cur_path)
+        main_config_raw = _parse_json_from_path(cur_path)
     if not main_config_raw:
         raise ValueError(
             f"Error > Exiting: the model config file was found {cur_path}, but appears to be empty. It is also possible the file is not valid"

@@ -6,13 +6,17 @@ from typing import Any, Dict, List
 
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.default.util import parse_default
-from yeahml.config.helper import (
-    create_exp_dir,
-    extract_dict_from_path,
-    get_raw_dict_from_string,
-)
+from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
+
+"""
+TODO: this file needs to be reorganized + cleaned.  The issue is that in this
+file there exists functions too many tasks 1) it is a parser, 2) it performs the
+`static_analysis` and includes functions that are used during the build_model.py
+process. (plus others maybe)
+"""
+
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
@@ -34,7 +38,7 @@ CONFIG_KEYS = [
 ]
 
 
-def maybe_extract_from_path(cur_dict: dict) -> dict:
+def _maybe_extract_from_path(cur_dict: dict) -> dict:
     try:
         cur_path = cur_dict["path"]
         if len(cur_dict.keys()) > 1:
@@ -47,7 +51,21 @@ def maybe_extract_from_path(cur_dict: dict) -> dict:
     return cur_dict
 
 
-def primary_config(main_path: str) -> dict:
+def _create_exp_dir(root_dir: str, wipe_dirs: bool):
+
+    if os.path.exists(root_dir):
+        if wipe_dirs:
+            shutil.rmtree(root_dir)
+        else:
+            raise ValueError(
+                f"a model experiment directory currently exists at {root_dir}. If you wish to override the current model, you can use meta:start_fresh: True"
+            )
+
+    if not os.path.exists(root_dir):
+        Path(root_dir).mkdir(parents=True, exist_ok=True)
+
+
+def _primary_config(main_path: str) -> dict:
     main_config_raw = get_raw_dict_from_string(main_path)
     cur_keys = main_config_raw.keys()
     invalid_keys = []
@@ -65,7 +83,7 @@ def primary_config(main_path: str) -> dict:
     for config_type in CONFIG_KEYS:
         # try block?
         raw_config = main_config_raw[config_type]
-        raw_config = maybe_extract_from_path(raw_config)
+        raw_config = _maybe_extract_from_path(raw_config)
 
         formatted_config = parse_default(raw_config, DEFAULT_CONFIG[f"{config_type}"])
         if config_type == "model":
@@ -93,8 +111,6 @@ def primary_config(main_path: str) -> dict:
     if not os.path.exists(exp_root_dir):
         Path(exp_root_dir).mkdir(parents=True, exist_ok=True)
 
-    # create_exp_dir(exp_root_dir, wipe_dirs=override_yml_dir)
-
     model_root_dir = exp_root_dir.joinpath(config_dict["model"]["name"])
     try:
         override_model_dir = config_dict["model"]["start_fresh"]
@@ -102,7 +118,7 @@ def primary_config(main_path: str) -> dict:
         # leave existing model information
         override_model_dir = False
 
-    create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
+    _create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
 
     return config_dict
 
@@ -337,7 +353,7 @@ def _validate_inputs(config_dict: dict, graph_dict: dict):
         node.in_name = new_in_names
 
 
-def build_chain(call_chain, node, graph_dict):
+def _build_chain(call_chain, node, graph_dict):
     # recursive function to build chain of input to output
     # I think I'm doing this backwards.. maybe a better approach would be to
     # build the chain from back to front and then reverse it?
@@ -350,7 +366,7 @@ def build_chain(call_chain, node, graph_dict):
             parent_chains = []
             for i, parent in enumerate(parent_names):
                 # recursively build chain for each parent
-                parent_chain = build_chain([], graph_dict[parent], graph_dict)
+                parent_chain = _build_chain([], graph_dict[parent], graph_dict)
                 parent_chains.append(parent_chain)
 
             # all parent chains are not contained in parent_chains
@@ -358,14 +374,16 @@ def build_chain(call_chain, node, graph_dict):
             call_chain.append(branch_tuple)
             call_chain.append(node.name)
         else:
-            new_chain = build_chain(call_chain, graph_dict[parent_names[0]], graph_dict)
+            new_chain = _build_chain(
+                call_chain, graph_dict[parent_names[0]], graph_dict
+            )
             if parent_names[0] == new_chain[-1]:
                 call_chain.append(node.name)
 
     return call_chain
 
 
-def create_subgraphs(config_dict, graph_dict):
+def _create_subgraphs(config_dict, graph_dict):
     # NOTE: is this right?
     # 1. loop out nodes --> build chains from out to in
     subgraphs = {}
@@ -374,7 +392,7 @@ def create_subgraphs(config_dict, graph_dict):
             if not node.label:
                 # it's an endpoint, but it's not a label (labels don't need to
                 # be built)
-                chain = build_chain([], node, graph_dict)
+                chain = _build_chain([], node, graph_dict)
                 subgraphs[node.name] = {"sequence": chain}
 
     return subgraphs
@@ -439,7 +457,7 @@ def static_analysis(config_dict: dict) -> dict:
 
     # could loop for NOTDEFINED here
     # TODO: Analyze graph_dict to see if there are any "dead_ends"
-    subgraphs = create_subgraphs(config_dict, graph_dict)
+    subgraphs = _create_subgraphs(config_dict, graph_dict)
 
     # exhaust generator and convert, extract list [[path_lists]]
     path_lists = list(_extract_paths(subgraphs))
@@ -467,7 +485,7 @@ def static_analysis(config_dict: dict) -> dict:
 def create_configs(main_path: str) -> dict:
 
     # parse individual configs
-    config_dict = primary_config(main_path)
+    config_dict = _primary_config(main_path)
 
     # build the order of inputs into the model. This logic will likely need to
     # change as inputs become more complex
