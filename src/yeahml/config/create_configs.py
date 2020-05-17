@@ -6,18 +6,24 @@ from typing import Any, Dict, List
 
 from yeahml.config.data.parse_data import format_data_config
 from yeahml.config.default.default_config import DEFAULT_CONFIG
+from yeahml.config.default.util import parse_default
 from yeahml.config.helper import (
     create_exp_dir,
     extract_dict_from_path,
     get_raw_dict_from_string,
 )
-from yeahml.config.hyper_parameters.parse_hyper_parameters import (
-    format_hyper_parameters_config,
-)
-from yeahml.config.logging.parse_logging import format_logging_config
-from yeahml.config.meta.parse_meta import format_meta_config
+
 from yeahml.config.model.parse_model import format_model_config
-from yeahml.config.performance.parse_performance import format_performance_config
+
+# from yeahml.config.hyper_parameters.parse_hyper_parameters import (
+#     format_hyper_parameters_config,
+# )
+# # from yeahml.config.logging.parse_logging import format_logging_config
+
+# from yeahml.config.meta.parse_meta import format_meta_config
+
+# from yeahml.config.performance.parse_performance import format_performance_config
+
 
 # components
 
@@ -73,27 +79,17 @@ def primary_config(main_path: str) -> dict:
         raw_config = main_config_raw[config_type]
         # if the main key has a "path" key, then extract from that path
         raw_config = maybe_extract_from_path(raw_config)
-        if config_type == "meta":
-            formatted_config = format_meta_config(raw_config, DEFAULT_CONFIG["meta"])
-        elif config_type == "logging":
-            formatted_config = format_logging_config(
-                raw_config, DEFAULT_CONFIG["logging"]
-            )
-        elif config_type == "performance":
-            formatted_config = format_performance_config(
-                raw_config, DEFAULT_CONFIG["performance"]
-            )
-        elif config_type == "optimize":
-            # using format_performance_config here since nothing else happens
-            # internally
-            formatted_config = format_performance_config(
-                raw_config, DEFAULT_CONFIG["optimize"]
-            )
-        elif config_type == "data":
-            formatted_config = format_data_config(raw_config, DEFAULT_CONFIG["data"])
-        elif config_type == "hyper_parameters":
-            formatted_config = format_hyper_parameters_config(
-                raw_config, DEFAULT_CONFIG["hyper_parameters"]
+        standard_parse = [
+            "meta",
+            "logging",
+            "performance",
+            "optimize",
+            "data",
+            "hyper_parameters",
+        ]
+        if config_type in standard_parse:
+            formatted_config = parse_default(
+                raw_config, DEFAULT_CONFIG[f"{config_type}"]
             )
         elif config_type == "model":
             # formatted_config = format_model_config(raw_config, config_dict["meta"])
