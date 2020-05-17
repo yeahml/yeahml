@@ -4,7 +4,7 @@ from typing import Any, Dict
 import tensorflow as tf
 
 from yeahml.build.layers.config import NOTPRESENT
-from yeahml.config.create_configs import get_node_config_by_name
+from yeahml.config.graph_analysis import get_node_config_by_name
 from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
