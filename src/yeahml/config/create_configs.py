@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
-from yeahml.config.data.parse_data import format_data_config
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.default.util import parse_default
 from yeahml.config.helper import (
@@ -12,20 +11,7 @@ from yeahml.config.helper import (
     extract_dict_from_path,
     get_raw_dict_from_string,
 )
-
 from yeahml.config.model.parse_model import format_model_config
-
-# from yeahml.config.hyper_parameters.parse_hyper_parameters import (
-#     format_hyper_parameters_config,
-# )
-# # from yeahml.config.logging.parse_logging import format_logging_config
-
-# from yeahml.config.meta.parse_meta import format_meta_config
-
-# from yeahml.config.performance.parse_performance import format_performance_config
-
-
-# components
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
