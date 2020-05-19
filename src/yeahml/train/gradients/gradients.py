@@ -148,7 +148,8 @@ def get_validation_step_fn():
         tf.debugging.assert_shapes(
             [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
         )
-        prediction = prediction[cur_objective_index]
+        if isinstance(cur_objective_index, int):
+            prediction = prediction[cur_objective_index]
 
         # TODO: apply mask?
         full_losses = []
