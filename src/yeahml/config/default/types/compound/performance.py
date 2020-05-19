@@ -16,7 +16,7 @@ class loss_config:
         self.type = categorical(
             default_value=None,
             required=True,
-            is_in_list=return_available_losses(),
+            is_in_list=return_available_losses().keys(),
             is_type=str,
             to_lower=True,
         )(loss_type)
@@ -48,7 +48,7 @@ class metric_config:
             default_value=None,
             is_type=str,
             required=True,
-            is_in_list=return_available_metrics(),
+            is_in_list=return_available_metrics().keys(),
             to_lower=True,
             allow_duplicates=True,
         )(metric_type)
