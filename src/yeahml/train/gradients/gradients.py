@@ -60,9 +60,26 @@ def get_get_supervised_grads_fn():
         if not isinstance(loss_fns, list):
             loss_fns = [loss_fns]
 
+        """
+        # TODO: y_batch maybe shouldn't be taken from here. the issue is that we
+        # specify:
+        ```
+        in_config:
+        type: "supervised"
+        options:
+          prediction: "y_pred"
+          target: "x_image"
+        `
+        """
         x_batch, y_batch = batch
         with tf.GradientTape() as tape:
             prediction = model(x_batch, training=True)
+
+            # NOTE: not sure how big of a performance hit this is
+            # TODO: add message
+            tf.debugging.assert_shapes(
+                [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
+            )
             if isinstance(cur_objective_index, int):
                 prediction = prediction[cur_objective_index]
 
@@ -113,8 +130,24 @@ def get_validation_step_fn():
         if not isinstance(loss_fns, list):
             loss_fns = [loss_fns]
 
+        """
+        # TODO: y_batch maybe shouldn't be taken from here. the issue is that we
+        # specify:
+        ```
+        in_config:
+        type: "supervised"
+        options:
+          prediction: "y_pred"
+          target: "x_image"
+        `
+        """
         x_batch, y_batch = batch
         prediction = model(x_batch, training=False)
+        # NOTE: not sure how big of a performance hit this is
+        # TODO: add message
+        tf.debugging.assert_shapes(
+            [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
+        )
         prediction = prediction[cur_objective_index]
 
         # TODO: apply mask?
