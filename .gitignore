@@ -9,6 +9,7 @@ __pycache__/
 examples/abalone/yeahml
 examples/mnist/yeahml
 examples/handwritten/yeahml
+examples/autoEncoder_mnist/yeahml
 
 src/yeahml/*/\.mypy_cache/3\.6/
 
@@ -18,5 +19,3 @@ src/yeahml/*/\.mypy_cache/3\.6/
 src/yeahml\.egg-info/
 
 htmlcov/
-
-
