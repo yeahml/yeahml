@@ -250,16 +250,20 @@ def validation(
             num_training_ops,
         )
 
-        cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
-            cur_ds_name
-        ][val_name]
-        cur_metrics_update = update_val_metrics_trackers(
-            metrics_conf,
-            cur_metric_tracker_dict,
-            val_name,
-            num_train_instances,
-            num_training_ops,
-        )
+        # metrics are optional -- there many only be a loss
+        if metrics_conf:
+            cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
+                cur_ds_name
+            ][val_name]
+            cur_metrics_update = update_val_metrics_trackers(
+                metrics_conf,
+                cur_metric_tracker_dict,
+                val_name,
+                num_train_instances,
+                num_training_ops,
+            )
+        else:
+            cur_metrics_update = None
 
         cur_update[cur_objective] = {
             "loss": cur_loss_update,
