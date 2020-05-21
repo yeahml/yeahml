@@ -34,20 +34,25 @@ def get_optimizers(optim_cdict):
 
 def _return_loss_trackers(raw_obj_dict):
 
+    loss_tracker_dict = None
+
     if "loss" in raw_obj_dict.keys():
-        loss_tracker_dict = create_loss_trackers(raw_obj_dict)
-    else:
-        loss_tracker_dict = None
+        if raw_obj_dict["loss"]:
+            loss_tracker_dict = create_loss_trackers(raw_obj_dict)
+        else:
+            raise ValueError(f"No loss objective is present in {raw_obj_dict}")
 
     return loss_tracker_dict
 
 
 def _return_metric_trackers(raw_obj_dict):
 
+    metric_tracker_dict = None
+
     if "metrics" in raw_obj_dict.keys():
-        metric_tracker_dict = create_metric_trackers(raw_obj_dict)
-    else:
-        metric_tracker_dict = None
+        # metrics may not be present
+        if raw_obj_dict["metrics"]:
+            metric_tracker_dict = create_metric_trackers(raw_obj_dict)
 
     return metric_tracker_dict
 
