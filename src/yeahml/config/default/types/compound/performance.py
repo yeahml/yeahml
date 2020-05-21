@@ -21,9 +21,9 @@ class loss_config:
             to_lower=True,
         )(loss_type)
         # TODO: error check that options are valid
-        self.options = categorical(
-            default_value=None, required=False, is_type=str, to_lower=True
-        )(loss_options)
+        self.options = list_of_dict(default_value=None, is_type=list, required=False)(
+            loss_options
+        )
         self.track = list_of_categorical(
             default_value=None,
             is_type=str,
@@ -65,7 +65,7 @@ class metric_config:
 
 # NOTE: this doesn't feel good, but I'm not sure how else to approach this yet.
 # that is, I don't like the idea of specifying supervised/unsupervised etc.
-# TODO: I think a better appoach may be to see what metric/loss is specified at
+# TODO: I think a better approach may be to see what metric/loss is specified at
 # make sure that we are including values for each
 PERFORMANCE_OPTIONS = [("supervised", ["prediction", "target"])]
 
@@ -243,6 +243,10 @@ class performances_config:
                             metric_options = metric_dict["options"]
                         except KeyError:
                             metric_options = None
+                    # a loss must be specified, but no metrics are ok
+                    else:
+                        metric_type = None
+                        metric_options = None
 
                     val = performance_config(
                         loss_type=loss_type,
