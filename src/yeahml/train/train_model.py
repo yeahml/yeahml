@@ -373,9 +373,11 @@ def train_model(
         for cur_objective in cur_optimizer_config["objectives"]:
             cur_objective_dict = objectives_dict[cur_objective]
             if "loss" in cur_objective_dict.keys():
-                loss_objective_names.append(cur_objective)
+                if cur_objective_dict["loss"]:
+                    loss_objective_names.append(cur_objective)
             if "metrics" in cur_objective_dict.keys():
-                metrics_objective_names.append(cur_objective)
+                if cur_objective_dict["metrics"]:
+                    metrics_objective_names.append(cur_objective)
         opt_to_loss_objectives[cur_optimizer_name] = loss_objective_names
         opt_to_metrics_objectives[cur_optimizer_name] = metrics_objective_names
 
