@@ -43,21 +43,31 @@ def configure_loss(opt_dict):
     except TypeError:
         # TODO: could include more helpful message here if the type is an initializer option
         raise TypeError(
-            f"config for initialier does not specify a 'type'. Current specified options:({opt_dict})."
+            f"config for loss does not specify a 'type'. Current specified options:({opt_dict})."
         )
     loss_obj = return_loss(cur_type.lower())
     loss_fn = loss_obj["function"]
 
     try:
         options = opt_dict["options"]
+        if options:
+            if isinstance(options, list):
+                if len(options) > 1:
+                    raise ValueError(
+                        f"there are more than one options dict specified for for {opt_dict}"
+                    )
+                options = options[0]
+            else:
+                raise ValueError(
+                    f"expected options to be of type list, not {type(options)} -- options: {options}"
+                )
+
     except KeyError:
         options = None
 
     if options:
-        if not set(opt_dict["options"].keys()).issubset(loss_obj["func_args"]):
-            raise ValueError(
-                f"options {opt_dict['options'].keys()} not in {init_obj['func_args']}"
-            )
+        if not set(options.keys()).issubset(loss_obj["func_args"]):
+            raise ValueError(f"options {options.keys()} not in {init_obj['func_args']}")
         loss_fn = copy_func(loss_fn)
         var_list = list(loss_fn.__code__.co_varnames)
         # TODO: there must be a more `automatic` way to filter these
