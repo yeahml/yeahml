@@ -77,9 +77,9 @@ def get_get_supervised_grads_fn():
 
             # NOTE: not sure how big of a performance hit this is
             # TODO: add message
-            tf.debugging.assert_shapes(
-                [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
-            )
+            # tf.debugging.assert_shapes(
+            #     [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
+            # )
             if isinstance(cur_objective_index, int):
                 prediction = prediction[cur_objective_index]
 
@@ -145,9 +145,9 @@ def get_validation_step_fn():
         prediction = model(x_batch, training=False)
         # NOTE: not sure how big of a performance hit this is
         # TODO: add message
-        tf.debugging.assert_shapes(
-            [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
-        )
+        # tf.debugging.assert_shapes(
+        #     [(prediction, y_batch.shape), (y_batch, y_batch.shape)]
+        # )
         if isinstance(cur_objective_index, int):
             prediction = prediction[cur_objective_index]
 
