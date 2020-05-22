@@ -10,6 +10,7 @@ examples/abalone/yeahml
 examples/mnist/yeahml
 examples/handwritten/yeahml
 examples/autoEncoder_mnist/yeahml
+examples/segmentation_oxford_pets/yeahml
 
 src/yeahml/*/\.mypy_cache/3\.6/
 
