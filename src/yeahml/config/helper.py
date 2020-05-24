@@ -12,8 +12,27 @@ except ImportError:
     from yaml import Loader
 
 
+def dict_raise_on_duplicates(ordered_pairs):
+    """
+    Reject duplicate keys. (used my json load)
+    
+    src: https://stackoverflow.com/questions/14902299/json-loads-allows-duplicate-keys-in-a-dictionary-overwriting-the-first-value
+    """
+
+    d = {}
+    for k, v in ordered_pairs:
+        if k in d:
+            raise ValueError("duplicate key: %r" % (k,))
+        else:
+            d[k] = v
+    return d
+
+
 class UniqueKeyLoader(Loader):
-    # https://gist.github.com/pypt/94d747fe5180851196eb#gistcomment-2084028
+    """
+    src: https://gist.github.com/pypt/94d747fe5180851196eb#gistcomment-2084028
+    """
+
     def construct_mapping(self, node, deep=False):
         if not isinstance(node, MappingNode):
             raise ConstructorError(
@@ -73,7 +92,10 @@ def _parse_json_from_path(path: str) -> dict:
     try:
         with open(path, encoding="utf-8") as data_file:
             try:
-                data = json.loads(data_file.read())
+                # TODO: validate that duplicates are flagged
+                data = json.loads(
+                    data_file.read(), object_pairs_hook=dict_raise_on_duplicates
+                )
                 return data
             except:
                 print(f"Error loading json to dict for file {path}")
