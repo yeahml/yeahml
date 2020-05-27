@@ -23,7 +23,9 @@ def return_available_layers():
                 LAYER_FUNCTIONS[layer_name.lower()] = {}
                 LAYER_FUNCTIONS[layer_name.lower()]["function"] = layer_func
 
-                # TODO: could add "func_args" here as desired
+    # LAYER_FUNCTIONS["custom_layer"] = {}
+    # LAYER_FUNCTIONS["custom_layer"]["function"] = None
+    # TODO: could add "func_args" here as desired
 
     return LAYER_FUNCTIONS
 
@@ -91,12 +93,19 @@ def get_layer_options(layer_func):
 
 def return_layer_defaults(layer_type):
     # logic to get all layers in a class
-    LAYER_FUNCTIONS = return_available_layers()
-    if layer_type in LAYER_FUNCTIONS.keys():
-        func = LAYER_FUNCTIONS[layer_type]["function"]
+    if isinstance(layer_type, str):
+        LAYER_FUNCTIONS = return_available_layers()
+        if layer_type in LAYER_FUNCTIONS.keys():
+            func = LAYER_FUNCTIONS[layer_type]["function"]
+        else:
+            raise ValueError(
+                f"layer type {layer_type} not available in {LAYER_FUNCTIONS.keys()}"
+            )
+    elif callable(layer_type):
+        func = layer_type
     else:
         raise ValueError(
-            f"layer type {layer_type} not available in {LAYER_FUNCTIONS.keys()}"
+            f"passed layer type is neither a string nor a module. {layer_type} is {type(layer_type)}"
         )
 
     func_args, func_defaults = get_layer_options(func)
