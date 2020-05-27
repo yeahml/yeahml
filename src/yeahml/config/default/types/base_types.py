@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 
 class default_config:
@@ -53,6 +54,51 @@ class default_config:
     #             raise TypeError(
     #                 f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
     #             )
+
+
+class custom_source_config(default_config):
+    def __init__(
+        self,
+        default_value=None,
+        is_type=None,
+        required=None,
+        description=None,
+        fn=None,
+        fn_args=None,
+    ):
+        super().__init__(
+            default_value=default_value,
+            is_type=is_type,
+            required=required,
+            description=description,
+            fn=fn,
+            fn_args=fn_args,
+        )
+
+    def __call__(self, cur_value=None):
+        if cur_value and self.is_type:
+            if not isinstance(cur_value, self.is_type):
+                raise TypeError(
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                )
+
+        if self.required and not cur_value:
+            raise ValueError(f"value was not specified, but is required")
+
+        val = self.default_value
+        if cur_value:
+            val = cur_value
+
+        if val:
+            if not Path(val).exists():
+                raise ValueError(f"path is specified as {val} but does not exist")
+        else:
+            raise ValueError(f"no path was specified")
+
+        # TODO: could have a class that checks if the source is valid + include
+        # necessary components
+
+        return val
 
 
 class numeric(default_config):
