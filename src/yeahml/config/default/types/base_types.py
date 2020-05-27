@@ -92,8 +92,8 @@ class custom_source_config(default_config):
         if val:
             if not Path(val).exists():
                 raise ValueError(f"path is specified as {val} but does not exist")
-        else:
-            raise ValueError(f"no path was specified")
+        # TODO: may need to think through a else here to catch for a custom
+        # layer without a path
 
         # TODO: could have a class that checks if the source is valid + include
         # necessary components
