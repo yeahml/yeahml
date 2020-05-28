@@ -1,3 +1,5 @@
+import importlib
+
 from yeahml.build.components.activation import configure_activation
 from yeahml.build.components.constraint import configure_constraint
 from yeahml.build.components.initializer import configure_initializer
@@ -11,6 +13,7 @@ from yeahml.build.layers.config import (
 )
 from yeahml.config.default.types.base_types import (
     categorical,
+    custom_source_config,
     default_config,
     list_of_categorical,
     list_of_numeric,
@@ -31,15 +34,50 @@ SPECIAL_OPTIONS = [
 
 
 class layer_base_config:
-    def __init__(self, layer_type=None):
+    def __init__(self, layer_type=None, layer_source=None):
         if layer_type is None:
             raise ValueError("layer_type is not defined")
         else:
-            self.str = categorical(
-                required=True, is_type=str, is_in_list=return_available_layers().keys()
-            )(layer_type)
-            fn_dict = return_layer_defaults(self.str)
-            # {"func": func, "func_args": func_args, "func_defaults": func_defaults}
+
+            # get function type and function information:
+            # this outter if/else is for determining whether to obtain the layer
+            # information from a source file, or from the keras api -- there are
+            # no checks here
+            if layer_source:
+                layer_source = layer_source.replace("/", ".")
+                if layer_source.endswith(".py"):
+                    import_source = layer_source.rstrip("py").rstrip(".")
+                custom_mod = importlib.import_module(f"{import_source}")
+
+                try:
+                    custom_func = custom_mod.__dict__[f"{layer_type}"]
+                except AttributeError:
+                    # NOTE: had a bad time with a list comp here so opted for a filter
+                    names = list(
+                        filter(lambda x: not x.startswith("_"), dir(custom_mod))
+                    )
+                    # names = [
+                    #     n if not n.startswith("_") else pass for n in dir(custom_mod)
+                    # ]
+                    raise AttributeError(
+                        f"custom layer named {layer_type} not found in {import_source} -- found: {names}. All names found {dir(custom_mod)}"
+                    )
+                self.str = f"{layer_type}"
+                fn_dict = return_layer_defaults(custom_func)
+            else:
+                self.str = categorical(
+                    required=True,
+                    is_type=str,
+                    is_in_list=return_available_layers().keys(),
+                )(layer_type)
+
+                fn_dict = return_layer_defaults(self.str)
+            # fn_dict:
+            # {
+            #     "func": func,
+            #     "func_args": func_args,
+            #     "func_defaults": func_defaults,
+            # }
             self.func = fn_dict["func"]
             self.func_args = fn_dict["func_args"]
             self.func_defaults = fn_dict["func_defaults"]
@@ -134,13 +172,19 @@ class layer_config:
     def __init__(
         self,
         layer_type=None,
+        source=None,
         layer_options=None,
         layer_in_name=None,
         startpoint=False,
         endpoint=False,
     ):
 
-        self.layer_base = layer_base_config(layer_type)()
+        self.source = custom_source_config(
+            default_value=None, required=False, is_type=str
+        )(source)
+
+        self.layer_base = layer_base_config(layer_type, self.source)()
+
         self.options = layer_options_config(
             func_args=self.layer_base["func_args"],
             func_defaults=self.layer_base["func_defaults"],
@@ -203,8 +247,14 @@ class layers_config:
                     user_options = None
 
                 try:
+                    custom_source = d["source"]
+                except KeyError:
+                    custom_source = None
+
+                try:
                     out_dict[k] = layer_config(
                         layer_type=d["type"],
+                        source=custom_source,
                         layer_options=user_options,
                         layer_in_name=layer_in_name,
                         startpoint=layer_is_startpoint,
