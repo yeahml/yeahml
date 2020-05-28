@@ -5,10 +5,12 @@ start_fresh: True
 # it could be the `in_name` to the first layer.
 layers:
   conv_1:
-    type: "conv2d"
+    type: "gated"
+    source: "layer/gated_conv.py"
     options:
-      filters: 32
+      filters: 64
       kernel_size: 3
+      strides: 1
       padding: "same"
       activation:
         type: elu
@@ -23,7 +25,8 @@ layers:
       activation:
         type: elu
   conv_3:
-    type: "conv2d"
+    type: "gated"
+    source: "layer/gated_conv.py"
     options:
       filters: 64
       kernel_size: 3
