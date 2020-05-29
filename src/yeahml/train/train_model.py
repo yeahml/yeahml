@@ -307,9 +307,6 @@ def train_model(
 
     # TODO: option to reinitialize model?
 
-    YML_TRACK_UPDATE = 30
-    LOG_PARAM_UPDATE = 20
-
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
     meta_cdict: Dict[str, Any] = config_dict["meta"]
@@ -337,7 +334,6 @@ def train_model(
     log_model_params(tr_writer, 0, model)
 
     logger = config_logger(model_run_path, log_cdict, "train")
-
     # get datasets
     # train_ds, val_ds = get_datasets(datasets, data_cdict, hp_cdict)
     dataset_dict = get_datasets(datasets, data_cdict, hp_cdict)
@@ -632,22 +628,28 @@ def train_model(
                     # # TODO: add to tensorboard
 
                     # create histograms of model parameters
-                    if num_training_ops % LOG_PARAM_UPDATE == 0:
-                        log_model_params(tr_writer, num_training_ops, model)
+                    if log_cdict["track"]["tensorboard"]["param_steps"] > 0:
+                        if (
+                            num_training_ops
+                            % log_cdict["track"]["tensorboard"]["param_steps"]
+                            == 0
+                        ):
+                            log_model_params(tr_writer, num_training_ops, model)
 
                     # update Tracker
-                    if num_training_ops % YML_TRACK_UPDATE == 0:
-                        cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][
-                            cur_ds_name
-                        ]["train"]
-                        cur_loss_update = update_val_loss_trackers(
-                            loss_conf["track"]["train"],
-                            cur_loss_tracker_dict,
-                            opt_to_steps[cur_optimizer_name],
-                            num_training_ops,
-                        )
+                    if log_cdict["track"]["tracker_steps"] > 0:
+                        if num_training_ops % log_cdict["track"]["tracker_steps"] == 0:
+                            cur_loss_tracker_dict = opt_tracker_dict[cur_objective][
+                                "loss"
+                            ][cur_ds_name]["train"]
+                            cur_loss_update = update_val_loss_trackers(
+                                loss_conf["track"]["train"],
+                                cur_loss_tracker_dict,
+                                opt_to_steps[cur_optimizer_name],
+                                num_training_ops,
+                            )
 
-                        loss_update_dict[cur_objective] = cur_loss_update
+                            loss_update_dict[cur_objective] = cur_loss_update
 
                     # TODO: this is a hacky way of seeing if training on a batch was run
                     if obj_to_grads:
@@ -662,16 +664,20 @@ def train_model(
                             "train",
                         )
 
-                        if num_training_ops % YML_TRACK_UPDATE == 0:
-                            update_metrics_dict = update_metrics_tracking(
-                                metrics_objective_names,
-                                objectives_dict,
-                                opt_tracker_dict,
-                                obj_to_grads,
-                                opt_to_steps[cur_optimizer_name],
-                                num_training_ops,
-                                "train",
-                            )
+                        if log_cdict["track"]["tracker_steps"] > 0:
+                            if (
+                                num_training_ops % log_cdict["track"]["tracker_steps"]
+                                == 0
+                            ):
+                                update_metrics_dict = update_metrics_tracking(
+                                    metrics_objective_names,
+                                    objectives_dict,
+                                    opt_tracker_dict,
+                                    obj_to_grads,
+                                    opt_to_steps[cur_optimizer_name],
+                                    num_training_ops,
+                                    "train",
+                                )
 
                 update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
             continue_optimizer = False

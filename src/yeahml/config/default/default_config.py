@@ -126,6 +126,18 @@ logging = {
                 ),
             }
         ),
+        "track": optional_config(
+            conf_dict={
+                "tracker_steps": numeric(default_value=0, required=False, is_type=int),
+                "tensorboard": optional_config(
+                    conf_dict={
+                        "param_steps": numeric(
+                            default_value=0, required=False, is_type=int
+                        )
+                    }
+                ),
+            }
+        ),
     }
 }
 

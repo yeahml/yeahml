@@ -10,6 +10,11 @@ logging:
   file:
     level: "ERROR"
     format_str: null
+  track:
+    tracker_steps: 30
+    tensorboard:
+      param_steps: 20
+
   graph_spec: True
 
 performance:
