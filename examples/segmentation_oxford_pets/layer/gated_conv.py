@@ -7,6 +7,7 @@ class gated(tf.keras.layers.Layer):
         some_kwarg=None,  # TODO:
         filters=None,
         kernel_size=None,
+        strides=1,
         padding=None,
         activation=None,
         **kwargs
@@ -20,8 +21,14 @@ class gated(tf.keras.layers.Layer):
         if not activation:
             raise ValueError("activation is required")
         super(gated, self).__init__(**kwargs)
+
+        # multiply filters by 2 before the split
         self.conv = tf.keras.layers.Conv2D(
-            filters=filters, kernel_size=kernel_size, padding=padding, activation=None
+            filters=(filters * 2),
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            activation=None,
         )
         self.activation = tf.keras.layers.Activation(activation)
         self.gate = tf.keras.layers.Activation("sigmoid")

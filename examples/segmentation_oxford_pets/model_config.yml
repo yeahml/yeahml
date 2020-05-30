@@ -5,32 +5,33 @@ start_fresh: True
 # it could be the `in_name` to the first layer.
 layers:
   conv_1:
-    type: "gated"
-    source: "layer/gated_conv.py"
+    type: "multipath"
+    source: "layer/block_module.py"
     options:
-      filters: 64
-      kernel_size: 3
-      strides: 1
+      filters: 32
+      # kernel_size: 5 # TODO: make all kwargs are necessary/check overlap
+      # strides: 1
       padding: "same"
       activation:
         type: elu
     in_name: "x_image"
   conv_2_downsample:
-    type: "conv2d"
+    type: "multipath_reduction"
+    source: "layer/block_module.py"
     options:
       filters: 32
-      kernel_size: 3
+      # kernel_size: 3
       strides: 2
       padding: "same" # 14,14,n
       activation:
         type: elu
   conv_3:
-    type: "gated"
-    source: "layer/gated_conv.py"
+    type: "multipath"
+    source: "layer/block_module.py"
     options:
-      filters: 64
-      kernel_size: 3
-      strides: 1
+      filters: 32
+      # kernel_size: 5 # TODO: make all kwargs are necessary/check overlap
+      # strides: 1
       padding: "same"
       activation:
         type: elu
