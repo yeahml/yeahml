@@ -4,113 +4,88 @@ start_fresh: True
 # TODO: it could be assumed that if only one layer in is defined in main, that
 # it could be the `in_name` to the first layer.
 layers:
-  conv_1:
-    type: "multipath"
+  down_1:
+    type: "down_block"
     source: "layer/block_module.py"
     options:
-      filters: 32
-      # kernel_size: 5 # TODO: make all kwargs are necessary/check overlap
-      # strides: 1
-      padding: "same"
+      filters: 16
+      down_size: 2 # out: 64x64
       activation:
         type: elu
     in_name: "x_image"
-  conv_2_downsample:
-    type: "multipath_reduction"
+  down_2:
+    type: "down_block"
     source: "layer/block_module.py"
     options:
       filters: 32
-      # kernel_size: 3
-      strides: 2
-      padding: "same" # 14,14,n
+      down_size: 2 # out: 32x32
       activation:
         type: elu
-  conv_3:
-    type: "multipath"
+  down_3:
+    type: "down_block"
     source: "layer/block_module.py"
     options:
       filters: 32
-      # kernel_size: 5 # TODO: make all kwargs are necessary/check overlap
-      # strides: 1
-      padding: "same"
+      down_size: 2 # out: 16x16
       activation:
         type: elu
-  conv_4_downsample:
-    type: "conv2d"
+  up_1:
+    type: "up_block"
+    source: "layer/block_module.py"
     options:
-      filters: 64
-      kernel_size: 3
-      strides: 2
-      padding: "same" # 7,7,n
-      activation:
-        type: elu
-  conv_5_upsample:
-    type: "Conv2DTranspose"
-    options:
-      filters: 128
-      kernel_size: 3
-      strides: 2
-      padding: "same" # 14,14,n
+      filters: 32
+      upsize: 2 # out: 32x32
       activation:
         type: elu
   concat_1:
     type: "concatenate"
-    in_name: ["conv_5_upsample", "conv_3"]
-  conv_6_upsample:
-    type: "conv2d"
+    in_name: ["up_1", "down_2"]
+  up_2:
+    type: "up_block"
+    source: "layer/block_module.py"
     options:
-      filters: 128
-      kernel_size: 3
-      strides: 1
-      padding: "same"
-      activation:
-        type: elu
-  conv_7_upsample:
-    type: "Conv2DTranspose"
-    options:
-      filters: 128
-      kernel_size: 3
-      strides: 2
-      padding: "same" # 28,28,n
+      filters: 32
+      upsize: 2 # out: 64x64
       activation:
         type: elu
   concat_2:
     type: "concatenate"
-    in_name: ["conv_7_upsample", "conv_1"]
-  conv_8:
-    type: "conv2d"
-    options:
-      filters: 64
-      kernel_size: 3
-      strides: 1
-      padding: "same"
-      activation:
-        type: elu
-  conv_compress:
-    type: "conv2d"
+    in_name: ["up_2", "down_1"]
+  up_3:
+    type: "up_block"
+    source: "layer/block_module.py"
     options:
       filters: 32
-      kernel_size: 1
-      strides: 1
-      padding: "same"
+      upsize: 2 # out: 128x128
       activation:
         type: elu
-  conv_compress_2:
+  concat_3:
+    type: "concatenate"
+    in_name: ["up_3", "x_image"]
+  compress_1:
+    type: "multipath"
+    source: "layer/block_module.py"
+    options:
+      filters: 32
+      padding: same
+      activation:
+        type: elu
+  channel_compress:
     type: "conv2d"
     options:
       filters: 8
+      padding: same
       kernel_size: 1
       strides: 1
-      padding: "same"
       activation:
         type: elu
   y_pred:
     type: "conv2d"
     options:
       filters: 3
+      padding: same
       kernel_size: 1
       strides: 1
-      padding: "same"
       activation:
         type: linear
     endpoint: True

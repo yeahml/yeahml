@@ -13,7 +13,7 @@ logging:
   track:
     tracker_steps: 30
     tensorboard:
-      param_steps: 20
+      param_steps: 50
 
   graph_spec: True
 
@@ -59,13 +59,13 @@ optimize:
     "main_opt":
       type: "adam"
       options:
-        learning_rate: 0.001
+        learning_rate: 0.0005
       objectives: ["main_obj"]
   directive:
     instructions: "main_opt"
 
 hyper_parameters:
-  epochs: 10
+  epochs: 50
   dataset:
     # TODO: I would like to make this logic more abstract
     # I think the only options that should be applied here are "batch" and "shuffle"
