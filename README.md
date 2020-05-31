@@ -105,97 +105,223 @@ the model is defined in another location). These indicated heading are required:
 
 ```yaml
 meta:
-  data_name: 'abalone'
-  experiment_name: 'trial_00'
+  data_name: "mnist"
+  experiment_name: "trial_00"
+  start_fresh: False
 
 logging:
   console:
-    level: 'info'
+    level: "info"
     format_str: null
   file:
-    level: 'ERROR'
+    level: "ERROR"
     format_str: null
+  track:
+    tracker_steps: 30
+    tensorboard:
+      param_steps: 50
   graph_spec: True
 
 performance:
   objectives:
-    main:
-      loss: 
-        type: 'MSE'
+    main_obj:
+      loss:
+        type: "sparse_categorical_crossentropy"
+        track: "mean"
       metric:
-        type: ["MeanSquaredError", "MeanAbsoluteError"]
-        options: [null, 
-                  null]
+        type: ["SparseCategoricalAccuracy"]
+        options: [null]
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_out"
-          target: "target_v"
-        dataset: 'abalone'
+          prediction: "y_pred"
+          target: "y_target"
+        dataset: "mnist"
 
 data:
-  in:
-    features:
-      shape: [2,1]
-      dtype: 'float64'
-    target_v:
-      shape: [1]
-      dtype: 'int32'
+  datasets:
+    "mnist":
+      in:
+        x_image:
+          shape: [28, 28, 1]
+          dtype: "float32" # this is a cast
+        y_target:
+          shape: [1, 1]
+          dtype: "int32"
+          label: True
+      split:
+        names: ["train", "val"]
 
 optimize:
-  # NOTE: multiple losses by the same optimizer, are currently only modeled
-  # jointly, if we wish to model the losses separately (sequentially or
-  # alternating), then we would want to use a second optimizer
   optimizers:
     "main_opt":
-      type: 'adam'
+      type: "adam"
       options:
         learning_rate: 0.0001
-        beta_1: 0.91 
-      objectives: ["main"]
+      objectives: ["main_obj"]
   directive:
     instructions: "main_opt"
 
 hyper_parameters:
-  epochs: 30
+  epochs: 5
   dataset:
-    # TODO: I would like to make this logic more abstract
-    # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
-    shuffle_buffer: 128 # this should be grouped with batchsize
-  
+    shuffle_buffer: 128
+
 model:
-  path: './model_config.yml'
+  path: "./model_config.yml"
 ```
 
 A basic model config (where the path to this file is specified above by (`model:path`) may look similar to the following:
 
 ```yaml
-
 name: "model_a"
+start_fresh: True
 
 layers:
+  conv_1:
+    type: "conv2d"
+    options:
+      filters: 8
+      kernel_size: 3
+      padding: "same"
+    in_name: "x_image"
+  conv_2_downsample:
+    type: "conv2d"
+    options:
+      filters: 8
+      kernel_size: 3
+      strides: 2
+      padding: "same"
+  conv_3:
+    type: "conv2d"
+    options:
+      filters: 8
+      kernel_size: 3
+      strides: 1
+      padding: "same"
+  conv_4_downsample:
+    type: "conv2d"
+    options:
+      filters: 8
+      kernel_size: 3
+      strides: 2
+      padding: "same"
+  flatten_1:
+    type: "flatten"
   dense_1:
-    type: 'dense' # all tf.keras.layers are available
-    options: # kwargs to the tf.keras.layers.___
-      units: 16
-    in_name: 'features' # defines the connection
-  dense_2:
-    type: 'dense'
+    type: "dense"
     options:
-      units: 8
-  dense_out:
-    type: 'dense'
-    options:
-      units: 1
+      units: 128
       activation:
-        type: 'linear' # all tf activation functions are available
+        type: "elu"
+  dense_2:
+    type: "dense"
+    options:
+      units: 32
+      activation:
+        type: "elu"
+  y_pred:
+    type: "dense"
+    options:
+      units: 10
+      activation:
+        type: "softmax"
+    endpoint: True
 ```
+
+### Sightly more advanced Example
+The segmentation [example](./examples/segmentation_oxford_pets) shows how to use
+custom written layers. Please note, it is also possible to mix and match
+predefined layers as well as the custom layers
+
+```yaml
+layers:
+  #....
+  type: "down_block"
+    source: "layer/block_module.py"
+    options:
+      filters: 32
+      down_size: 2 # out: 32x32
+      activation:
+        type: elu
+
+```
+
+where a python script (indicated by the `source:`) contains a custom layer named
+"down_block" (indicated by the `type:`). which can contain more custom
+subclassed layers (shown by n_by_n, etc.)
+
+```python
+import tensorflow as tf
+
+from .base_components import n_by_n
+from .block_components import multipath, multipath_reduction
+
+class down_block(tf.keras.layers.Layer):
+    def __init__(
+        self, filters=None, down_size=None, padding="same", activation=None, **kwargs
+    ):
+        if not filters:
+            raise ValueError("filters are required")
+        if not down_size:
+            raise ValueError("down_size is required")
+        if not padding:
+            raise ValueError("padding is required")
+        if not activation:
+            raise ValueError("activation is required")
+        self.down_size = down_size
+        super(down_block, self).__init__(**kwargs)
+        self.conv_a = multipath(
+            filters=filters, padding=padding, activation=activation, **kwargs
+        )
+        self.conv_b = multipath(
+            filters=filters, padding=padding, activation=activation, **kwargs
+        )
+        self.concat = tf.keras.layers.Concatenate()
+        self.conv_1x1 = n_by_n(
+            kernel_size=1,
+            filters=filters,
+            padding=padding,
+            activation=activation,
+            **kwargs
+        )
+        self.down = multipath_reduction(
+            filters=filters,
+            strides=down_size,
+            padding=padding,
+            activation=activation,
+            **kwargs
+        )
+        self.conv_out = multipath(
+            filters=filters, padding=padding, activation=activation, **kwargs
+        )
+
+    def get_config(self):
+        config = super(up_block, self).get_config()
+        config.update({"down_size": self.down_size})
+        return config
+
+    def call(self, inputs):
+
+        out_a = self.conv_a(inputs)
+        out_a = self.conv_b(out_a)
+        out_b = self.concat([out_a, inputs])
+        out = self.conv_1x1(out_b)
+
+        out = self.down(out)
+        out = self.conv_out(out)
+
+        return out
+```
+
+
 
 ### TensorBoard
 
 After training, [tensorboard](https://www.tensorflow.org/tensorboard) can be
-used to inspect the graph and metrics by issuing the following command:
+used to inspect the graph and metrics by issuing the following command from the
+appropriate subdirectory:
 `tensorboard --logdir "tf_logs/"` which will open tensorboard and display
 figures similar to those below.
 
