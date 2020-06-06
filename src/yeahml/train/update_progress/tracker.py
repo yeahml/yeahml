@@ -1,3 +1,6 @@
+################################################# metrics
+
+
 def update_metrics_tracking(
     metrics_objective_names,
     objectives_dict,
@@ -43,30 +46,6 @@ def update_metrics_tracking(
     return update_dict
 
 
-def update_val_loss_trackers(
-    cur_loss_conf, cur_loss_tracker_dict, num_train_instances, num_training_ops
-):
-    # update Tracker and reset tf states
-
-    update_dict = {}
-    for loss_name, desc_dict in cur_loss_conf.items():
-        update_dict[loss_name] = {}
-        for desc_name, desc_tf_obj in desc_dict.items():
-            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
-
-            tf_desc_val = desc_tf_obj.result().numpy()
-            desc_tf_obj.reset_states()
-
-            cur_update = desc_tracker.update(
-                value=tf_desc_val,
-                step=num_train_instances,
-                global_step=num_training_ops,
-            )
-            update_dict[loss_name][desc_name] = cur_update
-
-    return update_dict
-
-
 def update_val_metrics_trackers(
     metrics_conf,
     cur_metric_tracker_dict,
@@ -88,5 +67,32 @@ def update_val_metrics_trackers(
                 value=result, step=num_train_instances, global_step=num_training_ops
             )
             update_dict[metric_name] = cur_update
+
+    return update_dict
+
+
+################################################# loss
+
+
+def update_loss_trackers(
+    cur_loss_conf, cur_loss_tracker_dict, num_train_instances, num_training_ops
+):
+    # update Tracker and reset tf states
+
+    update_dict = {}
+    for loss_name, desc_dict in cur_loss_conf.items():
+        update_dict[loss_name] = {}
+        for desc_name, desc_tf_obj in desc_dict.items():
+            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
+
+            tf_desc_val = desc_tf_obj.result().numpy()
+            desc_tf_obj.reset_states()
+
+            cur_update = desc_tracker.update(
+                value=tf_desc_val,
+                step=num_train_instances,
+                global_step=num_training_ops,
+            )
+            update_dict[loss_name][desc_name] = cur_update
 
     return update_dict

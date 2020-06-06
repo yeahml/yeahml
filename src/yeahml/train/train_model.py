@@ -35,7 +35,7 @@ from yeahml.train.update_progress.tf_objectives import (
 )
 from yeahml.train.update_progress.tracker import (
     update_metrics_tracking,
-    update_val_loss_trackers,
+    update_loss_trackers,  # used for train and val
     update_val_metrics_trackers,
 )
 
@@ -243,7 +243,7 @@ def validation(
         cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name][
             val_name
         ]
-        cur_loss_update = update_val_loss_trackers(
+        cur_loss_update = update_loss_trackers(
             loss_conf["track"][val_name],
             cur_loss_tracker_dict,
             num_train_instances,
@@ -642,7 +642,7 @@ def train_model(
                             cur_loss_tracker_dict = opt_tracker_dict[cur_objective][
                                 "loss"
                             ][cur_ds_name]["train"]
-                            cur_loss_update = update_val_loss_trackers(
+                            cur_loss_update = update_loss_trackers(
                                 loss_conf["track"]["train"],
                                 cur_loss_tracker_dict,
                                 opt_to_steps[cur_optimizer_name],
