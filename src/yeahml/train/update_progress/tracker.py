@@ -11,6 +11,9 @@ def update_metrics_tracking(
     num_train_instances,
     num_training_ops,
     ds_split_name,
+    tb_writer,
+    ds_name,
+    objective_name,
 ):
     # update Tracker and reset tf object
     # NOTE: presently there can only be one loss coming in so the order is not
@@ -25,25 +28,39 @@ def update_metrics_tracking(
 
     update_dict = {}
 
-    for cur_objective in metrics_objective_names:
-        update_dict[cur_objective] = {}
-        cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
-        cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
-            cur_ds_name
-        ][ds_split_name]
+    with tb_writer.as_default():
+        for cur_objective in metrics_objective_names:
+            update_dict[cur_objective] = {}
+            cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
+            cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
+                cur_ds_name
+            ][ds_split_name]
 
-        metric_conf = objectives_dict[cur_objective]["metrics"]
-        for metric_name, split_to_metric in metric_conf.items():
-            metric_tracker = cur_metric_tracker_dict[metric_name]
-            update_dict[cur_objective][metric_name] = {}
-            if ds_split_name in split_to_metric.keys():
-                metric_obj = split_to_metric[ds_split_name]
-                result = metric_obj.result().numpy()
-                metric_obj.reset_states()
-                cur_update = metric_tracker.update(
-                    value=result, step=num_train_instances, global_step=num_training_ops
-                )
-                update_dict[cur_objective][metric_name] = cur_update
+            metric_conf = objectives_dict[cur_objective]["metrics"]
+            for metric_name, split_to_metric in metric_conf.items():
+                metric_tracker = cur_metric_tracker_dict[metric_name]
+                update_dict[cur_objective][metric_name] = {}
+                if ds_split_name in split_to_metric.keys():
+                    metric_obj = split_to_metric[ds_split_name]
+                    result = metric_obj.result().numpy()
+                    metric_obj.reset_states()
+
+                    with tf.name_scope("metric"):
+                        with tf.name_scope(f"{ds_name}"):
+                            tb_str = f"{objective_name}/{metric_name}"
+                            tf.summary.scalar(
+                                f"{tb_str}/global", result, step=num_training_ops
+                            )
+                            tf.summary.scalar(
+                                f"{tb_str}/direct", result, step=num_train_instances
+                            )
+
+                    cur_update = metric_tracker.update(
+                        value=result,
+                        step=num_train_instances,
+                        global_step=num_training_ops,
+                    )
+                    update_dict[cur_objective][metric_name] = cur_update
 
     return update_dict
 
@@ -54,21 +71,36 @@ def update_val_metrics_trackers(
     val_name,
     num_train_instances,
     num_training_ops,
+    tb_writer,
+    ds_name,
+    objective_name,
 ):
     # update Tracker, reset tf states
     update_dict = {}
 
-    for metric_name, split_to_metric in metrics_conf.items():
-        metric_tracker = cur_metric_tracker_dict[metric_name]
-        update_dict[metric_name] = {}
-        if val_name in split_to_metric.keys():
-            metric_obj = split_to_metric[val_name]
-            result = metric_obj.result().numpy()
-            metric_obj.reset_states()
-            cur_update = metric_tracker.update(
-                value=result, step=num_train_instances, global_step=num_training_ops
-            )
-            update_dict[metric_name] = cur_update
+    with tb_writer.as_default():
+        for metric_name, split_to_metric in metrics_conf.items():
+            metric_tracker = cur_metric_tracker_dict[metric_name]
+            update_dict[metric_name] = {}
+            if val_name in split_to_metric.keys():
+                metric_obj = split_to_metric[val_name]
+                result = metric_obj.result().numpy()
+                metric_obj.reset_states()
+
+                with tf.name_scope("metric"):
+                    with tf.name_scope(f"{ds_name}"):
+                        tb_str = f"{objective_name}/{metric_name}"
+                        tf.summary.scalar(
+                            f"{tb_str}/global", result, step=num_training_ops
+                        )
+                        tf.summary.scalar(
+                            f"{tb_str}/direct", result, step=num_train_instances
+                        )
+
+                cur_update = metric_tracker.update(
+                    value=result, step=num_train_instances, global_step=num_training_ops
+                )
+                update_dict[metric_name] = cur_update
 
     return update_dict
 
@@ -101,11 +133,9 @@ def update_loss_trackers(
                 # global: number of steps across all tasks
                 # relative: number of steps specific to task
                 # ^ these may change+not be the most helpful form
-                with tf.name_scope("loss").as_default():
-                    with tf.name_scope(f"{ds_name}").as_default():
-                        tb_str = (
-                            f"{objective_name}/{loss_name}/{desc_name}"
-                        )  # loss/{ds_name}
+                with tf.name_scope("loss"):
+                    with tf.name_scope(f"{ds_name}"):
+                        tb_str = f"{objective_name}/{loss_name}/{desc_name}"
                         tf.summary.scalar(
                             f"{tb_str}/global", tf_desc_val, step=num_training_ops
                         )

@@ -265,6 +265,9 @@ def validation(
                 val_name,
                 num_train_instances,
                 num_training_ops,
+                tb_writer=v_writer,
+                ds_name=cur_ds_name,
+                objective_name=cur_objective,
             )
         else:
             cur_metrics_update = None
@@ -685,6 +688,9 @@ def train_model(
                                     opt_to_steps[cur_optimizer_name],
                                     num_training_ops,
                                     "train",
+                                    tb_writer=tr_writer,
+                                    ds_name=cur_ds_name,
+                                    objective_name=cur_objective,
                                 )
 
                 update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
