@@ -45,6 +45,12 @@ def get_layer_options(layer_func):
         layer_opt_spec = inspect.getfullargspec(layer_func)
         cur_func_vars = layer_opt_spec.args
 
+        # VERSION : > tf 2.2, NOTE: unsure about this being the "right" way to hand this
+        if cur_func_vars == ["cls"]:
+            layer_opt_spec = inspect.getfullargspec(layer_func.__init__)
+            cur_func_vars = layer_opt_spec.args
+
+        # else:
         # some layers don't have defaults (like reshape)
         if layer_opt_spec.defaults:
             cur_func_defaults = list(layer_opt_spec.defaults)
@@ -76,7 +82,13 @@ def get_layer_options(layer_func):
 
     try:
         cur_func_vars.remove("self")
-    except KeyError:
+    except ValueError:
+        pass
+
+    # VERSION : > tf 2.2
+    try:
+        cur_func_vars.remove("cls")
+    except ValueError:
         pass
 
     diff = len(cur_func_vars) - len(cur_func_defaults)
