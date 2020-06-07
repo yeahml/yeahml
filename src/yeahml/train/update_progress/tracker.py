@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 ################################################# metrics
 
 
@@ -75,24 +77,44 @@ def update_val_metrics_trackers(
 
 
 def update_loss_trackers(
-    cur_loss_conf, cur_loss_tracker_dict, num_train_instances, num_training_ops
+    cur_loss_conf,
+    cur_loss_tracker_dict,
+    num_train_instances,
+    num_training_ops,
+    tb_writer,
+    ds_name,
+    objective_name,
 ):
     # update Tracker and reset tf states
 
-    update_dict = {}
-    for loss_name, desc_dict in cur_loss_conf.items():
-        update_dict[loss_name] = {}
-        for desc_name, desc_tf_obj in desc_dict.items():
-            desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
+    with tb_writer.as_default():
+        update_dict = {}
+        for loss_name, desc_dict in cur_loss_conf.items():
+            update_dict[loss_name] = {}
+            for desc_name, desc_tf_obj in desc_dict.items():
+                desc_tracker = cur_loss_tracker_dict[loss_name][desc_name]
 
-            tf_desc_val = desc_tf_obj.result().numpy()
-            desc_tf_obj.reset_states()
+                tf_desc_val = desc_tf_obj.result().numpy()
+                desc_tf_obj.reset_states()
 
-            cur_update = desc_tracker.update(
-                value=tf_desc_val,
-                step=num_train_instances,
-                global_step=num_training_ops,
-            )
-            update_dict[loss_name][desc_name] = cur_update
+                # update tf logs
+                # global: number of steps across all tasks
+                # relative: number of steps specific to task
+                # ^ these may change+not be the most helpful form
+                tb_str = f"loss/{ds_name}/{objective_name}/{loss_name}/{desc_name}"
+                tf.summary.scalar(
+                    f"{tb_str}/global", tf_desc_val, step=num_training_ops
+                )
+                tf.summary.scalar(
+                    f"{tb_str}/direct", tf_desc_val, step=num_train_instances
+                )
+
+                # update yml tracker
+                cur_update = desc_tracker.update(
+                    value=tf_desc_val,
+                    step=num_train_instances,
+                    global_step=num_training_ops,
+                )
+                update_dict[loss_name][desc_name] = cur_update
 
     return update_dict

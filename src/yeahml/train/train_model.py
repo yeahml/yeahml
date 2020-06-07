@@ -187,6 +187,7 @@ def validation(
     num_training_ops,
     objective_to_output_index,
     objectives_dict,
+    v_writer,
 ):
     val_name = "val"
 
@@ -248,6 +249,9 @@ def validation(
             cur_loss_tracker_dict,
             num_train_instances,
             num_training_ops,
+            tb_writer=v_writer,
+            ds_name=cur_ds_name,
+            objective_name=cur_objective,
         )
 
         # metrics are optional -- there many only be a loss
@@ -580,6 +584,7 @@ def train_model(
                         num_training_ops,
                         objective_to_output_index,
                         objectives_dict,
+                        v_writer,
                     )
                     logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
 
@@ -647,6 +652,9 @@ def train_model(
                                 cur_loss_tracker_dict,
                                 opt_to_steps[cur_optimizer_name],
                                 num_training_ops,
+                                tb_writer=tr_writer,
+                                ds_name=cur_ds_name,
+                                objective_name=cur_objective,
                             )
 
                             loss_update_dict[cur_objective] = cur_loss_update
