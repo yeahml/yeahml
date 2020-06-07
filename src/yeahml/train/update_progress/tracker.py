@@ -101,13 +101,17 @@ def update_loss_trackers(
                 # global: number of steps across all tasks
                 # relative: number of steps specific to task
                 # ^ these may change+not be the most helpful form
-                tb_str = f"loss/{ds_name}/{objective_name}/{loss_name}/{desc_name}"
-                tf.summary.scalar(
-                    f"{tb_str}/global", tf_desc_val, step=num_training_ops
-                )
-                tf.summary.scalar(
-                    f"{tb_str}/direct", tf_desc_val, step=num_train_instances
-                )
+                with tf.name_scope("loss").as_default():
+                    with tf.name_scope(f"{ds_name}").as_default():
+                        tb_str = (
+                            f"{objective_name}/{loss_name}/{desc_name}"
+                        )  # loss/{ds_name}
+                        tf.summary.scalar(
+                            f"{tb_str}/global", tf_desc_val, step=num_training_ops
+                        )
+                        tf.summary.scalar(
+                            f"{tb_str}/direct", tf_desc_val, step=num_train_instances
+                        )
 
                 # update yml tracker
                 cur_update = desc_tracker.update(
