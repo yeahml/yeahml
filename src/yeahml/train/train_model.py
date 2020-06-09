@@ -10,6 +10,7 @@ from yeahml.train.gradients.gradients import (
     get_validation_step_fn,
     update_model_params,
 )
+from yeahml.train.inference import inference_dataset
 
 # select which task to optimize
 from yeahml.train.sample_tasks.objective import select_objective
@@ -29,15 +30,12 @@ from yeahml.train.setup.tracker.tracker import (
     create_joint_dict_tracker,
     record_joint_losses,
 )
-from yeahml.train.update_progress.tf_objectives import (
-    update_metric_objects,
-    update_tf_val_metrics,
-)
+from yeahml.train.update_progress.tf_objectives import update_metric_objects
 from yeahml.train.update_progress.tracker import (
+    update_loss_trackers,
     update_metrics_tracking,
-    update_loss_trackers,  # used for train and val
-    update_val_metrics_trackers,
 )
+from yeahml.train.util import get_losses_to_update, get_next_batch, re_init_iter
 
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
@@ -110,26 +108,8 @@ def log_model_params(tr_writer, g_train_step, model):
             tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
 
-def get_next_batch(ds_iter):
-
-    # TODO: this should accept the ds_dict and ds_iter so that if we reach the
-    # we can recreate the ds_iter -- this will allow us to keep track of number
-    # of passes for each dataset. When we do this, we'll also have to drop the
-    # `convert_to_single_pass_iterator` function --- it will be included here
-    # instead.
-    try:
-        batch = next(ds_iter)
-    except StopIteration:
-        batch = None
-    return batch
-
-
 def _convert_to_iter(tf_ds):
     return tf_ds.repeat(1).__iter__()
-
-
-def re_init_iter(ds_name, split_name, ds_dict):
-    return _convert_to_iter(ds_dict[ds_name][split_name])
 
 
 def convert_to_single_pass_iterator(ds_dict):
@@ -173,112 +153,6 @@ def determine_if_training(opt_obj_ds_to_training):
     return False
 
 
-def validation(
-    model,
-    loss_objective_names,
-    metrics_objective_names,
-    dataset_iter_dict,
-    cur_val_fn,
-    opt_tracker_dict,
-    cur_objective,
-    cur_ds_name,
-    dataset_dict,
-    num_train_instances,
-    num_training_ops,
-    objective_to_output_index,
-    objectives_dict,
-    v_writer,
-):
-    val_name = "val"
-
-    cur_update = {}
-    for cur_objective in loss_objective_names:
-        cur_obj_output_index = objective_to_output_index[cur_objective]
-        cur_in_conf = objectives_dict[cur_objective]["in_config"]
-        cur_ds_name = cur_in_conf["dataset"]
-        cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
-        if val_name not in cur_ds_iter_dict.keys():
-            raise ValueError(
-                f"{cur_in_conf['dataset']} does not have a '{val_name}' dataset"
-            )
-        cur_val_iter = cur_ds_iter_dict[val_name]
-
-        # loss
-        loss_conf = objectives_dict[cur_objective]["loss"]
-
-        tf_val_loss_descs_to_update = _get_losses_to_update(loss_conf, val_name)
-
-        # metrics
-        metrics_conf = objectives_dict[cur_objective]["metrics"]
-
-        # iterate batches
-        cur_batch = get_next_batch(cur_val_iter)
-
-        while cur_batch:
-
-            val_dict = cur_val_fn(
-                model,
-                cur_batch,
-                loss_conf["object"],
-                cur_obj_output_index,
-                tf_val_loss_descs_to_update,
-            )
-            # {"predictions": prediction,
-            # "final_loss": final_loss,
-            # "losses": loss,
-            # "y_batch": y_batch,}
-
-            # update tf objects
-            # update_tf_loss_descriptions(val_dict, tf_val_loss_descs_to_update)
-            update_tf_val_metrics(val_dict, metrics_conf, val_name, cur_in_conf["type"])
-
-            # next batch until end
-            cur_batch = get_next_batch(cur_val_iter)
-
-        # reinitialize validation iterator
-        dataset_iter_dict[cur_ds_name][val_name] = re_init_iter(
-            cur_ds_name, val_name, dataset_dict
-        )
-
-        # update trackers
-        cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name][
-            val_name
-        ]
-        cur_loss_update = update_loss_trackers(
-            loss_conf["track"][val_name],
-            cur_loss_tracker_dict,
-            num_train_instances,
-            num_training_ops,
-            tb_writer=v_writer,
-            ds_name=cur_ds_name,
-            objective_name=cur_objective,
-        )
-
-        # metrics are optional -- there many only be a loss
-        if metrics_conf:
-            cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
-                cur_ds_name
-            ][val_name]
-            cur_metrics_update = update_val_metrics_trackers(
-                metrics_conf,
-                cur_metric_tracker_dict,
-                val_name,
-                num_train_instances,
-                num_training_ops,
-                tb_writer=v_writer,
-                ds_name=cur_ds_name,
-                objective_name=cur_objective,
-            )
-        else:
-            cur_metrics_update = None
-
-        cur_update[cur_objective] = {
-            "loss": cur_loss_update,
-            "metrics": cur_metrics_update,
-        }
-    return cur_update
-
-
 # def start_profiler(profile_path, profiling):
 #     if not profiling:
 #         tf.profiler.experimental.start(str(profile_path))
@@ -296,16 +170,6 @@ def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
         )
     cur_train_iter = cur_ds_iter_dict[split_name]
     return cur_train_iter
-
-
-def _get_losses_to_update(loss_conf, ds_split):
-    tf_train_loss_descs_to_update = []
-    for _, desc_dict in loss_conf["track"][ds_split].items():
-        #  _ = loss_name
-        for _, desc_tf_obj in desc_dict.items():
-            # _ = desc_name
-            tf_train_loss_descs_to_update.append(desc_tf_obj)
-    return tf_train_loss_descs_to_update
 
 
 def train_model(
@@ -498,7 +362,7 @@ def train_model(
             # each loss may be being optimized by data from different datasets
             cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
             loss_conf = objectives_dict[cur_objective]["loss"]
-            tf_train_loss_descs_to_update = _get_losses_to_update(loss_conf, "train")
+            tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
 
             cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
 
@@ -569,16 +433,13 @@ def train_model(
                     # also, maybe we don't want to run the "full" validation,
                     # only a (random) subset?
 
-                    logger.debug(
-                        f"START iterating validation - epoch: {opt_to_steps[cur_optimizer_name]}"
-                    )
-                    cur_val_fn = opt_to_validation_fn[cur_optimizer_name]
-                    cur_val_update = validation(
+                    # validation pass
+                    cur_val_update = inference_dataset(
                         model,
                         loss_objective_names,
                         metrics_objective_names,
                         dataset_iter_dict,
-                        cur_val_fn,
+                        opt_to_validation_fn[cur_optimizer_name],
                         opt_tracker_dict,
                         cur_objective,
                         cur_ds_name,
@@ -588,8 +449,9 @@ def train_model(
                         objective_to_output_index,
                         objectives_dict,
                         v_writer,
+                        logger,
+                        split_name="val",
                     )
-                    logger.info(f"done validation - {opt_to_steps[cur_optimizer_name]}")
 
                     # log params used during validation in other location
                     log_model_params(v_writer, num_training_ops, model)
@@ -705,8 +567,6 @@ def train_model(
 
     return return_dict
 
-    # logger.debug(f"END iterating training dataset- epoch: {e}")
-
     # # TODO: adjust
     # train_best_joint_update = record_joint_losses(
     #     "train",
@@ -716,13 +576,6 @@ def train_model(
     #     joint_loss_name,
     #     joint_loss_record_train,
     # )
-
-    # TODO: tensorboard
-    # with tr_writer.as_default():
-    #     tf.summary.scalar("loss", cur_train_loss_, step=e)
-    #     for i, name in enumerate(metric_order):
-    #         cur_train_metric_fn = train_metric_fns[i]
-    #         tf.summary.scalar(name, cur_train_metric_fn.result().numpy(), step=e)
 
     # TODO: save best params with update dict and save params
     # accordingly
@@ -737,10 +590,3 @@ def train_model(
 
     #     logger.debug(f"best params saved: val loss:
     #     {cur_val_loss_:.4f}")
-
-    # TODO: tensorboard
-    # with v_writer.as_default():
-    #     tf.summary.scalar("loss", cur_val_loss_, step=e)
-    #     for i, name in enumerate(metric_order):
-    #         cur_val_metric_fn = val_metric_fns[i]
-    #         tf.summary.scalar(name, cur_val_metric_fn.result().numpy(), step=e)
