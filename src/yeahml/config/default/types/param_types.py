@@ -13,7 +13,7 @@ class optional_config:
 
 
 class parameter_config:
-    def __init__(self, known_dict=None, unknown_dict=None):
+    def __init__(self, known_dict=None):
         if known_dict is None:
             self.known_dict = None
         else:

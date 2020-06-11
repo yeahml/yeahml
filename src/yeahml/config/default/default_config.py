@@ -5,9 +5,9 @@ from yeahml.config.default.types.base_types import (
 )
 from yeahml.config.default.types.compound.data import data_set_name_dict
 from yeahml.config.default.types.compound.directive import instruct_parser
-from yeahml.config.default.types.compound.layer import layers_config
+from yeahml.config.default.types.compound.layer import layers_parser
 from yeahml.config.default.types.compound.optimizer import optimizers_parser
-from yeahml.config.default.types.compound.performance import performances_config
+from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.default.types.param_types import optional_config
 
 # meta
@@ -57,30 +57,6 @@ hyper_parameters = {
                 "warm_up": numeric(default_value=None, required=False, is_type=int),
             }
         ),
-        # TODO: Right now I'm assuming 1 loss and one optimizer.. this isn't
-        # and needs to be reconsidered
-        # "optimizer": {
-        #     "type": categorical(
-        #         default_value=None,
-        #         required=True,
-        #         is_in_list=return_available_optimizers(),
-        #         to_lower=True,
-        #     ),
-        #     # TODO: this isn't really a list of categorical.... most are numeric
-        #     "options": parameter_config(
-        #         known_dict={
-        #             "learning_rate": numeric(
-        #                 default_value=None, required=True, is_type=float
-        #             )
-        #         }
-        #     ),
-        #     "name": categorical(default_value=None, required=True, to_lower=True),
-        #     # TODO: in a secondary check, we need to ensure the losses specified
-        #     # are valid+included
-        #     "objectives": list_of_categorical(
-        #         default_value=None, required=True, to_lower=True
-        #     ),
-        # },
     }
 }
 
@@ -196,13 +172,13 @@ augment = {"augment": {}}
 # formatted_dict["TFR_parse"] = raw_config["TFR_parse"]
 
 # TODO: eventually, we need to support custom performance/loss metrics
-performance = {"performance": {"objectives": performances_config()}}
+performance = {"performance": {"objectives": performances_parser()}}
 model = {
     "model": {
         # directory
         "name": categorical(default_value=None, required=True, is_type=str),
         "start_fresh": categorical(default_value=False, required=False, is_type=bool),
-        "layers": layers_config(),  # could add a check that the location exists
+        "layers": layers_parser(),  # could add a check that the location exists
     }
 }
 

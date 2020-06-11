@@ -181,19 +181,14 @@ class performance_config:
         return self.__dict__
 
 
-class performances_config:
-    def __init__(self, performance_spec_dict=None):
-        # TODO: this should be replaced by the __call__ logic
-        if performance_spec_dict is None:
-            self.conf_dict = None
-        else:
-            self.conf_dict = performance_spec_dict
+class performances_parser:
+    def __init__(self):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
     def __call__(self, performance_spec_dict):
-        # TODO: this should be moved to the __init__
         if isinstance(performance_spec_dict, dict):
             temp_dict = {}
             for k, d in performance_spec_dict.items():

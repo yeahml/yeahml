@@ -203,21 +203,15 @@ class layer_config:
         return self.__dict__
 
 
-class layers_config:
-    def __init__(self, conf_dict=None):
-
-        # TODO: this should be replaced by the __call__ logic
-        if conf_dict is None:
-            self.conf_dict = None
-        else:
-            self.conf_dict = conf_dict
+class layers_parser:
+    def __init__(self):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
     def __call__(self, model_spec_dict):
 
-        # TODO: this should be moved to the __init__
         out_dict = {}
         prev_layer_name = None
         if isinstance(model_spec_dict, dict):

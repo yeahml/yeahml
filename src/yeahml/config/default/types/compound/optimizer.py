@@ -44,12 +44,8 @@ class optimizer_config:
 
 
 class optimizers_parser:
-    def __init__(self, optimizers_spec_dict=None):
-        # TODO: this should be replaced by the __call__ logic
-        if optimizers_spec_dict is None:
-            self.conf_dict = None
-        else:
-            self.conf_dict = optimizers_spec_dict
+    def __init__(self):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
