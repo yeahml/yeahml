@@ -113,6 +113,7 @@ class dict_of_data_in_spec(data_in_spec):
             )
 
         # parse split information
+        # TODO: should this be 'splits' plural?
         try:
             split_config_raw = data_spec_dict["split"]
         except KeyError:

@@ -10,11 +10,11 @@ from yeahml.config.default.types.compound.optimizer import optimizers_parser
 from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.default.types.param_types import optional_config
 
+# TODO: check for extra keys in the configs that are not specified here
 # meta
 # TODO: set accepted options for `trace_level`
 # TODO: ensure `default_load_params_path` is a path.. also, does this belong in
 # meta?
-# TODO: I'm not sure trace_level is used anymore
 # TODO: numbers could probably be converted to string (for experiment_name?)
 meta = {
     "meta": {
@@ -284,11 +284,7 @@ model = {
             default_value=None,
             required=True,
             is_type=str,
-            description="",
-            description=(
-                "name of the model\n"
-                " > e.g. model:name: 'jacks_model"
-            ),
+            description=("name of the model\n" " > e.g. model:name: 'jacks_model"),
         ),
         "start_fresh": categorical(
             default_value=False,
