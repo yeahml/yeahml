@@ -176,7 +176,12 @@ performance = {"performance": {"objectives": performances_parser()}}
 model = {
     "model": {
         # directory
-        "name": categorical(default_value=None, required=True, is_type=str),
+        "name": categorical(
+            default_value=None,
+            required=True,
+            is_type=str,
+            description="model name `name: <str>`",
+        ),
         "start_fresh": categorical(default_value=False, required=False, is_type=bool),
         "layers": layers_parser(),  # could add a check that the location exists
     }

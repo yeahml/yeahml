@@ -132,11 +132,13 @@ class numeric(default_config):
         if cur_value and self.is_type:
             if not isinstance(cur_value, self.is_type):
                 raise TypeError(
-                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}, description: {self.description}"
                 )
 
         if self.required and not cur_value:
-            raise ValueError(f"value was not specified, but is required")
+            raise ValueError(
+                f"value was not specified, but is required, description: {self.description}"
+            )
 
         val = self.default_value
         if cur_value:
@@ -145,10 +147,14 @@ class numeric(default_config):
         if val:
             # ensure w/in bounds
             if val > self.bounds[1]:
-                raise ValueError(f"value {val} is greater than {self.bounds[1]}")
+                raise ValueError(
+                    f"value {val} is greater than {self.bounds[1]}, description: {self.description}"
+                )
 
             if val < self.bounds[0]:
-                raise ValueError(f"value {val} is less than {self.bounds[0]}")
+                raise ValueError(
+                    f"value {val} is less than {self.bounds[0]}, description: {self.description}"
+                )
             # TODO: call function with args
 
         return val
@@ -239,18 +245,22 @@ class categorical(default_config):
             if isinstance(to_lower, bool):
                 self.to_lower = to_lower
             else:
-                raise ValueError(f"to_lower is not type {type(bool)}")
+                raise ValueError(
+                    f"to_lower is not type {type(bool)}, description: {self.description}"
+                )
 
     # call fn with fn_args
     def __call__(self, cur_value=None):
         if cur_value and self.is_type:
             if not isinstance(cur_value, self.is_type):
                 raise TypeError(
-                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}"
+                    f"{cur_value} is (type: {type(cur_value)}) not type {self.is_type}, description: {self.description}"
                 )
 
         if self.required and not cur_value:
-            raise ValueError(f"value was not specified, but is required")
+            raise ValueError(
+                f"value was not specified, but is required, description: {self.description}"
+            )
 
         val = self.default_value
         if cur_value:
@@ -266,7 +276,9 @@ class categorical(default_config):
             # categorical_crossentropy as a loss checks against a dict
             if self.is_in_list:
                 if val not in self.is_in_list:
-                    raise ValueError(f"value {val} is not in {self.is_in_list}")
+                    raise ValueError(
+                        f"value {val} is not in {self.is_in_list}, description: {self.description}"
+                    )
 
         return val
 
