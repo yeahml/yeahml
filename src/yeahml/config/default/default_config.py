@@ -20,23 +20,70 @@ meta = {
     "meta": {
         # directory
         "yeahml_dir": categorical(
-            default_value="yeahml", required=False, is_type=str, to_lower=False
+            default_value="yeahml",
+            required=False,
+            is_type=str,
+            to_lower=False,
+            description=(
+                "Root directory to store information\n"
+                " > e.g. meta:yeahml_dir: 'yeahml'"
+            ),
         ),  # could add a check that the location exists
         "data_name": categorical(
-            default_value=None, required=True, is_type=str, to_lower=False
+            default_value=None,
+            required=True,
+            is_type=str,
+            to_lower=False,
+            description=(
+                "Description of the data used \n"
+                " > e.g. meta:data_name: 'mnist', or  meta:data_name: 'V00'\n"
+                "this logic will likely change in the future"
+            ),
         ),
         "experiment_name": categorical(
-            default_value=None, required=True, is_type=str, to_lower=False
+            default_value=None,
+            required=True,
+            is_type=str,
+            to_lower=False,
+            description=(
+                "Name for the experiment being performed\n"
+                " > e.g. meta:experiment_name: 'trial_00'"
+            ),
         ),
-        "start_fresh": categorical(default_value=False, required=False, is_type=bool),
+        "start_fresh": categorical(
+            default_value=False,
+            required=False,
+            is_type=bool,
+            description=(
+                "Used to determine whether previous experiments should be deleted\n"
+                " > e.g. meta:start_fresh: True"
+            ),
+        ),
         # random seed
-        "rand_seed": numeric(default_value=None, required=False, is_type=int),
-        # tracing
-        "trace_level": categorical(default_value=None, required=False),
+        "rand_seed": numeric(
+            default_value=None,
+            required=False,
+            is_type=int,
+            description=(
+                "Used to set the random seed for tensorflow\n"
+                " > e.g. meta:rand_seed: 42"
+            ),
+        ),
+        # TODO: tracing
+        # "trace_level": categorical(
+        #     default_value=None, required=False, description="meta:trace_level: <str>"
+        # ),
         # default path to load param information
         # TODO: this should likely move to the model config
         "default_load_params_path": categorical(
-            default_value=None, required=False, is_type=str, to_lower=False
+            default_value=None,
+            required=False,
+            is_type=str,
+            to_lower=False,
+            description=(
+                "Default location to load parameters from\n"
+                "meta:default_load_params_path: './path/to/some/parameters...'"
+            ),
         ),  # TODO: confirm path exists
     }
 }
@@ -46,15 +93,40 @@ meta = {
 hyper_parameters = {
     "hyper_parameters": {
         "dataset": {
-            "batch": numeric(default_value=None, required=True, is_type=int),
-            "shuffle_buffer": numeric(default_value=None, required=False, is_type=int),
+            "batch": numeric(
+                default_value=None,
+                required=True,
+                is_type=int,
+                description="hyper_parameters:dataset:batch: <int>",
+            ),
+            "shuffle_buffer": numeric(
+                default_value=None,
+                required=False,
+                is_type=int,
+                description="hyper_parameters:dataset:shuffle_buffer: <int>",
+            ),
         },
-        "epochs": numeric(default_value=None, required=True, is_type=int),
+        "epochs": numeric(
+            default_value=None,
+            required=True,
+            is_type=int,
+            description="hyper_parameters:epochs: <int>",
+        ),
         # TODO: need to account for optional outter keys
         "early_stopping": optional_config(
             conf_dict={
-                "epochs": numeric(default_value=None, required=False, is_type=int),
-                "warm_up": numeric(default_value=None, required=False, is_type=int),
+                "epochs": numeric(
+                    default_value=None,
+                    required=False,
+                    is_type=int,
+                    description="hyper_parameters:early_stopping:epochs: <int>",
+                ),
+                "warm_up": numeric(
+                    default_value=None,
+                    required=False,
+                    is_type=int,
+                    description="hyper_parameters:early_stopping:warm_up: <int>",
+                ),
             }
         ),
     }
@@ -77,12 +149,20 @@ logging = {
                     required=False,
                     is_in_list=ERR_LEVELS,
                     is_type=str,
+                    description=(
+                        "the level to log information to the console\n"
+                        " > e.g. logging:console:level: 'critical'"
+                    ),
                 ),
                 "format_str": categorical(
                     default_value="%(name)-12s: %(levelname)-8s %(message)s",
                     required=False,
                     is_type=str,
                     to_lower=False,
+                    description=(
+                        "the level to log information to the console\n"
+                        " > e.g. logging:console:format_str: '%(name)-12s: %(levelname)-8s %(message)s'"
+                    ),
                 ),
             }
         ),
@@ -93,22 +173,44 @@ logging = {
                     required=False,
                     is_in_list=ERR_LEVELS,
                     is_type=str,
+                    description=(
+                        "the level to log information to the log file\n"
+                        " > e.g. logging:file:level: 'critical'"
+                    ),
                 ),
                 "format_str": categorical(
                     default_value="%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s",
                     required=False,
                     is_type=str,
                     to_lower=False,
+                    description=(
+                        "the level to log information to the log file\n"
+                        " > e.g. logging:file:format_str: '%(name)-12s: %(levelname)-8s %(message)s'"
+                    ),
                 ),
             }
         ),
         "track": optional_config(
             conf_dict={
-                "tracker_steps": numeric(default_value=0, required=False, is_type=int),
+                "tracker_steps": numeric(
+                    default_value=0,
+                    required=False,
+                    is_type=int,
+                    description=(
+                        "the frequency (as a number of training steps) at which to log tracker information\n"
+                        " > e.g. logging:tracker_steps: 30"
+                    ),
+                ),
                 "tensorboard": optional_config(
                     conf_dict={
                         "param_steps": numeric(
-                            default_value=0, required=False, is_type=int
+                            default_value=0,
+                            required=False,
+                            is_type=int,
+                            description=(
+                                "the frequency (as a number of training steps) at which to log tracker information\n"
+                                " > e.g. logging:track:tensorboard:param_steps: 30"
+                            ),
                         )
                     }
                 ),
@@ -176,13 +278,28 @@ performance = {"performance": {"objectives": performances_parser()}}
 model = {
     "model": {
         # directory
+        # TODO: check that no spaces or special chars are included in the model
+        # name and other directory names?
         "name": categorical(
             default_value=None,
             required=True,
             is_type=str,
-            description="model name `name: <str>`",
+            description="",
+            description=(
+                "name of the model\n"
+                " > e.g. model:name: 'jacks_model"
+            ),
         ),
-        "start_fresh": categorical(default_value=False, required=False, is_type=bool),
+        "start_fresh": categorical(
+            default_value=False,
+            required=False,
+            is_type=bool,
+            description=(
+                "model start_fresh `start_fresh: <bool>` is used to determine "
+                "whether to start the directory 'fresh'/delete current contents \n"
+                " > e.g. model:start_fresh: True"
+            ),
+        ),
         "layers": layers_parser(),  # could add a check that the location exists
     }
 }

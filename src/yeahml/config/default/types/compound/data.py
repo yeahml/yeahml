@@ -22,6 +22,10 @@ class data_in_spec:
             required=True,
             is_type=str,
             is_in_list=return_available_dtypes(),
+            description=(
+                "dtype of the feature\n"
+                " > e.g. data:datasets:'mnist':in:image_in:dtype: 'float32"
+            ),
         )(dtype)
 
         self.startpoint = startpoint
@@ -70,6 +74,7 @@ class dict_of_data_in_spec(data_in_spec):
         if isinstance(temp_in_dict, dict):
             for k, d in temp_in_dict.items():
 
+                # TODO: should startpoint/endpoint be checked as bools?
                 try:
                     layer_is_startpoint = d["startpoint"]
                 except KeyError:

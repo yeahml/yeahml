@@ -20,12 +20,22 @@ class optimizer_config:
             required=True,
             is_in_list=return_available_optimizers(),
             to_lower=True,
+            description=(
+                "The type of optimizer being used\n"
+                " > e.g. optimize:optimizers:'name':type: 'adam'"
+            ),
         )(opt_type)
 
         self.options = parameter_config(
             known_dict={
                 "learning_rate": numeric(
-                    default_value=None, required=True, is_type=float
+                    default_value=None,
+                    required=True,
+                    is_type=float,
+                    description=(
+                        "The learning rate for a specified optimizer\n"
+                        " > e.g. optimize:optimizers:'name':options:learning_rate 0.001"
+                    ),
                 )
             }
         )(opt_options)
@@ -33,7 +43,13 @@ class optimizer_config:
         # TODO: in a secondary check, we need to ensure the losses specified
         # are valid+included
         self.objectives = list_of_categorical(
-            default_value=None, required=True, to_lower=True
+            default_value=None,
+            required=True,
+            to_lower=True,
+            description=(
+                "The objective for a specified optimizer to optimize\n"
+                " > e.g. optimize:optimizers:'name':objectives: ['mnist_objective']"
+            ),
         )(opt_objectives)
 
     def __str__(self):
@@ -57,7 +73,14 @@ class optimizers_parser:
             for k, d in optimizers_spec_dict.items():
 
                 optimizer_name = categorical(
-                    default_value=None, required=True, is_type=str, to_lower=False
+                    default_value=None,
+                    required=True,
+                    is_type=str,
+                    to_lower=False,
+                    description=(
+                        "The name of the optimizer \n"
+                        " > e.g. optimize:optimizers: 'mnist_opt'"
+                    ),
                 )(k)
 
                 try:
@@ -84,6 +107,6 @@ class optimizers_parser:
 
         else:
             raise ValueError(
-                f"{optimizers_spec_dict} is type {type(optimizers_spec_dict)} not type {type({})}"
+                f"optimizers_spec_dict ({optimizers_spec_dict}) is type {type(optimizers_spec_dict)} not type {type({})}"
             )
         return temp_dict

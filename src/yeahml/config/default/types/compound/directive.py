@@ -323,12 +323,8 @@ def parse_instructions(instructions: str) -> Dict[str, Dict[str, Any]]:
 
 
 class instruct_parser:
-    def __init__(self, instruct_spec_dict=None):
-        # NOTE: currently unused
-        if instruct_spec_dict is None:
-            self.instruct_spec_dict = None
-        else:
-            self.instruct_spec_dict = optimizers_spec_dict
+    def __init__(self):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)

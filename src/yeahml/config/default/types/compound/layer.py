@@ -69,6 +69,10 @@ class layer_base_config:
                     required=True,
                     is_type=str,
                     is_in_list=return_available_layers().keys(),
+                    description=(
+                        "string defining the layer type of the indicated layer\n"
+                        " > e.g. model:layers:conv_1:type: 'conv2d'"
+                    ),
                 )(layer_type)
 
                 fn_dict = return_layer_defaults(self.str)
@@ -191,7 +195,13 @@ class layer_config:
             user_args=layer_options,
         )()
         self.layer_in_name = list_of_categorical(
-            default_value=None, required=True, is_type=str
+            default_value=None,
+            required=True,
+            is_type=str,
+            description=(
+                "name of the input to the current layer (as a string or list of strings)\n"
+                " > e.g. model:layers:dense_2:in_name: 'dense_1'"
+            ),
         )(layer_in_name)
         self.startpoint = startpoint
         self.endpoint = endpoint
