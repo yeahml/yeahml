@@ -1,9 +1,9 @@
 import pytest
-
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.model.parse_model import format_model_config
-from yeahml.build.layers.config import NOTPRESENT
 import tensorflow as tf
+
+from yeahml.build.layers.config import NOTPRESENT
+from yeahml.config.default.default_config import DEFAULT_CONFIG
+from yeahml.config.default.util import parse_default
 
 """
 layers:
@@ -34,6 +34,8 @@ ex_config = {
     "minimal_00": (
         {
             "model": {
+                "name": "some_model",
+                "start_fresh": True,
                 "layers": {
                     "dense_1": {
                         "type": "dense",
@@ -58,10 +60,12 @@ ex_config = {
                             "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
                         },
                     },
-                }
+                },
             }
         },
         {
+            "name": "some_model",
+            "start_fresh": True,
             "layers": {
                 "dense_1": {
                     "layer_base": {
@@ -118,7 +122,7 @@ ex_config = {
                             False,
                         ]
                     },
-                    "layer_in_name": "jack",
+                    "layer_in_name": ["jack"],
                 },
                 "bn_1": {
                     "layer_base": {
@@ -180,7 +184,7 @@ ex_config = {
                         ],
                     },
                     "options": {"user_vals": []},
-                    "layer_in_name": "dense_1",
+                    "layer_in_name": ["dense_1"],
                 },
                 "dense_2": {
                     "layer_base": {
@@ -238,9 +242,9 @@ ex_config = {
                         ]
                     },
                     # test that prev layer information is used here
-                    "layer_in_name": "bn_1",
+                    "layer_in_name": ["bn_1"],
                 },
-            }
+            },
         },
     )
 }
@@ -252,7 +256,7 @@ ex_config = {
 def test_default(config, expected):
     """test parsing of model"""
     if isinstance(expected, dict):
-        formatted_config = format_model_config(config["model"], DEFAULT_CONFIG["model"])
+        formatted_config = parse_default(config["model"], DEFAULT_CONFIG["model"])
         try:
             assert expected == formatted_config
         except AssertionError:
@@ -277,7 +281,6 @@ def test_default(config, expected):
                                     assert issubclass(
                                         type(a), tf.keras.regularizers.Regularizer
                                     )
-                                    pass
                                 elif issubclass(
                                     type(b), tf.keras.initializers.Initializer
                                 ):
@@ -301,11 +304,7 @@ def test_default(config, expected):
 
     elif isinstance(expected, ValueError):
         with pytest.raises(ValueError):
-            formatted_config = format_model_config(
-                config["model"], DEFAULT_CONFIG["model"]
-            )
+            formatted_config = parse_default(config["model"], DEFAULT_CONFIG["model"])
     elif isinstance(expected, TypeError):
         with pytest.raises(TypeError):
-            formatted_config = format_model_config(
-                config["model"], DEFAULT_CONFIG["model"]
-            )
+            formatted_config = parse_default(config["model"], DEFAULT_CONFIG["model"])
