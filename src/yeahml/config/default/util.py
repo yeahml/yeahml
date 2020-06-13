@@ -2,11 +2,7 @@ from yeahml.config.default.types.param_types import optional_config, parameter_c
 
 
 def _get_unspecified_default(DEFAULT):
-    formatted_dict = {}
-    for k, spec in DEFAULT.items():
-        # get default values
-        o = spec()
-        formatted_dict[k] = o
+    formatted_dict = parse_default({}, DEFAULT)
     return formatted_dict
 
 
