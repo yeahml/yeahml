@@ -50,7 +50,6 @@ def parse_default(raw_config, DEFAULT):
                 # no user values are specified, only get the default values
                 out_val = _get_unspecified_default(spec())
         elif isinstance(spec, parameter_config):
-            # TODO: verify that this is working as expected
             out_val = _unpack_params(raw_config[k], k, spec)
         elif callable(spec):
             try:

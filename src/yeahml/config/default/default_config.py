@@ -133,7 +133,10 @@ hyper_parameters = {
 }
 
 optimize = {
-    "optimize": {"optimizers": optimizers_parser(), "directive": instruct_parser()}
+    "optimize": {
+        "optimizers": optimizers_parser(),
+        "directive": {"instructions": instruct_parser()},
+    }
 }
 
 

@@ -27,7 +27,11 @@ ex_config = {
                     "objectives": ["main_opt"],
                 }
             },
-            "directive": {"YEAHML_0": {"operation": "+", "optimizers": "main_opt"}},
+            "directive": {
+                "instructions": {
+                    "YEAHML_0": {"operation": "+", "optimizers": "main_opt"}
+                }
+            },
         },
     )
 }
@@ -40,6 +44,7 @@ def test_default(config, expected):
     """test parsing of optimize"""
     if isinstance(expected, dict):
         formatted_config = parse_default(config["optimize"], DEFAULT_CONFIG["optimize"])
+        print(formatted_config)
         assert expected == formatted_config
     elif isinstance(expected, ValueError):
         with pytest.raises(ValueError):

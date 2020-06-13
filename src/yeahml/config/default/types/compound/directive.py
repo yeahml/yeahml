@@ -329,20 +329,20 @@ class instruct_parser:
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
-    def __call__(self, optimizers_spec_dict):
+    def __call__(self, instructions):
         # TODO: this should be moved to the __init__
 
-        try:
-            instructions = optimizers_spec_dict["instructions"]
-        except KeyError:
-            raise ValueError(
-                f"no instructions were found in {optimizers_spec_dict.keys()}"
-            )
+        # try:
+        #     instructions = optimizers_spec_dict["instructions"]
+        # except KeyError:
+        #     raise ValueError(
+        #         f"no instructions were found in {optimizers_spec_dict.keys()}"
+        #     )
 
-        if not instructions:
-            raise ValueError(
-                f"No instructions were found in optimizers_spec_dict: {optimizers_spec_dict['instructions']}"
-            )
+        # if not instructions:
+        #     raise ValueError(
+        #         f"No instructions were found in optimizers_spec_dict: {optimizers_spec_dict['instructions']}"
+        #     )
 
         instruct_dict = parse_instructions(instructions)
 

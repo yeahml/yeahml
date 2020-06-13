@@ -28,7 +28,7 @@ def config_logger(full_exp_path: str, log_cdict: dict, log_type: str) -> Any:
     c_fmt = logging.Formatter(log_cdict["console"]["format_str"])
     f_fmt = logging.Formatter(log_cdict["file"]["format_str"])
 
-    ACCEPTED_LOGGERS = ["build", "train", "eval", "graph", "preds"]
+    ACCEPTED_LOGGERS = ["build", "train", "eval", "graph", "preds", "config"]
     if log_type not in ACCEPTED_LOGGERS:
         raise ValueError(
             f"The requested logger type is not currently supported: {log_type}"

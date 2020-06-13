@@ -12,6 +12,7 @@ from yeahml.config.graph_analysis import static_analysis
 from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
+from yeahml.log.yf_logging import config_logger
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
@@ -76,6 +77,9 @@ def check_for_unused_keys(
     to yeahml. This will help prevent confusion about what is/isn't being used
     by the framework.
 
+    TODO: if a `path` is specified (as will likely be typical for the model
+    def), the extra key check is currently ignored - 13June20
+
     Parameters
     ----------
     conf_formatted : dict
@@ -96,12 +100,32 @@ def check_for_unused_keys(
     for key in raw_keys:
         cur_key_path = parent_key_path.copy()
         cur_key_path.append(key)
+
+        if key == "path":
+            # TODO: "path" is a magic word indicating that in the users config,
+            # the nested structure for the indicated section is written
+            # somewhere else (path)
+            # TODO: this isn't perfectly straight forward, i.e. the config for a
+            # model is not 1:1 with the returned formatted config
+            # raw = _maybe_extract_from_path(conf_raw)
+            # check_for_unused_keys(conf_formatted, raw, cur_key_path,
+            # unused_keys)
+            pass
+        elif key == "instructions" and cur_key_path[-2] == "directive":
+            # TODO: this is a bandaid fix -- the issue is that the return type
+            # of [optimize][directive][instructions] is a dict and thus is
+            # attempted to be checked against below by check_for_unused_keys and
+            # so the solution currently is to not check this key
+            return
+        else:
+            raw = conf_raw[key]
+
         if key not in conf_formatted.keys():
             unused_keys.append(cur_key_path)
         else:
             obj = conf_formatted[key]
             if isinstance(obj, dict):
-                check_for_unused_keys(obj, conf_raw[key], cur_key_path, unused_keys)
+                check_for_unused_keys(obj, raw, cur_key_path, unused_keys)
 
     return unused_keys
 
@@ -112,12 +136,46 @@ def _getFromDict(dataDict, mapList):
 
 
 def _build_unused_keys_message(main_config_raw, unused_keys):
+    unchecked_str = ""
     error_str = ""
     for uks in unused_keys:
         retv = _getFromDict(main_config_raw, uks)
-        cur_str = f" - main_config [{']['.join(uks)}] = {retv}\n"
-        error_str += cur_str
-    return error_str
+        if uks[-1] == "path":
+            unchecked_str += f" - main_config [{']['.join(uks)}] = {retv}\n"
+        else:
+            error_str += f" - main_config [{']['.join(uks)}] = {retv}\n"
+    return error_str, unchecked_str
+
+
+def _maybe_message(unused_keys, main_config_raw, logger):
+    err_str, unchecked_str = _build_unused_keys_message(main_config_raw, unused_keys)
+    if unchecked_str:
+        unchecked_msg = (
+            f"The following paths were not checked for unparsed keys:\n"
+            f"{unchecked_str}"
+        )
+    else:
+        unchecked_msg = ""
+    if err_str:
+        raise ValueError(
+            (
+                "Unparsed keys detected\n\n"
+                f"{unchecked_msg}"
+                f"The following unparsed keys were detected:\n"
+                f"{err_str}"
+                "please remove these keys from the config.\n\n"
+                "If you would like to support these keys; \n"
+                "please modify the `DEFAULT_CONFIG` in `src/yeahml/config/default/default_config.py`"
+            )
+        )
+    elif unchecked_str:
+        logger.warn(
+            "some keys have not been checked for unparsed keys:\n"
+            f"{unchecked_str}"
+            "\n This is common when the config contains model:path: <some_path>.yml and means that"
+            " there could be extra keys in this model config that are not being parsed+used by yeahml."
+            " in a future release, this could be addressed by building parsing logic in `src/yeahml/config/create_configs.py`"
+        )
 
 
 def _primary_config(main_path: str) -> dict:
@@ -149,18 +207,17 @@ def _primary_config(main_path: str) -> dict:
 
         config_dict[config_type] = formatted_config
 
+    full_exp_path = (
+        Path(config_dict["meta"]["yeahml_dir"])
+        .joinpath(config_dict["meta"]["data_name"])
+        .joinpath(config_dict["meta"]["experiment_name"])
+        .joinpath(config_dict["model"]["name"])
+    )
+    logger = config_logger(full_exp_path, config_dict["logging"], "config")
+
     unused_keys = check_for_unused_keys(config_dict, main_config_raw, [], [])
     if unused_keys:
-        message_str = _build_unused_keys_message(main_config_raw, unused_keys)
-        raise ValueError(
-            (
-                f"The following unparsed keys were detected:\n"
-                f"{message_str}"
-                "please remove these keys from the config.\n\n"
-                "If you would like to support these keys; \n"
-                "please modify the `DEFAULT_CONFIG` in `src/yeahml/config/default/default_config.py`"
-            )
-        )
+        _maybe_message(unused_keys, main_config_raw, logger)
 
     # TODO: this should probably be made once and stored? in the :meta?
     exp_root_dir = (
