@@ -54,7 +54,7 @@ ex_config = {
     "config,expected", ex_config.values(), ids=list(ex_config.keys())
 )
 def test_default(config, expected):
-    """test parsing of performance"""
+    """test parsing of logging"""
     if isinstance(expected, dict):
         formatted_config = parse_default(config["logging"], DEFAULT_CONFIG["logging"])
         assert expected == formatted_config

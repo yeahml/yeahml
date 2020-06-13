@@ -3,25 +3,6 @@ import pytest
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.default.util import parse_default
 
-"""performance = {
-    "performance": {
-        "metric": {
-            "type": list_of_categorical(
-                default_value=None, required=True, is_in_list=return_available_metrics()
-            ),
-            "options": list_of_categorical(default_value=None, required=False),
-        },
-        # TODO: support multiple losses -- currently only one loss is supported
-        "loss": {
-            "type": categorical(
-                default_value=None, required=True, is_in_list=return_available_losses()
-            ),
-            # TODO: error check that options are valid
-            "options": categorical(default_value=None, required=False),
-        },
-    }
-}"""
-
 # TODO: test options
 ex_config = {
     # ----- REQUIRED
