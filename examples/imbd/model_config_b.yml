@@ -1,0 +1,61 @@
+name: "model_b"
+start_fresh: True
+
+# TODO: it could be assumed that if only one layer in is defined in main, that
+# it could be the `in_name` to the first layer.
+layers:
+  embedding:
+    type: "embedding"
+    options:
+      input_dim: 8185
+      output_dim: 64
+    in_name: "text"
+  bidirectional_block:
+    type: "bidir_block"
+    source: "layer/sequence_block.py"
+    options:
+      units: 64
+      return_sequences: True
+  bidir_2:
+    type: "bidir_block"
+    source: "layer/sequence_block.py"
+    options:
+      units: 32
+  dense_1:
+    type: "dense"
+    options:
+      units: 64
+      activation:
+        type: "elu"
+  dropout_1:
+    type: "dropout"
+    options:
+      rate: 0.5
+  y_pred:
+    type: "dense"
+    options:
+      units: 1
+    endpoint: True
+# layers:
+#   embedding:
+#     type: "embedding"
+#     options:
+#       input_dim: 8185
+#       output_dim: 64
+#     in_name: "text"
+#   bidirectional_block:
+#     type: "bidir_block"
+#     source: "layer/sequence_block.py"
+#     options:
+#       units: 64
+#   dense_1:
+#     type: "dense"
+#     options:
+#       units: 64
+#       activation:
+#         type: "elu"
+#   y_pred:
+#     type: "dense"
+#     options:
+#       units: 1
+#     endpoint: True

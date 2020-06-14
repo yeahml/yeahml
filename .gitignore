@@ -8,11 +8,7 @@ src/yeahml/*/\.mypy_cache/3\.6/
 tests/unit/yeahml/config/defaults/\.mypy_cache/
 
 ######## Examples
-examples/abalone/yeahml
-examples/mnist/yeahml
-examples/handwritten/yeahml
-examples/autoEncoder_mnist/yeahml
-examples/segmentation_oxford_pets/yeahml
+examples/*/yeahml
 
 
 \.ipynb_checkpoints/
@@ -24,3 +20,5 @@ src/yeahml\.egg-info/
 htmlcov/
 
 
+
+examples/imbd/yeahml/imdb/trial_00/model_b/run_2020_06_14-12_43_30/tf_logs/train/

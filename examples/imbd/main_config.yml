@@ -1,0 +1,94 @@
+meta:
+  data_name: "imdb"
+  experiment_name: "trial_00"
+  start_fresh: False
+  # TODO: information on when to save params, currently only best params saved
+logging:
+  console:
+    level: "info"
+    format_str: null
+  file:
+    level: "ERROR"
+    format_str: null
+  track:
+    tracker_steps: 30
+    tensorboard:
+      param_steps: 50
+  # graph_spec: True
+
+performance:
+  objectives:
+    # each objective can be a loss, a metric, or a combination of both
+    main_obj:
+      loss:
+        # each loss can only be one loss
+        # TODO: support custom losses
+        type: "binary_crossentropy"
+        # TODO: this should be able to be a dict
+        options: [{ from_logits: True }]
+        track: "mean" # for now, only one description allowed
+        #options:
+      metric:
+        # there can be many metrics
+        # TODO: support custom metrics
+        type: ["BinaryAccuracy"]
+        options: [null]
+      in_config:
+        type: "supervised"
+        options:
+          prediction: "y_pred"
+          target: "y_label"
+        dataset: "imdb"
+    # second_obj:
+    #   metric:
+    #     type: ["TopKCategoricalAccuracy", "TopKCategoricalAccuracy"]
+    #     options: [{"k": 2}, {"k": 3}]
+    #   in_config:
+    #     type: "supervised"
+    #     options:
+    #       prediction: "y_pred"
+    #       target: "y_target"
+    #     dataset: 'mnist'
+
+# TODO: this section needs to be redone
+data:
+  datasets:
+    "imdb":
+      in:
+        text:
+          shape: "unknown"
+          dtype: "int64" # this is a cast
+        y_label: # TODO: `label:True` identifiers are not doing what they seem...
+          shape: "unknown"
+          dtype: "int64"
+          label: True
+      split:
+        names: ["train", "val"]
+
+optimize:
+  # NOTE: multiple losses by the same optimizer, are currently only modeled
+  # jointly, if we wish to model the losses seperately (sequentially or
+  # alternating), then we would want to use a second optimizer
+  optimizers:
+    "main_opt":
+      type: "adam"
+      options:
+        learning_rate: 0.0001
+      objectives: ["main_obj"]
+  directive:
+    instructions: "main_opt"
+
+hyper_parameters:
+  epochs: 8
+  dataset:
+    # TODO: I would like to make this logic more abstract
+    # I think the only options that should be applied here are "batch" and "shuffle"
+    batch: 64
+    shuffle_buffer: 10000 # this should be grouped with batchsize
+  # other:
+  #   earlystopping:
+  #     type: 'earlystopping'
+  #     options:
+
+model:
+  path: "./model_config_b.yml"
