@@ -5,6 +5,9 @@ def _combine_gradients(obj_to_grads):
     # TODO: need to research how best to combine the gradients here...
     # combine all gradients. This portion (with in the optimizer loop)
     # will combine the gradients as if it were trained jointly
+
+    # TODO: this needs to be smarter.. We need to make sure the gradients are
+    # combined (probably by tensor name), not just concatenated in a list
     combined_gradients = None
     for obj_name, grad_dict in obj_to_grads.items():
         # TODO: we could add scaling/weighting here
@@ -53,6 +56,10 @@ def get_get_supervised_grads_fn():
 
     # https://github.com/tensorflow/tensorflow/issues/27120
     # this allows the model to continue to be trained on multiple calls
+    # TODO: at some point, we may need to allow for batches of different sizes
+    # - experimental_relax_shapes=True (doesn't appear to work for this case)
+    #   https://www.tensorflow.org/api_docs/python/tf/function
+    # - (input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
     @tf.function
     def get_grad(model, batch, loss_fns, cur_objective_index, loss_descs_to_update):
         # supervised implies a x, and y.. however, this maybe should change to a
@@ -108,6 +115,9 @@ def get_get_supervised_grads_fn():
 
         # TODO: maybe we should be able to specify which params to be optimized
         # by specific optimizers
+        # NOTE: this will calculate a gradient for each model param. these
+        # gradients will be combined and applied to the model later using
+        # optimizer.apply_gradients(zip(grads, model.trainable_variables))
         grads = tape.gradient(final_loss, model.trainable_variables)
 
         return {
