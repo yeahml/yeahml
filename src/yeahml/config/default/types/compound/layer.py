@@ -149,8 +149,10 @@ class layer_options_config:
 
                 # TODO: I'm not sure this "_shape" will always be true in that
                 # it requires a list of ints.. also, consider tuple v list.
+                exclude_names = ["noise_shape"]
                 if arg_name.endswith("_shape"):
-                    arg_v = convert_to_list(arg_v)
+                    if arg_name not in exclude_names:
+                        arg_v = convert_to_list(arg_v)
 
                 self.user_vals.append(arg_v)
             # sanity check

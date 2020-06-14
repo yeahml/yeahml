@@ -12,10 +12,21 @@ class data_in_spec:
         self, shape=None, dtype=None, startpoint=True, endpoint=False, label=False
     ):
 
-        self.shape = list_of_numeric(default_value=None, is_type=int, required=True)(
-            shape
-        )
-        # TODO: include name?
+        # TODO: this is a bandaid fix and will need to be addressed in a future.
+        # I am not currently sure how best to handle this case.
+        if shape == "unknown":
+            self.shape = (None,)
+        else:
+            self.shape = list_of_numeric(
+                default_value=None,
+                is_type=int,
+                required=True,
+                description=(
+                    "shape of the data feature\n"
+                    " > e.g. data:datasets:'mnist':in:image_in:shape: [28,28,1]"
+                ),
+            )(shape)
+            # TODO: include name?
 
         self.dtype = categorical(
             default_value=None,
@@ -105,7 +116,8 @@ class dict_of_data_in_spec(data_in_spec):
                     )()
                 except TypeError:
                     raise TypeError(
-                        f"item [key={k}:dict={d}] was not expected. in the key:dict, the dict is expected to have subkeys :shape and :dtype. full spec: {data_spec_dict}"
+                        f"item [key={k}:dict={d}] was not expected. in the key:dict,"
+                        f" the dict is expected to have subkeys :shape and :dtype. full spec: {data_spec_dict}"
                     )
         else:
             raise ValueError(
