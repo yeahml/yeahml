@@ -172,7 +172,14 @@ def return_batched_iter(set_type: str, main_cdict: dict, hp_cdict: dict, tfr_f_p
     # system environment, batchsize, and data size
     # TODO: a sneaky bug could appear here where the batch is applied twice
     # due to the fact that a .batch is applied to dataset objects in memory
-    dataset = dataset.batch(hp_cdict["dataset"]["batch"]).prefetch(1)
+    # TODO:
+    # dataset = dataset.batch(hp_cdict["dataset"]["batch"]).prefetch(1)
+    # TODO: dataset.padded_batch
+    # dataset = dataset.padded_batch(
+    #     batch_size, padded_shapes=(500, 1), drop_remainder=True
+    # )
+    # TODO: prefetch
+    dataset = dataset.batch(batch_size, drop_remainder=True).prefetch(1)
     dataset = dataset.repeat(1)
 
     # iterator = dataset.make_initializable_iterator()

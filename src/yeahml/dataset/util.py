@@ -16,7 +16,12 @@ def _apply_ds_hyperparams(hp_cdict: Dict[str, Any], dataset: Any) -> Any:
         batch_size = hp_cdict["dataset"]["batch"]
     except KeyError:
         batch_size = 1
-    dataset = dataset.batch(batch_size)
+
+    # TODO: dataset.padded_batch
+    # dataset = dataset.padded_batch(
+    #     batch_size, padded_shapes=(500, 1), drop_remainder=True
+    # )
+    dataset = dataset.batch(batch_size, drop_remainder=True)
 
     return dataset
 
