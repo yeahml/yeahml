@@ -8,6 +8,8 @@
     - uses multiple datasets and multiple optimizers
 - [segmentation_oxford_pets](./segmentation_oxford_pets)
     - shows use of relative import custom layers
+- [imdb](./imdb)
+    - text data
 
 
 
