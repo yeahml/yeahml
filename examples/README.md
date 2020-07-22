@@ -1,15 +1,14 @@
 # Examples
 
 - [mnist](./mnist)
-    - familiarity
 - [abalone](./abalone)
 - [autoEncoder_mnist](./autoEncoder_mnist)
 - [handwritten](./handwritten)
     - uses multiple datasets and multiple optimizers
 - [segmentation_oxford_pets](./segmentation_oxford_pets)
-    - shows use of relative import custom layers
+    - shows the use of combining config+python code
 - [imdb](./imdb)
-    - text data
+    - more advanced preprocessing
 
 
 
