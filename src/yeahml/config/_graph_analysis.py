@@ -6,7 +6,8 @@ follow and though it does currently work for the few example cases, I'm not
 convinced it will work for every case
 """
 
-
+# `**` denotes that every key in this nested location should be looped through,
+# regardless of the name
 LOOP_ORDER = [
     ("data", ["data", "datasets", "**", "in"]),
     ("model", ["model", "layers"]),
@@ -313,7 +314,8 @@ def _build_empty_graph(config_dict):
     # build skeleton graph, all nodes are present in this graph
 
     graph_dict = {}
-    for outter_config_key, nested_keys in LOOP_ORDER:
+    # (outter_config_key, nested_keys)
+    for _, nested_keys in LOOP_ORDER:
         # LIST
         raw_node_configs = _obtain_items_from_nested_dict(nested_keys, config_dict)
         empty_node_dict = _extract_raw_nodes(raw_node_configs)
@@ -362,5 +364,13 @@ def static_analysis(config_dict: dict) -> dict:
     # TODO: depending on the implementation, we may need to create multiple models
     # based on the `graph_dict` components. This is also likely where we should log
     # the graph information/structure ?
+
+    print(graph_dict)
+    print()
+    print()
+    print(subgraphs)
+    print()
+    print(graph_dict["dense_2b"])
+    sys.exit()
 
     return graph_dict, subgraphs

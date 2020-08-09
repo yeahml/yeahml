@@ -4,7 +4,7 @@ from typing import Any, Dict
 import tensorflow as tf
 
 from yeahml.build.layers.config import NOTPRESENT
-from yeahml.config.graph_analysis import get_node_config_by_name
+from yeahml.config.graph_analysis.build_graph_dict import get_node_config_by_name
 from yeahml.information.write_info import write_build_information
 
 # from yeahml.build.get_components import get_logits_and_preds
@@ -238,9 +238,12 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
     model_cdict: Dict[str, Any] = config_dict["model"]
     meta_cdict: Dict[str, Any] = config_dict["meta"]
     log_cdict: Dict[str, Any] = config_dict["logging"]
-    data_cdict: Dict[str, Any] = config_dict["data"]
-    static_cdict: Dict[str, Any] = config_dict["static"]
-    subgraphs_cdict: Dict[str, Any] = config_dict["subgraphs"]
+    # data_cdict: Dict[str, Any] = config_dict["data"]
+    # static_cdict: Dict[str, Any] = config_dict["static"]
+    # subgraphs_cdict: Dict[str, Any] = config_dict["subgraphs"]
+    graph_dict: Dict[str, Any] = config_dict["graph_dict"]
+    graph_dependencies: Dict[str, Any] = config_dict["graph_dependencies"]
+
     model_io_cdict: Dict[str, Any] = config_dict["model_io"]
 
     full_exp_path = (
@@ -261,7 +264,7 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
 
     # configure/build all layers and save in lookup table
     built_nodes = {}
-    for name, node in static_cdict.items():
+    for name, node in graph_dict.items():
 
         node_config = get_node_config_by_name(node.name, config_dict)
         if not node_config:
@@ -286,7 +289,7 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
             built_nodes[name] = {"out": out, "func": func}
 
     # connect the subgraphs
-    for end_name, seq_dict in subgraphs_cdict.items():
+    for end_name, seq_dict in graph_dependencies.items():
 
         seq_info = seq_dict["sequence"]
         out_seq = _build_sequence(seq_info, built_nodes)
