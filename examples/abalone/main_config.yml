@@ -83,14 +83,14 @@ optimize:
     "main_opt":
       type: "adam"
       options:
-        learning_rate: 0.00002
+        learning_rate: 0.00001
         beta_1: 0.91
       objectives: ["main_obj"]
     "second_opt":
       type: "adam"
       options:
         learning_rate: 0.00002
-        beta_1: 0.91
+        beta_1: 0.92
       objectives: ["second_obj"]
   directive:
     # (a|b): alternate, (a&b): joint, (a,b): sequential

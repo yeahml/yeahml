@@ -15,7 +15,7 @@ from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger
 
-from yeahml.config.graph_analysis.static_analysis import static_analysis_v2
+from yeahml.config.graph_analysis.static_analysis import static_analysis
 from yeahml.config.model.util import make_hash
 
 ## Basic Error Checking
@@ -288,14 +288,9 @@ def create_configs(main_path: str) -> dict:
     config_dict["model_io"] = {"inputs": input_order, "outputs": output_order}
 
     # validate graph
-    # static_dict, subgraphs = static_analysis(config_dict)
-    # graph_dict, subgraphs
-    graph_dict, graph_dependencies = static_analysis_v2(config_dict)
+    graph_dict, graph_dependencies = static_analysis(config_dict)
 
     config_dict["graph_dict"] = graph_dict
     config_dict["graph_dependencies"] = graph_dependencies
-
-    # config_dict["static"] = static_dict
-    # config_dict["subgraphs"] = subgraphs
 
     return config_dict
