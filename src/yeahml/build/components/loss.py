@@ -1,4 +1,5 @@
 import inspect
+import pprint
 
 import tensorflow as tf
 
@@ -17,7 +18,7 @@ def return_available_losses():
             if opt_name.lower() not in set(["deserialize", "get", "serialize"]):
                 LOSS_FUNCTIONS[opt_name.lower()] = {}
                 LOSS_FUNCTIONS[opt_name.lower()]["function"] = opt_func
-                args = list(opt_func.__code__.co_varnames)
+                args = inspect.signature(opt_func).parameters
                 args = [a for a in args if a not in ["y_pred", "y_true"]]
                 LOSS_FUNCTIONS[opt_name.lower()]["func_args"] = args
     return LOSS_FUNCTIONS
@@ -67,8 +68,16 @@ def configure_loss(opt_dict):
 
     if options:
         if not set(options.keys()).issubset(loss_obj["func_args"]):
-            raise ValueError(f"options {options.keys()} not in {init_obj['func_args']}")
-        loss_fn = copy_func(loss_fn)
+            raise ValueError(f"options {options.keys()} not in {loss_obj['func_args']}")
+
+        # in some cases the loss function .__dict__ does not return any function
+        # values (when it should) as a result of being wrapped, this block will
+        # obtain the original function
+        if "__original_wrapped__" in loss_fn.__dict__:
+            loss_fn = copy_func(loss_fn.__dict__["__original_wrapped__"])
+        else:
+            loss_fn = copy_func(loss_fn)
+
         var_list = list(loss_fn.__code__.co_varnames)
         # TODO: there must be a more `automatic` way to filter these
         var_list = [
@@ -76,6 +85,7 @@ def configure_loss(opt_dict):
             for e in var_list
             if e not in ("y_pred", "y_true") and not e.startswith("_")
         ]
+
         cur_defaults_list = list(loss_fn.__defaults__)
         for ao, v in options.items():
             arg_index = var_list.index(ao)
