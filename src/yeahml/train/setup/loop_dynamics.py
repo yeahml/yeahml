@@ -1,7 +1,4 @@
-# from yeahml.build.components.optimizer import get_optimizer
-
-
-from yeahml.build.components.optimizer import return_optimizer
+from yeahml.build.components.optimizer import configure_optimizer
 from yeahml.train.setup.tracker.loss import (
     create_joint_loss_tracker,
     create_loss_trackers,
@@ -10,20 +7,10 @@ from yeahml.train.setup.tracker.metric import create_metric_trackers
 
 
 def get_optimizers(optim_cdict):
-    def _configure_optimizer(opt_dict):
-        # TODO: this should not be here. (follow template for losses)
-        optim_dict = return_optimizer(opt_dict["type"])
-        optimizer = optim_dict["function"]
-
-        # configure optimizers
-        temp_dict = opt_dict.copy()
-        optimizer = optimizer(**temp_dict["options"])
-
-        return optimizer
 
     optimizers_dict = {}
     for opt_name, opt_dict in optim_cdict["optimizers"].items():
-        configured_optimizer = _configure_optimizer(opt_dict)
+        configured_optimizer = configure_optimizer(opt_dict)
         optimizers_dict[opt_name] = {
             "optimizer": configured_optimizer,
             "objectives": opt_dict["objectives"],

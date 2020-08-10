@@ -3,6 +3,18 @@ import inspect
 import tensorflow as tf
 
 
+def configure_optimizer(opt_dict):
+    # TODO: this should not be here. (follow template for losses)
+    optim_dict = return_optimizer(opt_dict["type"])
+    optimizer = optim_dict["function"]
+
+    # configure optimizers
+    temp_dict = opt_dict.copy()
+    optimizer = optimizer(**temp_dict["options"])
+
+    return optimizer
+
+
 def return_available_optimizers():
     # logic to get all layers in a class
     OPTIMIZER_FUNCTIONS = {}
