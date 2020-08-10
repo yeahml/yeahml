@@ -42,7 +42,7 @@ ex_config = {
                         "options": {
                             "units": "16",
                             "kernel_initializer": {"type": "glorotnormal"},
-                            "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+                            "bias_regularizer": {"type": "l2", "options": {"l2": 0.3}},
                             "activation": {"type": "elu"},
                         },
                         "in_name": "jack",
@@ -57,7 +57,7 @@ ex_config = {
                         "options": {
                             "units": "16",
                             "kernel_initializer": {"type": "glorotnormal"},
-                            "bias_regularizer": {"type": "l2", "options": {"l": 0.3}},
+                            "bias_regularizer": {"type": "l2", "options": {"l2": 0.3}},
                         },
                     },
                 },
@@ -112,7 +112,9 @@ ex_config = {
                             tf.keras.initializers.GlorotNormal(),
                             "zeros",
                             None,
-                            tf.keras.regularizers.l2,  # TODO: this isn't checked for options
+                            tf.keras.regularizers.l2(
+                                l2=0.3
+                            ),  # TODO: this isn't checked for options
                             None,
                             None,
                             None,
@@ -231,7 +233,9 @@ ex_config = {
                             tf.keras.initializers.GlorotNormal(),
                             "zeros",
                             None,
-                            tf.keras.regularizers.l2,  # TODO: this isn't checked for options
+                            tf.keras.regularizers.l2(
+                                l2=0.3
+                            ),  # TODO: this isn't checked for options
                             None,
                             None,
                             None,

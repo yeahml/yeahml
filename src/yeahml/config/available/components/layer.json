@@ -1,14 +1,14 @@
 {
   "meta": {
-    "update_time_str": "2020-01-26 12:17:18.988993",
+    "update_time_str": "2020-08-10 10:23:20.030550",
     "version": {
-      "tensorflow": "2.1.0",
+      "tensorflow": "2.3.0",
       "yeahml": "0.0.1a1"
     }
   },
   "data": [
-    "densefeatures",
     "inputlayer",
+    "densefeatures",
     "elu",
     "leakyrelu",
     "prelu",
@@ -17,6 +17,8 @@
     "thresholdedrelu",
     "conv1d",
     "convolution1d",
+    "conv1dtranspose",
+    "convolution1dtranspose",
     "conv2d",
     "convolution2d",
     "conv2dtranspose",
