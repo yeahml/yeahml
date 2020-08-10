@@ -4,7 +4,6 @@ import tensorflow as tf
 
 
 def configure_initializer(func_type, func_opt):
-    # NOTE: This returns init(), not init .. which is different than the regularizer
     init_obj = return_initializer(func_type)
 
     init_fn = init_obj["function"]
@@ -16,10 +15,8 @@ def configure_initializer(func_type, func_opt):
             )
         for k, v in func_opt.items():
             cur_config[k] = v
-        # TODO: I'm not sure this works
         out = init_fn().from_config(cur_config)
     else:
-        # TODO: is this correct?
         out = init_fn()
 
     return out
@@ -35,7 +32,7 @@ def return_available_initializers():
     for opt_name, opt_func in available_keras_initializers.items():
         if inspect.isclass(opt_func) and issubclass(
             opt_func, tf.keras.initializers.Initializer
-        ):  # callable(opt_func):  # or
+        ):
             if opt_name.lower() not in set(["deserialize", "get", "serialize"]):
                 INITIALIZER_FUNCTIONS[opt_name.lower()] = {}
                 INITIALIZER_FUNCTIONS[opt_name.lower()]["function"] = opt_func
