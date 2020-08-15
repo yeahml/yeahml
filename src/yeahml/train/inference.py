@@ -24,7 +24,9 @@ def inference_dataset(
     logger,
     split_name,
 ):
-    logger.debug(f"START iterating validation - epoch: {num_train_instances}")
+    logger.debug(
+        f"START inference on {split_name}, num_train_instances: {num_train_instances}"
+    )
 
     cur_update = {}
     for cur_objective in loss_objective_names:
@@ -114,5 +116,5 @@ def inference_dataset(
             "metrics": cur_metrics_update,
         }
 
-    logger.info(f"done validation - {num_train_instances}")
+    logger.info(f"done inference on {split_name} - {num_train_instances}")
     return cur_update
