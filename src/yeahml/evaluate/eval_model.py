@@ -169,50 +169,50 @@ def eval_model(
     model_run_path = create_model_run_path(full_exp_path)
     logger = config_logger(model_run_path, log_cdict, "eval")
 
+    # TODO: this is hardcoded for supervised settings
+    # tf.keras models output the model outputs in a list, we need to get the index
+    # of each prediction we care about from that output to use in the loss
+    # function
+    # TODO: Additionally, this assumes the targeted variable is a model `output`
+    # NOTE: rather than `None` when a model only outputs a single value, maybe
+    # there should be a magic keyword/way to denote this.
+    if isinstance(model.output, list):
+        MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
+        chash_to_output_index = {}
+        for chash, cur_in_config in chash_to_in_config.items():
+            try:
+                assert (
+                    cur_in_config["type"] == "supervised"
+                ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
+                pred_name = cur_in_config["options"]["prediction"]
+                out_index = MODEL_OUTPUT_ORDER.index(pred_name)
+                chash_to_output_index[chash] = out_index
+            except KeyError:
+                # TODO: perform check later
+                chash_to_output_index[chash] = None
+    else:
+        # TODO: this is hardcoded to assume supervised
+        chash_to_output_index = {}
+        for chash, cur_in_config in chash_to_in_config.items():
+            assert (
+                cur_in_config["type"] == "supervised"
+            ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
+            assert (
+                model.output.name.split("/")[0]
+                == cur_in_config["options"]["prediction"]
+            ), f"model output {model.output.name.split('/')[0]} does not match prediction of cur_in_config: {cur_in_config}"
+            chash_to_output_index[chash] = None
+
     print("====" * 8)
     print(ds_to_chash)
     print("----")
     print(chash_to_in_config)
     print("-----")
     print(dataset_iter_dict)
+    print("--" * 8)
+    print(chash_to_output_index)
 
     raise NotImplementedError(f"not implemented yet")
-
-    # # create a tf.function for applying gradients for each optimizer
-    # # TODO: I am not 100% about this logic for maping the optimizer to the
-    # #   apply_gradient fn... this needs to be confirmed to work as expected
-
-    # opt_to_validation_fn = {}
-    # opt_to_get_grads_fn, opt_to_app_grads_fn = {}, {}
-    # opt_to_steps = {}
-    # # used to determine which objectives to loop to calculate losses
-    # opt_to_loss_objectives = {}
-    # # used to determine which objectives to obtain to calculate metrics
-    # opt_to_metrics_objectives = {}
-
-    # # TODO: this is hardcoded for supervised settings
-    # # tf.keras models output the model outputs in a list, we need to get the
-    # # of each prediction we care about from that output to use in the loss
-    # # function
-    # # NOTE: I'm not sure how I feel about this -- is it better to have multiple
-    # # "tf.models" that share params (is that even possible) -- or is it better
-    # # to do this where it is one "tf.model"?
-    # if isinstance(model.output, list):
-    #     MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
-    #     objective_to_output_index = {}
-    #     for obj_name, obj_dict in objectives_dict.items():
-    #         try:
-    #             pred_name = obj_dict["in_config"]["options"]["prediction"]
-    #             out_index = MODEL_OUTPUT_ORDER.index(pred_name)
-    #             objective_to_output_index[obj_name] = out_index
-    #         except KeyError:
-    #             # TODO: perform check later
-    #             objective_to_output_index[obj_name] = None
-    # else:
-    #     # TODO: this is hardcoded to assume supervised
-    #     objective_to_output_index = {}
-    #     for obj_name, obj_dict in objectives_dict.items():
-    #         objective_to_output_index[obj_name] = None
 
     # logger.info("START - evaluating")
 

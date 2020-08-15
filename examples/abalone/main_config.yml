@@ -34,7 +34,7 @@ performance:
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_out"
+          prediction: "reshape_out"
           target: "target_v"
         dataset: "abalone" # TODO: this could be infered if only one dataset is used?
     second_obj:
@@ -48,7 +48,7 @@ performance:
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_out"
+          prediction: "reshape_out"
           target: "target_v"
         dataset: "abalone"
 
