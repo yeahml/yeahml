@@ -134,6 +134,78 @@ def create_ds_to_lm_mapping(perf_cdict):
     return ds_to_chash, chash_to_in_config
 
 
+def create_output_index(model, chash_to_in_config):
+    # TODO: this block should be abstracted away to be used by both
+    # train/inference loops
+    # TODO: this is hardcoded for supervised settings
+    # tf.keras models output the model outputs in a list, we need to get the index
+    # of each prediction we care about from that output to use in the loss
+    # function
+    # TODO: Additionally, this assumes the targeted variable is a model `output`
+    # NOTE: rather than `None` when a model only outputs a single value, maybe
+    # there should be a magic keyword/way to denote this.
+    chash_to_output_index = {}
+    if isinstance(model.output, list):
+        MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
+        for chash, cur_in_config in chash_to_in_config.items():
+            try:
+                assert (
+                    cur_in_config["type"] == "supervised"
+                ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
+                pred_name = cur_in_config["options"]["prediction"]
+                out_index = MODEL_OUTPUT_ORDER.index(pred_name)
+                chash_to_output_index[chash] = out_index
+            except KeyError:
+                # TODO: perform check later
+                chash_to_output_index[chash] = None
+    else:
+        for chash, cur_in_config in chash_to_in_config.items():
+            assert (
+                cur_in_config["type"] == "supervised"
+            ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
+            assert (
+                model.output.name.split("/")[0]
+                == cur_in_config["options"]["prediction"]
+            ), f"model output {model.output.name.split('/')[0]} does not match prediction of cur_in_config: {cur_in_config}"
+            chash_to_output_index[chash] = None
+
+    return chash_to_output_index
+
+
+def load_targeted_weights():
+    # # load best weights
+    # # TODO: load specific weights according to a param
+
+    # model_path = full_exp_path.joinpath("model")
+    # if model_path.is_dir():
+    #     sub_dirs = [x for x in model_path.iterdir() if x.is_dir()]
+    #     most_recent_subdir = sub_dirs[0]
+    #     # TODO: this assumes .h5 is the filetype and that model.h5 is present
+    #     most_recent_save_path = Path(most_recent_subdir).joinpath("save")
+
+    # # TODO: THis logic/specification needs to be validated. Is this what we
+    # # want? what if we want to specify a specific run? Where should we get that information?
+    # if weights_path:
+    #     specified_path = weights_path
+    # else:
+    #     # TODO: this needs to allow an easier specification for which params to load
+    #     # The issue here is that if someone alters the model (perhaps in a notebook), then
+    #     # retrains the model (but doesn't update the config), the "old" model, not new model
+    #     # will be evaluated.  This will need to change
+    #     specified_path = most_recent_save_path.joinpath("params").joinpath(
+    #         "best_params.h5"
+    #     )
+
+    # if not specified_path.is_file():
+    #     raise ValueError(
+    #         f"specified path is neither an h5 path, nor a directory containing directories of h5: {specified_path}"
+    #     )
+
+    # model.load_weights(str(specified_path))
+    # logger.info(f"params loaded from {specified_path}")
+    raise NotImplementedError(f"not yet implemented")
+
+
 def eval_model(
     model: Any,
     config_dict: Dict[str, Dict[str, Any]],
@@ -170,51 +242,9 @@ def eval_model(
     model_run_path = create_model_run_path(full_exp_path)
     logger = config_logger(model_run_path, log_cdict, "eval")
 
-    # TODO: this block should be abstracted away to be used by both
-    # train/inference loops
-    # TODO: this is hardcoded for supervised settings
-    # tf.keras models output the model outputs in a list, we need to get the index
-    # of each prediction we care about from that output to use in the loss
-    # function
-    # TODO: Additionally, this assumes the targeted variable is a model `output`
-    # NOTE: rather than `None` when a model only outputs a single value, maybe
-    # there should be a magic keyword/way to denote this.
-    if isinstance(model.output, list):
-        MODEL_OUTPUT_ORDER = [n.name.split("/")[0] for n in model.output]
-        chash_to_output_index = {}
-        for chash, cur_in_config in chash_to_in_config.items():
-            try:
-                assert (
-                    cur_in_config["type"] == "supervised"
-                ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
-                pred_name = cur_in_config["options"]["prediction"]
-                out_index = MODEL_OUTPUT_ORDER.index(pred_name)
-                chash_to_output_index[chash] = out_index
-            except KeyError:
-                # TODO: perform check later
-                chash_to_output_index[chash] = None
-    else:
-        chash_to_output_index = {}
-        for chash, cur_in_config in chash_to_in_config.items():
-            assert (
-                cur_in_config["type"] == "supervised"
-            ), f"only supervised is currently allowed, not {cur_in_config['type']} :("
-            assert (
-                model.output.name.split("/")[0]
-                == cur_in_config["options"]["prediction"]
-            ), f"model output {model.output.name.split('/')[0]} does not match prediction of cur_in_config: {cur_in_config}"
-            chash_to_output_index[chash] = None
+    # create output index
+    chash_to_output_index = create_output_index(model, chash_to_in_config)
 
-    # print("====" * 8)
-    # print(ds_to_chash)
-    # print("----")
-    # print(chash_to_in_config)
-    # print("-----")
-    # print(dataset_iter_dict)
-    # print("--" * 8)
-    # print(chash_to_output_index)
-
-    print("........" * 8)
     logger.info("START - evaluating")
     for cur_ds_name, chash_conf_d in ds_to_chash.items():
         logger.info(f"current dataset: {cur_ds_name}")
@@ -233,6 +263,8 @@ def eval_model(
             cur_target_name = cur_objective_config["options"]["target"]
             print(cur_target_name)
 
+            # logger.info(f"objective: {cur_objective}")
+
         print(chash_conf_d)
         print("====")
 
@@ -242,12 +274,6 @@ def eval_model(
 
     raise NotImplementedError(f"not implemented yet")
 
-    # logger.info(f"objective: {cur_objective}")
-
-    # # TODO: next step -- continue_objective = True
-    # # each loss may be being optimized by data from different datasets
-    # cur_ds_name = objectives_dict[cur_objective]["in_config"]["dataset"]
-    # loss_conf = objectives_dict[cur_objective]["loss"]
     # tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
 
     # cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
@@ -275,75 +301,6 @@ def eval_model(
     #             logger,
     #             split_name="val",
     #         )
-
-    # # TODO: it also be possible to use this without passing the model?
-
-    # # load best weights
-    # # TODO: load specific weights according to a param
-
-    # model_path = full_exp_path.joinpath("model")
-    # if model_path.is_dir():
-    #     sub_dirs = [x for x in model_path.iterdir() if x.is_dir()]
-    #     most_recent_subdir = sub_dirs[0]
-    #     # TODO: this assumes .h5 is the filetype and that model.h5 is present
-    #     most_recent_save_path = Path(most_recent_subdir).joinpath("save")
-
-    # # TODO: THis logic/specification needs to be validated. Is this what we
-    # # want? what if we want to specify a specific run? Where should we get that information?
-    # if weights_path:
-    #     specified_path = weights_path
-    # else:
-    #     # TODO: this needs to allow an easier specification for which params to load
-    #     # The issue here is that if someone alters the model (perhaps in a notebook), then
-    #     # retrains the model (but doesn't update the config), the "old" model, not new model
-    #     # will be evaluated.  This will need to change
-    #     specified_path = most_recent_save_path.joinpath("params").joinpath(
-    #         "best_params.h5"
-    #     )
-
-    # if not specified_path.is_file():
-    #     raise ValueError(
-    #         f"specified path is neither an h5 path, nor a directory containing directories of h5: {specified_path}"
-    #     )
-
-    # model.load_weights(str(specified_path))
-    # logger.info(f"params loaded from {specified_path}")
-
-    # # Right now, we're only going to add the first loss to the existing train
-    # # loop
-    # objective_list = list(perf_cdict["objectives"].keys())
-    # if len(objective_list) > 1:
-    #     raise ValueError(
-    #         "Currently, only one objective is supported by the training loop logic. There are {len(objective_list)} specified ({objective_list})"
-    #     )
-    # first_and_only_obj = objective_list[0]
-
-    # # loss
-    # # get loss function
-    # loss_object = configure_loss(perf_cdict["objectives"][first_and_only_obj]["loss"])
-
-    # # mean loss
-    # avg_eval_loss = tf.keras.metrics.Mean(name="validation_loss", dtype=tf.float32)
-
-    # # metrics
-    # eval_metric_fns, metric_order = [], []
-    # # TODO: this is hardcoded to only the first objective
-    # met_opts = perf_cdict["objectives"][first_and_only_obj]["metric"]["options"]
-    # # TODO: this is hardcoded to only the first objective
-    # for i, metric in enumerate(
-    #     perf_cdict["objectives"][first_and_only_obj]["metric"]["type"]
-    # ):
-    #     try:
-    #         met_opt_dict = met_opts[i]
-    #     except TypeError:
-    #         # no options
-    #         met_opt_dict = None
-    #     except IndexError:
-    #         # No options for particular metric
-    #         met_opt_dict = None
-    #     eval_metric_fn = configure_metric(metric, met_opt_dict)
-    #     eval_metric_fns.append(eval_metric_fn)
-    #     metric_order.append(metric)
 
     # # reset metrics (should already be reset)
     # for eval_metric_fn in eval_metric_fns:
