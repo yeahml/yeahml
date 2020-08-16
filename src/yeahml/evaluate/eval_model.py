@@ -212,6 +212,7 @@ def eval_model(
     datasets: Any = None,
     weights_path: str = "",
     eval_split="test",
+    pred_dict=None,  # stupid hacky fix
 ) -> Dict[str, Any]:
 
     # TODO: option to reinitialize model?
@@ -285,6 +286,7 @@ def eval_model(
                 cur_target_name,
                 eval_split,
                 logger,
+                pred_dict,
             )
             return temp_ret
 

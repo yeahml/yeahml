@@ -7,6 +7,7 @@ from yeahml.train.update_progress.tracker import (
     update_val_metrics_trackers,
 )
 from yeahml.train.util import get_losses_to_update, get_next_batch, re_init_iter
+import tensorflow as tf
 
 
 def inference_dataset(
@@ -134,6 +135,7 @@ def inference_on_ds(
     cur_target_name,
     eval_split,
     logger,
+    pred_dict=None,
 ):
     split_name = eval_split
     logger.debug(f"START inference_on_ds on {split_name}")
@@ -164,7 +166,22 @@ def inference_on_ds(
 
     cur_batch = get_next_batch(cur_dataset_iter)
 
-    temp_ret = {"pred": [], "target": []}
+    if pred_dict:
+        temp_ret = {"pred": [], "target": []}
+        try:
+            pred_fn = pred_dict["pred"]["fn"]
+            pred_options = pred_dict["pred"]["options"]
+        except KeyError:
+            pred_fn, pred_options = None, None
+        logger.debug(f"pred_fn set to {pred_fn}, options: {pred_options}")
+
+        try:
+            target_fn = pred_dict["target"]["fn"]
+            target_options = pred_dict["target"]["options"]
+        except KeyError:
+            target_fn, target_options = None, None
+        logger.debug(f"target_fn set to {target_fn}, options: {target_options}")
+
     while cur_batch:
 
         inference_dict = cur_inference_fn(
@@ -175,8 +192,23 @@ def inference_on_ds(
         # "losses": loss,
         # "y_batch": y_batch,}
 
-        temp_ret["pred"].extend(inference_dict["predictions"].numpy().flatten())
-        temp_ret["target"].extend(inference_dict["y_batch"].numpy().flatten())
+        if pred_dict:
+            pred_raw = inference_dict["predictions"]
+            if pred_fn:
+                pred_raw = pred_fn(pred_raw, **pred_options)
+            preds_ = pred_raw.numpy().flatten()
+
+            target_raw = inference_dict["y_batch"]
+            if target_fn:
+                target_raw = target_fn(target_raw, **target_options)
+            targets_ = target_raw.numpy().flatten()
+
+            assert len(preds_) == len(
+                targets_
+            ), f"targets and predictions are of different sizes pred:{len(preds_)} target:{len(targets_)}"
+
+            temp_ret["pred"].extend(preds_)
+            temp_ret["target"].extend(targets_)
 
         # update tf objects
         # update_tf_loss_descriptions(val_dict, tf_val_loss_descs_to_update)
@@ -184,6 +216,7 @@ def inference_on_ds(
 
         # next batch until end
         cur_batch = get_next_batch(cur_dataset_iter)
+
     return temp_ret
 
     # # update trackers
