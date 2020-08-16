@@ -202,7 +202,10 @@ def train_model(
     optimizers_dict = get_optimizers(optim_cdict)
 
     # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
-    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
+    # TODO: "train", "val" should be obtained from the config
+    objectives_dict = get_objectives(
+        perf_cdict["objectives"], dataset_dict, target_splits=["train", "val"]
+    )
 
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the

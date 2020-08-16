@@ -10,7 +10,7 @@ from yeahml.build.components.metric import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.dataset.util import get_configured_dataset
 from yeahml.log.yf_logging import config_logger  # custom logging
-from yeahml.train.inference import inference_dataset
+from yeahml.train.inference import inference_on_ds
 
 #####
 from yeahml.train.util import (
@@ -50,7 +50,7 @@ def create_ds_to_lm_mapping(perf_cdict):
     datasets.
     
     ds_to_chash is used to iterate on the dataset on the outer loop then group
-    metrics/losses by the same in_config (which may be the same prediction node
+    metric/losses by the same in_config (which may be the same prediction node
     and label), which is indexed by a hash.
 
     the chash_to_in_config, is then used to map the hash to which nodes to pull
@@ -61,7 +61,7 @@ def create_ds_to_lm_mapping(perf_cdict):
     `ds_to_chash`
         {
             "abalone": {
-                -2976269282734729230: {"metrics": set(), "loss": {"second_obj", "main_obj"}}
+                -2976269282734729230: {"metric": set(), "loss": {"second_obj", "main_obj"}}
             }
         }
 
@@ -105,8 +105,8 @@ def create_ds_to_lm_mapping(perf_cdict):
             if "loss" in cur_obj_dict.keys():
                 if cur_obj_dict["loss"]:
                     loss_objective_names.add(objective)
-            if "metrics" in cur_obj_dict.keys():
-                if cur_obj_dict["metrics"]:
+            if "metric" in cur_obj_dict.keys():
+                if cur_obj_dict["metric"]:
                     metrics_objective_names.add(objective)
 
             # make the outter dict if not yet made
@@ -118,11 +118,11 @@ def create_ds_to_lm_mapping(perf_cdict):
                 }
 
             try:
-                s = ds_to_chash[ds_name][conf_hash]["metrics"]
+                s = ds_to_chash[ds_name][conf_hash]["metric"]
                 if metrics_objective_names:
                     s.update(metrics_objective_names)
             except KeyError:
-                ds_to_chash[ds_name][conf_hash]["metrics"] = metrics_objective_names
+                ds_to_chash[ds_name][conf_hash]["metric"] = metrics_objective_names
 
             try:
                 s = ds_to_chash[ds_name][conf_hash]["loss"]
@@ -245,9 +245,20 @@ def eval_model(
     # create output index
     chash_to_output_index = create_output_index(model, chash_to_in_config)
 
+    # objectives to objects
+    # TODO: "test" should be obtained from the config
+    # this returns a in_config, which isn't really needed.
+    # TODO: is this always only going to be a single split?
+    split_name = "test"  # TODO: this needs to be double checked
+    objectives_to_objects = get_objectives(
+        perf_cdict["objectives"], dataset_dict, target_splits=split_name
+    )
+    # TODO: batch together...
+
     logger.info("START - evaluating")
     for cur_ds_name, chash_conf_d in ds_to_chash.items():
         logger.info(f"current dataset: {cur_ds_name}")
+
         for in_hash, cur_hash_conf in chash_conf_d.items():
             cur_objective_config = chash_to_in_config[in_hash]
             assert (
@@ -256,21 +267,34 @@ def eval_model(
             logger.info(f"current config: {cur_objective_config}")
 
             cur_inference_fn = cur_hash_conf["inference_fn"]
-            cur_metrics = cur_hash_conf["metrics"]
-            cur_losses = cur_hash_conf["loss"]
-            cur_ds_iter = dataset_iter_dict[cur_ds_name]
+            cur_metrics_objective_names = cur_hash_conf["metric"]
+            cur_loss_objective_names = cur_hash_conf["loss"]
+            cur_dataset_iter = dataset_iter_dict[cur_ds_name][split_name]
             cur_pred_index = chash_to_output_index[in_hash]
             cur_target_name = cur_objective_config["options"]["target"]
-            print(cur_target_name)
+
+            inference_on_ds(
+                model,
+                cur_dataset_iter,
+                cur_inference_fn,
+                cur_loss_objective_names,
+                cur_metrics_objective_names,
+                objectives_to_objects,
+                cur_pred_index,
+                cur_target_name,
+                logger,
+            )
+
+            # reinitialize validation iterator
+            dataset_iter_dict[cur_ds_name][split_name] = re_init_iter(
+                cur_ds_name, split_name, dataset_dict
+            )
+
+            sys.exit()
+
+            # TODO: batch all losses and metrics
 
             # logger.info(f"objective: {cur_objective}")
-
-        print(chash_conf_d)
-        print("====")
-
-    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
-    print("XXXXX" * 8)
-    print(objectives_dict)
 
     raise NotImplementedError(f"not implemented yet")
 
@@ -281,26 +305,6 @@ def eval_model(
     # while continue_objective:
     #     cur_batch = get_next_batch(cur_train_iter)
     #     if not cur_batch:
-
-    #         # validation pass
-    #         cur_val_update = inference_dataset(
-    #             model,
-    #             loss_objective_names,
-    #             metrics_objective_names,
-    #             dataset_iter_dict,
-    #             opt_to_validation_fn[cur_optimizer_name],
-    #             opt_tracker_dict,
-    #             cur_objective,
-    #             cur_ds_name,
-    #             dataset_dict,
-    #             opt_to_steps[cur_optimizer_name],
-    #             num_training_ops,
-    #             objective_to_output_index,
-    #             objectives_dict,
-    #             v_writer,
-    #             logger,
-    #             split_name="val",
-    #         )
 
     # # reset metrics (should already be reset)
     # for eval_metric_fn in eval_metric_fns:
