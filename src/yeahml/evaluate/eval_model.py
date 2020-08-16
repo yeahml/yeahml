@@ -25,6 +25,7 @@ from yeahml.train.gradients.gradients import get_validation_step_fn
 from yeahml.config.model.util import make_hash
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.paths import create_model_run_path
+from yeahml.train.setup.objectives import get_objectives
 
 
 @tf.function
@@ -169,6 +170,8 @@ def eval_model(
     model_run_path = create_model_run_path(full_exp_path)
     logger = config_logger(model_run_path, log_cdict, "eval")
 
+    # TODO: this block should be abstracted away to be used by both
+    # train/inference loops
     # TODO: this is hardcoded for supervised settings
     # tf.keras models output the model outputs in a list, we need to get the index
     # of each prediction we care about from that output to use in the loss
@@ -191,7 +194,6 @@ def eval_model(
                 # TODO: perform check later
                 chash_to_output_index[chash] = None
     else:
-        # TODO: this is hardcoded to assume supervised
         chash_to_output_index = {}
         for chash, cur_in_config in chash_to_in_config.items():
             assert (
@@ -203,40 +205,44 @@ def eval_model(
             ), f"model output {model.output.name.split('/')[0]} does not match prediction of cur_in_config: {cur_in_config}"
             chash_to_output_index[chash] = None
 
-    print("====" * 8)
-    print(ds_to_chash)
-    print("----")
-    print(chash_to_in_config)
-    print("-----")
-    print(dataset_iter_dict)
-    print("--" * 8)
-    print(chash_to_output_index)
+    # print("====" * 8)
+    # print(ds_to_chash)
+    # print("----")
+    # print(chash_to_in_config)
+    # print("-----")
+    # print(dataset_iter_dict)
+    # print("--" * 8)
+    # print(chash_to_output_index)
+
+    print("........" * 8)
+    logger.info("START - evaluating")
+    for cur_ds_name, chash_conf_d in ds_to_chash.items():
+        logger.info(f"current dataset: {cur_ds_name}")
+        for in_hash, cur_hash_conf in chash_conf_d.items():
+            cur_objective_config = chash_to_in_config[in_hash]
+            assert (
+                cur_objective_config["type"] == "supervised"
+            ), f"only supervised is currently allowed, not {cur_objective_config['type']} :("
+            logger.info(f"current config: {cur_objective_config}")
+
+            cur_inference_fn = cur_hash_conf["inference_fn"]
+            cur_metrics = cur_hash_conf["metrics"]
+            cur_losses = cur_hash_conf["loss"]
+            cur_ds_iter = dataset_iter_dict[cur_ds_name]
+            cur_pred_index = chash_to_output_index[in_hash]
+            cur_target_name = cur_objective_config["options"]["target"]
+            print(cur_target_name)
+
+        print(chash_conf_d)
+        print("====")
+
+    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
+    print("XXXXX" * 8)
+    print(objectives_dict)
 
     raise NotImplementedError(f"not implemented yet")
 
-    # logger.info("START - evaluating")
-
-    # # loss
-    # # opt_name :loss :main_obj :ds_name :split_name :loss_name:desc_name
-    # # opt_name :metric :main_obj: ds_name :split_name :metric_name
-    # opt_tracker_dict = main_tracker_dict[cur_optimizer_name]
-
-    # # TODO: these should really be grouped by the in config (likely by
-    # # creating a hash) this allows us to group objectives by what
-    # # dataset their using so that we can reuse the same batch.
-    # # NOTE: for now, I'm saving the prediction and gt (if supervised) in
-    # # the grad_dict
-    # loss_objective_names = opt_to_loss_objectives[cur_optimizer_name]
-    # metrics_objective_names = opt_to_metrics_objectives[cur_optimizer_name]
-
-    # obj_to_grads = {}
-    # # TODO: the losses should be grouped by the ds used so that we only
-    # # obtain+run the batch once+ensuring it's the same batch
-    # loss_update_dict, update_metrics_dict = {}, {}
-
-    # cur_objective = select_objective(loss_objective_names)
     # logger.info(f"objective: {cur_objective}")
-    # continue_objective = True
 
     # # TODO: next step -- continue_objective = True
     # # each loss may be being optimized by data from different datasets
@@ -249,65 +255,6 @@ def eval_model(
     # while continue_objective:
     #     cur_batch = get_next_batch(cur_train_iter)
     #     if not cur_batch:
-
-    #         # dataset pass is complete
-    #         obj_ds_to_epoch = update_epoch_dict(
-    #             obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
-    #         )
-
-    #         if (
-    #             obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
-    #             >= hp_cdict["epochs"]
-    #         ):
-
-    #             # update this particular combination to false -
-    #             # eventually this logic will be "smarter" i.e. not
-    #             # based entirely on number of epochs.
-    #             opt_obj_ds_to_training[cur_optimizer_name][cur_objective][cur_ds_name][
-    #                 "train"
-    #             ] = False
-
-    #             # this objective is done. see if they're all done
-    #             is_training = determine_if_training(opt_obj_ds_to_training)
-
-    #             # TODO: this isn't the "best" way to handle this,
-    #             # ideally, we would decided (in an intelligent way) when
-    #             # we're done training a group of objectives by
-    #             # evaluating the loss curves
-    #             list_of_optimizers.remove(cur_optimizer_name)
-    #             logger.info(
-    #                 f"{cur_optimizer_name} removed from list of opt. remaining: {list_of_optimizers}"
-    #             )
-    #             logger.info(f"is_training: {is_training}")
-    #             # TODO: determine whether to move to the next objective
-    #             # NOTE: currently, move to the next objective
-
-    #             # TODO: there is likely a better way to handle the case
-    #             # where we have reached the 'set' number of epochs for
-    #             # this problem
-
-    #         # the original dict is updated here in case another dataset
-    #         # needs to use the datset iter -- this could likely be
-    #         # optimized, but the impact would be minimal right now
-    #         cur_train_iter = re_init_iter(cur_ds_name, "train", dataset_dict)
-    #         dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
-
-    #         logger.info(
-    #             f"epoch {cur_objective} - {cur_ds_name} {'train'}:"
-    #             f" {obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}"
-    #         )
-
-    #         # perform validation after each pass through the training
-    #         # dataset
-    #         # NOTE: the location of this 'validation' may change
-    #         # TODO: there is an error here where the first objective
-    #         # will be validated on the last epoch and then one more
-    #         # time.
-    #         # TODO: ensure the metrics are reset
-    #         #  iterate validation after iterating entire training..
-    #         # this will/should change to update on a set frequency --
-    #         # also, maybe we don't want to run the "full" validation,
-    #         # only a (random) subset?
 
     #         # validation pass
     #         cur_val_update = inference_dataset(
@@ -328,51 +275,6 @@ def eval_model(
     #             logger,
     #             split_name="val",
     #         )
-
-    #     else:
-
-    #         # create histograms of model parameters
-    #         if log_cdict["track"]["tensorboard"]["param_steps"] > 0:
-    #             if (
-    #                 num_training_ops % log_cdict["track"]["tensorboard"]["param_steps"]
-    #                 == 0
-    #             ):
-    #                 log_model_params(tr_writer, num_training_ops, model)
-
-    #         # update Tracker
-    #         if log_cdict["track"]["tracker_steps"] > 0:
-    #             if num_training_ops % log_cdict["track"]["tracker_steps"] == 0:
-    #                 cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][
-    #                     cur_ds_name
-    #                 ]["train"]
-    #                 cur_loss_update = update_loss_trackers(
-    #                     loss_conf["track"]["train"],
-    #                     cur_loss_tracker_dict,
-    #                     opt_to_steps[cur_optimizer_name],
-    #                     num_training_ops,
-    #                     tb_writer=tr_writer,
-    #                     ds_name=cur_ds_name,
-    #                     objective_name=cur_objective,
-    #                 )
-
-    #                 loss_update_dict[cur_objective] = cur_loss_update
-
-    #         # TODO: this is a hacky way of seeing if training on a batch was run
-
-    #     update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
-    # # one pass of training (a batch from each objective) with the
-    # # current optimizer
-
-    # # TODO: I think the 'joint' should likely be the optimizer name, not the
-    # # combination of losses name, this would also simplify the creation of these
-
-    # return_dict = {"tracker": main_tracker_dict}
-
-    # return return_dict
-
-    # raise NotImplementedError(
-    #     "this functionality is currently broken and needs to be updated"
-    # )
 
     # # TODO: it also be possible to use this without passing the model?
 
@@ -446,29 +348,6 @@ def eval_model(
     # # reset metrics (should already be reset)
     # for eval_metric_fn in eval_metric_fns:
     #     eval_metric_fn.reset_states()
-
-    # # get datasets
-    # # TODO: ensure eval dataset is the same as used previously
-    # # TODO: apply shuffle/aug/reshape from config
-    # if not dataset:
-    #     eval_ds = get_configured_dataset(data_cdict, hp_cdict)
-    # else:
-    #     assert isinstance(
-    #         dataset, tf.data.Dataset
-    #     ), f"a {type(dataset)} was passed as a test dataset, please pass an instance of {tf.data.Dataset}"
-    #     eval_ds = get_configured_dataset(data_cdict, hp_cdict, ds=dataset)
-
-    # logger.info("-> START evaluating model")
-    # for step, (x_batch, y_batch) in enumerate(eval_ds):
-    #     eval_step(model, x_batch, y_batch, loss_object, avg_eval_loss, eval_metric_fns)
-    # logger.info("[END] evaluating model")
-
-    # logger.info("-> START creating eval_dict")
-    # eval_dict = {}
-    # for i, name in enumerate(metric_order):
-    #     cur_metric_fn = eval_metric_fns[i]
-    #     eval_dict[name] = cur_metric_fn.result().numpy()
-    # logger.info("[END] creating eval_dict")
 
     # # TODO: log each instance
 
