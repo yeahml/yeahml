@@ -211,6 +211,7 @@ def eval_model(
     config_dict: Dict[str, Dict[str, Any]],
     datasets: Any = None,
     weights_path: str = "",
+    eval_split="test",
 ) -> Dict[str, Any]:
 
     # TODO: option to reinitialize model?
@@ -249,7 +250,7 @@ def eval_model(
     # TODO: "test" should be obtained from the config
     # this returns a in_config, which isn't really needed.
     # TODO: is this always only going to be a single split?
-    split_name = "test"  # TODO: this needs to be double checked
+    split_name = eval_split  # TODO: this needs to be double checked
     objectives_to_objects = get_objectives(
         perf_cdict["objectives"], dataset_dict, target_splits=split_name
     )
@@ -273,7 +274,7 @@ def eval_model(
             cur_pred_index = chash_to_output_index[in_hash]
             cur_target_name = cur_objective_config["options"]["target"]
 
-            inference_on_ds(
+            temp_ret = inference_on_ds(
                 model,
                 cur_dataset_iter,
                 cur_inference_fn,
@@ -282,15 +283,15 @@ def eval_model(
                 objectives_to_objects,
                 cur_pred_index,
                 cur_target_name,
+                eval_split,
                 logger,
             )
+            return temp_ret
 
             # reinitialize validation iterator
             dataset_iter_dict[cur_ds_name][split_name] = re_init_iter(
                 cur_ds_name, split_name, dataset_dict
             )
-
-            sys.exit()
 
             # TODO: batch all losses and metrics
 
