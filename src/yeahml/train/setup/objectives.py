@@ -263,7 +263,6 @@ def get_objectives(
 
         if loss_config:
             loss_ds_to_loss = _get_loss(loss_config, datasplit_names, objective_name)
-
         else:
             loss_ds_to_loss = None
 

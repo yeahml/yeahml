@@ -255,13 +255,18 @@ def eval_model(
     objectives_to_objects = get_objectives(
         perf_cdict["objectives"], dataset_dict, target_splits=split_name
     )
+
     # TODO: batch together...
 
     logger.info("START - evaluating")
+    ret_dict = {}
     for cur_ds_name, chash_conf_d in ds_to_chash.items():
+        ret_dict[cur_ds_name] = {}
         logger.info(f"current dataset: {cur_ds_name}")
 
         for in_hash, cur_hash_conf in chash_conf_d.items():
+            logger.info(f"in_hash: {in_hash}")
+            ret_dict[cur_ds_name][in_hash] = {}
             cur_objective_config = chash_to_in_config[in_hash]
             assert (
                 cur_objective_config["type"] == "supervised"
@@ -288,18 +293,14 @@ def eval_model(
                 logger,
                 pred_dict,
             )
-            return temp_ret
+            ret_dict[cur_ds_name][in_hash] = temp_ret
 
             # reinitialize validation iterator
             dataset_iter_dict[cur_ds_name][split_name] = re_init_iter(
                 cur_ds_name, split_name, dataset_dict
             )
 
-            # TODO: batch all losses and metrics
-
-            # logger.info(f"objective: {cur_objective}")
-
-    raise NotImplementedError(f"not implemented yet")
+    return ret_dict
 
     # tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
 

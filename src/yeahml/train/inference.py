@@ -166,6 +166,7 @@ def inference_on_ds(
 
     cur_batch = get_next_batch(cur_dataset_iter)
 
+    temp_ret = None
     if pred_dict:
         temp_ret = {"pred": [], "target": []}
         try:
@@ -217,38 +218,20 @@ def inference_on_ds(
         # next batch until end
         cur_batch = get_next_batch(cur_dataset_iter)
 
-    return temp_ret
+    out = {}
+    out["loss"] = {}
+    for i, loss_obj in enumerate(loss_objects):
+        out["loss"][loss_obj.__name__] = {}
+        loss_descs = loss_descriptions[i]
+        for ld in loss_descs:
+            out["loss"][loss_obj.__name__][ld.name] = ld.result().numpy()
 
-    # # update trackers
-    # cur_loss_tracker_dict = opt_tracker_dict[cur_objective]["loss"][cur_ds_name][
-    #     split_name
-    # ]
-    # cur_loss_update = update_loss_trackers(
-    #     loss_conf["track"][split_name],
-    #     cur_loss_tracker_dict,
-    #     num_train_instances,
-    #     num_training_ops,
-    #     tb_writer=v_writer,
-    #     ds_name=cur_ds_name,
-    #     objective_name=cur_objective,
-    # )
+    out["metrics"] = {}
+    for met_obj in supervised_met_objects:
+        out["metrics"][met_obj.name] = met_obj.result().numpy()
 
-    # # metrics are optional -- there many only be a loss
-    # if metrics_conf:
-    #     cur_metric_tracker_dict = opt_tracker_dict[cur_objective]["metrics"][
-    #         cur_ds_name
-    #     ][split_name]
-    #     cur_metrics_update = update_val_metrics_trackers(
-    #         metrics_conf,
-    #         cur_metric_tracker_dict,
-    #         split_name,
-    #         num_train_instances,
-    #         num_training_ops,
-    #         tb_writer=v_writer,
-    #         ds_name=cur_ds_name,
-    #         objective_name=cur_objective,
-    #     )
-    # else:
-    #     cur_metrics_update = None
+    if temp_ret:
+        out["out"] = temp_ret
 
     logger.info("done iinference_on_ds")
+    return out

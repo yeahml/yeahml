@@ -154,3 +154,18 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
         ret_dict[opt_name]["joint"] = joint_tracker_dict
 
     return ret_dict
+
+
+# def create_inference_dict(objectives_dict=None):
+
+#     tracker_dict = {}
+#     for objective_name, raw_obj_dict in objectives_dict.items():
+#         loss_tracker_dict = _return_loss_trackers(raw_obj_dict)
+#         metric_tracker_dict = _return_metric_trackers(raw_obj_dict)
+
+#         tracker_dict[objective_name] = {
+#             "loss": loss_tracker_dict,
+#             "metrics": metric_tracker_dict,
+#         }
+
+#     return tracker_dict
