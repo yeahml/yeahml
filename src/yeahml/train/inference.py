@@ -32,6 +32,7 @@ def inference_dataset(
         f"START inference on {split_name}, num_train_instances: {num_train_instances}"
     )
 
+    # TODO: need to check for loss/metrics overlap?
     cur_update = {}
     for cur_objective in loss_objective_names:
         cur_obj_output_index = objective_to_output_index[cur_objective]
@@ -141,9 +142,6 @@ def inference_on_ds(
     logger.debug(f"START inference_on_ds on {split_name}")
 
     # losses
-    # TODO: this essentially only allows one description per loss.. which seems
-    # than ideal.. I think the soution could be 1: naming or 2:
-    # losses:[a,b], descs:[[a_desc_1,a_desc_2], [b_desc]] then inner loop
     loss_objects, loss_descriptions = [], []
     for ln in cur_loss_objective_names:
         loss_conf = objectives_to_objects[ln]["loss"]
@@ -233,5 +231,5 @@ def inference_on_ds(
     if temp_ret:
         out["out"] = temp_ret
 
-    logger.info("done iinference_on_ds")
+    logger.info(f"done inference_on_ds on {split_name}")
     return out

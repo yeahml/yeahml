@@ -215,7 +215,17 @@ def eval_model(
     pred_dict=None,  # stupid hacky fix
 ) -> Dict[str, Any]:
 
-    # TODO: option to reinitialize model?
+    # TODO: allow for multiple splits to evaluate on
+
+    # TODO: load the best weights
+    # model = load_targeted_weights(full_exp_path, weights_path)
+
+    # NOTE: should I reset the metrics?
+    # # reset metrics (should already be reset)
+    # for eval_metric_fn in eval_metric_fns:
+    #     eval_metric_fn.reset_states()
+
+    # # TODO: log each instance
 
     # unpack configurations
     model_cdict: Dict[str, Any] = config_dict["model"]
@@ -255,8 +265,6 @@ def eval_model(
     objectives_to_objects = get_objectives(
         perf_cdict["objectives"], dataset_dict, target_splits=split_name
     )
-
-    # TODO: batch together...
 
     logger.info("START - evaluating")
     ret_dict = {}
@@ -301,19 +309,3 @@ def eval_model(
             )
 
     return ret_dict
-
-    # tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
-
-    # cur_train_iter = get_train_iter(dataset_iter_dict, cur_ds_name, "train")
-
-    # while continue_objective:
-    #     cur_batch = get_next_batch(cur_train_iter)
-    #     if not cur_batch:
-
-    # # reset metrics (should already be reset)
-    # for eval_metric_fn in eval_metric_fns:
-    #     eval_metric_fn.reset_states()
-
-    # # TODO: log each instance
-
-    # return eval_dict
