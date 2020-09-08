@@ -66,7 +66,7 @@ class callbacks_parser:
                     callback_options = None
 
                 conf = callback_config(
-                    callback_type=callback_type, callback_options=callback_options
+                    cb_type=callback_type, cb_options=callback_options
                 )()
                 temp_dict[k] = conf
 

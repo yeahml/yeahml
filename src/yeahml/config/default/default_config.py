@@ -3,12 +3,14 @@ from yeahml.config.default.types.base_types import (
     list_of_categorical,
     numeric,
 )
+from yeahml.config.default.types.compound.callbacks import callbacks_parser
 from yeahml.config.default.types.compound.data import data_set_name_dict
 from yeahml.config.default.types.compound.directive import instruct_parser
 from yeahml.config.default.types.compound.layer import layers_parser
 from yeahml.config.default.types.compound.optimizer import optimizers_parser
 from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.default.types.param_types import optional_config
+
 
 # TODO: check for extra keys in the configs that are not specified here
 # meta
@@ -303,6 +305,8 @@ model = {
     }
 }
 
+callbacks = {"callbacks": {"objects": callbacks_parser()}}
+
 
 DEFAULT_CONFIG = {}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **meta}
@@ -312,3 +316,4 @@ DEFAULT_CONFIG = {**DEFAULT_CONFIG, **logging}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **data}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **model}
 DEFAULT_CONFIG = {**DEFAULT_CONFIG, **optimize}
+DEFAULT_CONFIG = {**DEFAULT_CONFIG, **callbacks}

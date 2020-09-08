@@ -26,8 +26,9 @@ from yeahml.config.model.util import make_hash
 # TODO: A config logger should be generated / used
 
 # TODO: I don't like this global, but I'm not sure where it belongs yet
-# NOTE: it is required that meta be created before model. this may need to change
-CONFIG_KEYS = [
+# NOTE: it is required that meta be created before model. this may need to
+# change
+REQ_KEYS = [
     "meta",
     "logging",
     "performance",
@@ -36,6 +37,8 @@ CONFIG_KEYS = [
     "model",
     "optimize",
 ]
+
+CONFIG_KEYS = ["callbacks", *REQ_KEYS]
 
 
 def _maybe_extract_from_path(cur_dict: dict) -> dict:
@@ -185,21 +188,30 @@ def _maybe_message(unused_keys, main_config_raw, logger):
 def _primary_config(main_path: str) -> dict:
     main_config_raw = get_raw_dict_from_string(main_path)
     cur_keys = main_config_raw.keys()
-    invalid_keys = []
-    for key in CONFIG_KEYS:
+
+    # check for invalid keys
+    keys_not_present = []
+    for key in REQ_KEYS:
         if key not in cur_keys:
-            invalid_keys.append(key)
-            # not all of these *need* to be present, but for now that will be
-            # enforced
+            keys_not_present.append(key)
+    invalid_keys = []
+    for cur_key in cur_keys:
+        if cur_key not in CONFIG_KEYS:
+            invalid_keys.append(cur_key)
+
+    err_str = ""
     if invalid_keys:
-        raise ValueError(
-            f"The main config does not contain the key(s) {invalid_keys}:"
-            f" current keys: {cur_keys}"
+        err_str += (
+            f"The main config contains the following invalid key(s) {invalid_keys}:"
         )
+    if keys_not_present:
+        err_str += f"The main config does not contain the key(s) {keys_not_present}:"
+    if err_str:
+        raise ValueError(f"{err_str} \n current keys: {cur_keys}")
 
     # build dict containing configs
     config_dict = {}
-    for config_type in CONFIG_KEYS:
+    for config_type in cur_keys:
         # try block?
         raw_config = main_config_raw[config_type]
         raw_config = _maybe_extract_from_path(raw_config)
