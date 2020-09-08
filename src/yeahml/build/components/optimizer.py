@@ -39,7 +39,7 @@ def return_optimizer(optimizer_str):
         optimizer = avail_opts[optimizer_str]
     except KeyError:
         raise KeyError(
-            f"optimzer {optimizer_str} not available in options {avail_opts.keys()}"
+            f"optimizer {optimizer_str} not available in options {avail_opts.keys()}"
         )
 
     return optimizer
