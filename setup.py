@@ -1,11 +1,13 @@
 from setuptools import find_packages, setup
+from datetime import datetime
 
 setup(
-    name="yeahml",
-    version="0.0.1a1",
+    name="yeahml-nightly",
+    version=datetime.now().strftime("0.0.1a1.dev%Y%m%d"),
     author="Jack Burdick",
-    author_email='jburdick@gmail.com',
-    description="Configuration Markup for ML Libraries",
+    author_email='jackbburdick@gmail.com',
+    description="""YeahML is a prototype library for building, training, and analyzing neural
+networks using primarily configuration files""",
     long_description="TODO: Fill in",
     packages=find_packages(where='src/'),
     package_dir={"yeahml": "src/yeahml"},

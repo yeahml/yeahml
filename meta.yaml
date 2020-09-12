@@ -1,8 +1,7 @@
-{% set version = "1.1.0" %}
 
 package:
-  name: imagesize
-  version: {{ version }}
+  name: yeahml
+  version: {{ python setup.py --version }}
 
 source:
   url: https://github.com/yeahml/yeahml
@@ -16,6 +15,8 @@ requirements:
   host:
     - python
     - pip
+    - pip:
+      - toposort
   run:
     - python
     - tensorflow
