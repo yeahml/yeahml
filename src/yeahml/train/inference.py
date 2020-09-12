@@ -1,9 +1,13 @@
-from yeahml.train.update_progress.tf_objectives import update_tf_val_metrics
+from yeahml.train.update_progress.tf_objectives import (
+    update_tf_val_metrics,
+    update_supervised_tf_metrics,
+)
 from yeahml.train.update_progress.tracker import (
     update_loss_trackers,
     update_val_metrics_trackers,
 )
 from yeahml.train.util import get_losses_to_update, get_next_batch, re_init_iter
+import tensorflow as tf
 
 
 def inference_dataset(
@@ -24,8 +28,11 @@ def inference_dataset(
     logger,
     split_name,
 ):
-    logger.debug(f"START iterating validation - epoch: {num_train_instances}")
+    logger.debug(
+        f"START inference on {split_name}, num_train_instances: {num_train_instances}"
+    )
 
+    # TODO: need to check for loss/metrics overlap?
     cur_update = {}
     for cur_objective in loss_objective_names:
         cur_obj_output_index = objective_to_output_index[cur_objective]
@@ -114,5 +121,115 @@ def inference_dataset(
             "metrics": cur_metrics_update,
         }
 
-    logger.info(f"done validation - {num_train_instances}")
+    logger.info(f"done inference on {split_name} - {num_train_instances}")
     return cur_update
+
+
+def inference_on_ds(
+    model,
+    cur_dataset_iter,
+    cur_inference_fn,
+    cur_loss_objective_names,
+    cur_metrics_objective_names,
+    objectives_to_objects,
+    cur_pred_index,
+    cur_target_name,
+    eval_split,
+    logger,
+    pred_dict=None,
+):
+    split_name = eval_split
+    logger.debug(f"START inference_on_ds on {split_name}")
+
+    # losses
+    loss_objects, loss_descriptions = [], []
+    for ln in cur_loss_objective_names:
+        loss_conf = objectives_to_objects[ln]["loss"]
+        loss_obj = loss_conf["object"]
+        tf_val_loss_descs_to_update = get_losses_to_update(loss_conf, split_name)
+        loss_objects.append(loss_obj)
+        loss_descriptions.append(tf_val_loss_descs_to_update)
+
+    supervised_met_objects = []
+    for mn in cur_metrics_objective_names:
+        assert (
+            objectives_to_objects[mn]["in_config"]["type"] == "supervised"
+        ), f"only supervised is currently supported :( not {objectives_to_objects[mn]['in_config']['type']}"
+        metric_conf = objectives_to_objects[mn]["metrics"]
+        for _, split_to_metric in metric_conf.items():
+            # _ is `metric_name`
+            if split_name in split_to_metric.keys():
+                metric_tf_obj = split_to_metric[split_name]
+                supervised_met_objects.append(metric_tf_obj)
+
+    cur_batch = get_next_batch(cur_dataset_iter)
+
+    temp_ret = None
+    if pred_dict:
+        temp_ret = {"pred": [], "target": []}
+        try:
+            pred_fn = pred_dict["pred"]["fn"]
+            pred_options = pred_dict["pred"]["options"]
+        except KeyError:
+            pred_fn, pred_options = None, None
+        logger.debug(f"pred_fn set to {pred_fn}, options: {pred_options}")
+
+        try:
+            target_fn = pred_dict["target"]["fn"]
+            target_options = pred_dict["target"]["options"]
+        except KeyError:
+            target_fn, target_options = None, None
+        logger.debug(f"target_fn set to {target_fn}, options: {target_options}")
+
+    while cur_batch:
+
+        inference_dict = cur_inference_fn(
+            model, cur_batch, loss_objects, cur_pred_index, loss_descriptions
+        )
+        # {"predictions": prediction,
+        # "final_loss": final_loss,
+        # "losses": loss,
+        # "y_batch": y_batch,}
+
+        if pred_dict:
+            pred_raw = inference_dict["predictions"]
+            if pred_fn:
+                pred_raw = pred_fn(pred_raw, **pred_options)
+            preds_ = pred_raw.numpy().flatten()
+
+            target_raw = inference_dict["y_batch"]
+            if target_fn:
+                target_raw = target_fn(target_raw, **target_options)
+            targets_ = target_raw.numpy().flatten()
+
+            assert len(preds_) == len(
+                targets_
+            ), f"targets and predictions are of different sizes pred:{len(preds_)} target:{len(targets_)}"
+
+            temp_ret["pred"].extend(preds_)
+            temp_ret["target"].extend(targets_)
+
+        # update tf objects
+        # update_tf_loss_descriptions(val_dict, tf_val_loss_descs_to_update)
+        update_supervised_tf_metrics(inference_dict, supervised_met_objects)
+
+        # next batch until end
+        cur_batch = get_next_batch(cur_dataset_iter)
+
+    out = {}
+    out["loss"] = {}
+    for i, loss_obj in enumerate(loss_objects):
+        out["loss"][loss_obj.__name__] = {}
+        loss_descs = loss_descriptions[i]
+        for ld in loss_descs:
+            out["loss"][loss_obj.__name__][ld.name] = ld.result().numpy()
+
+    out["metrics"] = {}
+    for met_obj in supervised_met_objects:
+        out["metrics"][met_obj.name] = met_obj.result().numpy()
+
+    if temp_ret:
+        out["out"] = temp_ret
+
+    logger.info(f"done inference_on_ds on {split_name}")
+    return out

@@ -21,14 +21,30 @@ layers:
     type: "dense"
     options:
       units: 8
+      kernel_constraint:
+        type: MaxNorm
+      bias_regularizer:
+        type: "L1"
       activation:
-        type: "elu"
+        type: "relu"
   dense_2b:
     type: "dense"
     options:
       units: 8
+      kernel_constraint:
+        type: MaxNorm
+        options:
+          max_value: 3
+      kernel_initializer:
+        type: RandomNormal
+      bias_regularizer:
+        type: "L1"
+        options:
+          l1: 0.879
       activation:
-        type: "elu"
+        type: "relu"
+        options:
+          alpha: 0.9
     in_name: "dense_1"
   concat_1:
     type: "concatenate"
@@ -37,14 +53,24 @@ layers:
     type: "dense"
     options:
       units: 8
+      kernel_constraint:
+        type: MaxNorm
+      bias_regularizer:
+        type: "L1"
+      kernel_initializer:
+        type: RandomNormal
+        options:
+          mean: 0.3
       activation:
-        type: "elu"
+        type: "relu"
   dense_3b:
     type: "dense"
     options:
+      kernel_initializer:
+        type: RandomNormal
       units: 8
       activation:
-        type: "elu"
+        type: "relu"
     in_name: "dense_2"
   concat_3:
     type: "concatenate"

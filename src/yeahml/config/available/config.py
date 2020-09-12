@@ -91,11 +91,22 @@ COMPONENT_DICT = {
             },
         }
     },
+    "metrics": {
+        "type": {
+            "name": "class",
+            "options": {
+                "class": tf.metrics,
+                "subclass": tf.metrics.Metric,
+                "exclude_list": ["deserialize", "get", "serialize", "metric"],
+            },
+        }
+    },
     "regularizer": {
         "type": {
-            "name": "callable",
+            "name": "class",
             "options": {
-                "callable": tf.keras.regularizers,
+                "class": tf.keras.regularizers,
+                "subclass": tf.keras.regularizers.Regularizer,
                 "exclude_list": ["deserialize", "get", "serialize"],
             },
         }

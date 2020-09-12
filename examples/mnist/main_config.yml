@@ -61,7 +61,7 @@ data:
           dtype: "int32"
           label: True
       split:
-        names: ["train", "val"]
+        names: ["train", "val", "test"]
 
 optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled

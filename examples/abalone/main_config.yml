@@ -34,7 +34,7 @@ performance:
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_out"
+          prediction: "reshape_out"
           target: "target_v"
         dataset: "abalone" # TODO: this could be infered if only one dataset is used?
     second_obj:
@@ -48,7 +48,7 @@ performance:
       in_config:
         type: "supervised"
         options:
-          prediction: "dense_out"
+          prediction: "reshape_out"
           target: "target_v"
         dataset: "abalone"
 
@@ -66,7 +66,8 @@ data:
           dtype: "int32"
           label: True
       split:
-        names: ["train", "val"]
+        names: ["train", "val", "test"]
+        # TODO: redo this section `train`, `val`, `eval`
 
 optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled
@@ -83,14 +84,14 @@ optimize:
     "main_opt":
       type: "adam"
       options:
-        learning_rate: 0.00002
+        learning_rate: 0.0001
         beta_1: 0.91
       objectives: ["main_obj"]
     "second_opt":
       type: "adam"
       options:
-        learning_rate: 0.00002
-        beta_1: 0.91
+        learning_rate: 0.0002
+        beta_1: 0.92
       objectives: ["second_obj"]
   directive:
     # (a|b): alternate, (a&b): joint, (a,b): sequential

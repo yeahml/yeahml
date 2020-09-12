@@ -3,7 +3,7 @@ import pytest
 import yeahml as yml
 from util import return_data_and_ids
 
-available_components = return_data_and_ids("metric")
+available_components = return_data_and_ids("metrics")
 
 
 def test_return_available_metrics():

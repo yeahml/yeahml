@@ -168,7 +168,10 @@ def get_validation_step_fn():
 
             # TODO: need to verify this
             tf_desc_obj = loss_descs_to_update[i]
-            if tf_desc_obj:
+            if isinstance(tf_desc_obj, list):
+                for tdo in tf_desc_obj:
+                    tdo.update_state(loss)
+            elif tf_desc_obj:
                 tf_desc_obj.update_state(loss)
 
             # TODO: custom weighting for training could be applied here

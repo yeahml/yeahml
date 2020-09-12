@@ -147,7 +147,9 @@ def _get_loss(
 
 
 def get_objectives(
-    objectives: Dict[str, Any], dataset_dict: Dict[str, Dict[str, Any]]
+    objectives: Dict[str, Any],
+    dataset_dict: Dict[str, Dict[str, Any]],
+    target_splits=None,
 ) -> Dict[str, Any]:
     """Builds the objective configuration for a given objective
     
@@ -232,6 +234,17 @@ def get_objectives(
             )
 
         datasplit_names = list(tf_dataset_dict.keys())
+        if target_splits:
+            if isinstance(target_splits, list):
+                pass
+            elif isinstance(target_splits, str):
+                target_splits = [target_splits]
+            else:
+                raise ValueError(f"{target_splits} is not of type list or str")
+            assert set(target_splits).issubset(
+                set(datasplit_names)
+            ), f"{target_splits} is not a subset of {datasplit_names}"
+            datasplit_names = target_splits
 
         try:
             loss_config = objective_config["loss"]
@@ -250,7 +263,6 @@ def get_objectives(
 
         if loss_config:
             loss_ds_to_loss = _get_loss(loss_config, datasplit_names, objective_name)
-
         else:
             loss_ds_to_loss = None
 

@@ -1,8 +1,8 @@
 {
   "meta": {
-    "update_time_str": "2020-01-26 12:17:18.990128",
+    "update_time_str": "2020-08-10 10:23:20.031458",
     "version": {
-      "tensorflow": "2.1.0",
+      "tensorflow": "2.3.0",
       "yeahml": "0.0.1a1"
     }
   },
@@ -12,13 +12,25 @@
     "glorot_normal",
     "glorotuniform",
     "glorot_uniform",
+    "henormal",
+    "he_normal",
+    "heuniform",
+    "he_uniform",
     "identity",
+    "lecunnormal",
+    "lecun_normal",
+    "lecununiform",
+    "lecun_uniform",
     "ones",
     "orthogonal",
     "randomnormal",
+    "random_normal",
     "randomuniform",
+    "random_uniform",
     "truncatednormal",
+    "truncated_normal",
     "variancescaling",
+    "variance_scaling",
     "zeros"
   ]
 }

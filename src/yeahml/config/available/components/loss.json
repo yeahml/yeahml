@@ -1,8 +1,8 @@
 {
   "meta": {
-    "update_time_str": "2020-01-26 12:17:18.990437",
+    "update_time_str": "2020-08-10 10:23:20.031633",
     "version": {
-      "tensorflow": "2.1.0",
+      "tensorflow": "2.3.0",
       "yeahml": "0.0.1a1"
     }
   },
@@ -26,8 +26,10 @@
     "categorical_crossentropy",
     "categorical_hinge",
     "cosine_similarity",
-    "kullback_leibler_divergence",
+    "kl_divergence",
     "kld",
+    "kullback_leibler_divergence",
+    "log_cosh",
     "mean_absolute_error",
     "mae",
     "mean_absolute_percentage_error",

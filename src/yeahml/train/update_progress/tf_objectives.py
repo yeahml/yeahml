@@ -42,3 +42,10 @@ def update_tf_val_metrics(val_preds_dict, metrics_conf, val_name, cur_metrics_ty
                     preds = val_preds_dict["predictions"]
                     y_batch = val_preds_dict["y_batch"]
                     metric_tf_obj.update_state(y_batch, preds)
+
+
+def update_supervised_tf_metrics(inference_dict, supervised_met_objects):
+    for tf_metric_object in supervised_met_objects:
+        preds = inference_dict["predictions"]
+        y_batch = inference_dict["y_batch"]
+        tf_metric_object.update_state(y_batch, preds)

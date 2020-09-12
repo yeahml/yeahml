@@ -156,9 +156,7 @@ def determine_if_training(opt_obj_ds_to_training):
 def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
     if split_name not in cur_ds_iter_dict.keys():
-        raise ValueError(
-            f"{cur_in_conf['dataset']} does not have a {split_name} dataset"
-        )
+        raise ValueError(f"{cur_ds_iter_dict} does not have a {split_name} dataset")
     cur_train_iter = cur_ds_iter_dict[split_name]
     return cur_train_iter
 
@@ -204,7 +202,10 @@ def train_model(
     optimizers_dict = get_optimizers(optim_cdict)
 
     # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
-    objectives_dict = get_objectives(perf_cdict["objectives"], dataset_dict)
+    # TODO: "train", "val" should be obtained from the config
+    objectives_dict = get_objectives(
+        perf_cdict["objectives"], dataset_dict, target_splits=["train", "val"]
+    )
 
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the

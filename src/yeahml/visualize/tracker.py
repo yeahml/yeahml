@@ -1,7 +1,6 @@
-
-'''
+"""
 TODO:
-'''
+"""
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -45,6 +44,7 @@ def _basic_plot_loss_tracker(
                             label=f"{opt_name} {obj_name} {ds_name} {split_name} {loss_name} {description}",
                         )
 
+
 def _basic_plot_metrics_tracker(
     loss_tracker,
     skip=0,
@@ -81,6 +81,7 @@ def _basic_plot_metrics_tracker(
 
 def basic_plot_tracker(
     tracker,
+    skip=0,
     loss=False,
     metrics=False,
     local=False,
@@ -102,6 +103,7 @@ def basic_plot_tracker(
                 # metrics, loss
                 _basic_plot_loss_tracker(
                     opt_tracker_d[obj_name]["loss"],
+                    skip=skip,
                     local=local,
                     training=training,
                     validation=validation,
@@ -120,6 +122,7 @@ def basic_plot_tracker(
                 # metrics, loss
                 _basic_plot_metrics_tracker(
                     opt_tracker_d[obj_name]["metrics"],
+                    skip=skip,
                     local=local,
                     training=training,
                     validation=validation,
