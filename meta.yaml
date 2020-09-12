@@ -1,22 +1,22 @@
+{% set setup_py = load_setup_py_data() %}
 
 package:
   name: yeahml
-  version: {{ python setup.py --version }}
+  version: {{ setup_py.version }}
 
 source:
-  url: https://github.com/yeahml/yeahml
+  path: .
 
 build:
   noarch: python
   number: 0
-  script: python -m pip install --no-deps --ignore-installed .
+  script: python -m pip install --ignore-installed . 
 
 requirements:
   host:
     - python
     - pip
-    - pip:
-      - toposort
+
   run:
     - python
     - tensorflow
@@ -26,6 +26,8 @@ requirements:
 test:
   imports:
     - yeahml
+    - toposort
+  script: run_test.sh
 
 about:
   home: https://github.com/yeahml/yeahml

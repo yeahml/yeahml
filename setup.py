@@ -17,6 +17,9 @@ networks using primarily configuration files""",
             'yeahml=yeahml.cli:main'
         ]
     },
+    install_requires=[
+        'toposort',
+    ],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
