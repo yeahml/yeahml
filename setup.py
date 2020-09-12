@@ -7,8 +7,8 @@ setup(
     author_email='jburdick@gmail.com',
     description="Configuration Markup for ML Libraries",
     long_description="TODO: Fill in",
-    packages=find_packages(),
-    package_dir={"yeahml": "yeahml"},
+    packages=find_packages(where='src/'),
+    package_dir={"yeahml": "src/yeahml"},
     include_package_data=True,
     entry_points={
         'console_scripts': [
