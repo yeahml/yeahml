@@ -122,5 +122,10 @@ hyper_parameters:
   #     type: 'earlystopping'
   #     options:
 
+callbacks:
+  objects:
+    "custom_printer":
+      type: "Printer"
+
 model:
   path: "./model_config.yml"

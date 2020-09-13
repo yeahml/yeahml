@@ -8,15 +8,13 @@ from typing import List
 
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.default.util import parse_default
+from yeahml.config.graph_analysis.static_analysis import static_analysis
 
 # from yeahml.config.graph_analysis import static_analysis
 from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
 from yeahml.log.yf_logging import config_logger
-
-from yeahml.config.graph_analysis.static_analysis import static_analysis
-from yeahml.config.model.util import make_hash
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design

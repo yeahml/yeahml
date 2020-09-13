@@ -207,6 +207,32 @@ def train_model(
         perf_cdict["objectives"], dataset_dict, target_splits=["train", "val"]
     )
 
+    # TODO: create callbacks
+    # https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/callbacks.py
+    # ^ 1. create a `callbackslist` (and attach to model?)
+    # 1.b. does this 'register' the call back as well?
+    # https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/engine/training.py#L824-L1146
+    # ^ 2. include the relevant calls
+    # 3. inference/eval will also require a similar callbacks set up
+    #    NOTE: do we need to map objective to callback? we maybe do... that is,
+    #    do we want to be able to specify which callbacks are applied to which
+    #    objectives, it may not be the case that we want the callback to be
+    #    applied globally -- for example, what about an lr schedule? that would
+    #    change depending on the objective/optimizer
+    # callbacks.on_train_begin() --> callbacks.on_train_end(logs=training_logs)
+    # callbacks.on_epoch_begin(epoch) --> callbacks.on_epoch_end(epoch, epoch_logs)
+    #    callbacks.on_train_batch_begin(step)  -->
+    #    callbacks.on_train_batch_end(end_step, logs)
+    # ----------
+    # callbacks.on_test_begin() --> callbacks.on_test_end(logs=logs)
+    # callbacks.on_test_batch_begin(step) -->
+    # callbacks.on_test_batch_end(end_step, logs)
+    # -----------
+    # callbacks.on_predict_begin() -> callbacks.on_predict_end()
+    # callbacks.on_predict_batch_begin(step) ->
+    # callbacks.on_predict_batch_end(end_step, {'outputs': batch_outputs})
+    # 4. there is an old SO question about this that could be answered
+
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the
     #   apply_gradient fn... this needs to be confirmed to work as expected

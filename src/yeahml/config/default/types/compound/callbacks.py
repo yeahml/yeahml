@@ -1,5 +1,5 @@
 # TODO: implement optimizer
-from yeahml.build.components.callback import return_available_callbacks
+from yeahml.build.components.callbacks.callbacks import return_available_callbacks
 from yeahml.config.default.types.base_types import categorical, list_of_dict
 
 
