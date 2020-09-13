@@ -3,6 +3,9 @@ from typing import Any, Dict
 
 import tensorflow as tf
 
+# from tensorflow.python.keras import callbacks as callbacks_module
+
+
 from yeahml.log.yf_logging import config_logger  # custom logging
 from yeahml.train.gradients.gradients import (
     get_apply_grad_fn,
@@ -41,6 +44,9 @@ from yeahml.train.util import (
     get_next_batch,
     re_init_iter,
 )
+
+# TODO: delete out before merging
+from yeahml.build.components.callbacks.objects import Printer as printer
 
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
@@ -232,6 +238,30 @@ def train_model(
     # callbacks.on_predict_batch_begin(step) ->
     # callbacks.on_predict_batch_end(end_step, {'outputs': batch_outputs})
     # 4. there is an old SO question about this that could be answered
+
+    # custom_callbacks =
+    # obtain/configure callbacks
+    # for cb in [].... get_callback(name)
+    # TODO: hardcoded for the moment
+    jj = printer(monitor="jack")
+    # kk = tf.keras.callbacks.EarlyStopping()
+    custom_callbacks = [jj]
+    verbose = False
+    cbs = tf.python.keras.callbacks.CallbackList(
+        custom_callbacks,
+        add_history=True,
+        add_progbar=verbose != 0,
+        model=model,
+        verbose=verbose,
+        # epochs=epochs,
+        # steps=data_handler.inferred_steps,
+    )
+    print(cbs)
+    cbs.on_train_begin()
+    cbs.on_epoch_begin(3)
+    # cbs.on_epoch_end(3)
+    print("okokokok")
+    sys.exit()
 
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the
