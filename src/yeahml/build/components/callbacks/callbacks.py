@@ -1,8 +1,8 @@
 import inspect
+import importlib
+from pathlib import Path
 
 import tensorflow as tf
-import yeahml.build.components.callbacks.objects as cb_objs
-import importlib, inspect
 
 
 def configure_callback(callback_dict):
@@ -40,19 +40,33 @@ def return_available_callbacks():
                 CALLBACK_FUNCTIONS[cb_name.lower()]["func_args"] = filt_args
 
     custom_callbacks = {}
-    for cb_name, cb_class in inspect.getmembers(cb_objs, inspect.isclass):
-        if inspect.isclass(cb_class):
-            custom_callbacks[cb_name.lower()] = {}
-            custom_callbacks[cb_name.lower()]["function"] = cb_class
+    # TODO: I would imagine there is a better way to do this
+    cb_cb_dir = Path(__file__).parent.joinpath("objects")
+    files = [
+        x
+        for x in cb_cb_dir.iterdir()
+        if x.is_file() and str(x).split("/")[-1].split(".")[0] not in ["base"]
+    ]
+    for import_source in files:
+        import_source = str(import_source).split("/")
+        import_source = import_source[import_source.index("yeahml") :]
+        import_source = ".".join(import_source)
+        if import_source.endswith(".py"):
+            import_source = import_source.rstrip("py").rstrip(".")
+        custom_mod = importlib.import_module(f"{import_source}")
+        for cb_name, cb_class in inspect.getmembers(custom_mod, inspect.isclass):
+            if inspect.isclass(cb_class):
+                custom_callbacks[cb_name.lower()] = {}
+                custom_callbacks[cb_name.lower()]["function"] = cb_class
 
-            if inspect.signature(cb_class).parameters:
-                args = inspect.signature(cb_class.__dict__["__init__"]).parameters
-                args = [a for a in args if a not in ["self", "kwargs"]]
-            else:
-                args = []
+                if inspect.signature(cb_class).parameters:
+                    args = inspect.signature(cb_class.__dict__["__init__"]).parameters
+                    args = [a for a in args if a not in ["self", "kwargs"]]
+                else:
+                    args = []
 
-            filt_args = [a for a in args if a not in ["self", "kwargs"]]
-            custom_callbacks[cb_name.lower()]["func_args"] = filt_args
+                filt_args = [a for a in args if a not in ["self", "kwargs"]]
+                custom_callbacks[cb_name.lower()]["func_args"] = filt_args
 
     # TODO: in the future, we may either override or wrap the existing callback
     # in a class that profices the information w/o relying on Keras's way of

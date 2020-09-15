@@ -46,7 +46,7 @@ from yeahml.train.util import (
 )
 
 # TODO: delete out before merging
-from yeahml.build.components.callbacks.objects import Printer as printer
+from yeahml.build.components.callbacks.objects.printer import Printer as printer
 
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
