@@ -10,3 +10,8 @@ class Printer(TrainCallback):
         """[summary]
         """
         print(f"on_batch_begin: {self.monitor}")
+
+    def pre_metric(self):
+        """[summary]
+        """
+        print(f"pre_metric: {self.monitor}")
