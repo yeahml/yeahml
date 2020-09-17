@@ -215,25 +215,26 @@ class TrainCallback(Callback):
         """
 
 
-class CallbackContainer:
+class Callbacks:
     def __init__(self, callbacks):
         # TODO: could check to ensure these are valid callbacks
         self.callbacks = callbacks if callbacks else None
 
         # create dictionary of the callbacks to call at the specified time+state
         cb_dict = {}
-        combos = itertools.product(CB_TIMING_OPTIONS, CB_STATE_OPTIONS)
-        for cb in self.callbacks:
-            for cb_name_tup in combos:
-                # e.g. pre_task
-                cb_name = f"{cb_name_tup[0]}_{cb_name_tup[1]}"
-                try:
-                    _ = cb_dict[cb_name]
-                except KeyError:
-                    cb_dict[cb_name] = []
-                cb_method = getattr(cb, cb_name)
-                if is_implemented(cb_method):
-                    cb_dict[cb_name].append(cb_method)
+        if self.callbacks:
+            combos = itertools.product(CB_TIMING_OPTIONS, CB_STATE_OPTIONS)
+            for cb in self.callbacks:
+                for cb_name_tup in combos:
+                    # e.g. pre_task
+                    cb_name = f"{cb_name_tup[0]}_{cb_name_tup[1]}"
+                    try:
+                        _ = cb_dict[cb_name]
+                    except KeyError:
+                        cb_dict[cb_name] = []
+                    cb_method = getattr(cb, cb_name)
+                    if is_implemented(cb_method):
+                        cb_dict[cb_name].append(cb_method)
         self.cb_dict = cb_dict
 
     def pre_task(self):
@@ -245,6 +246,57 @@ class CallbackContainer:
     #     if self.cb_dict["pre_task"]:
     #         for cb_method in self.cb_dict["pre_task"]:
     #             cb_method()
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+
+class CallbackContainer:
+    def __init__(
+        self, callbacks, optimizer_names=None, objective_names=None, dataset_names=None
+    ):
+        self.callbacks = callbacks if callbacks else None
+        if not optimizer_names:
+            raise ValueError("no optimizers detected")
+        if not objective_names:
+            raise ValueError("no objectives detected")
+        if not dataset_names:
+            raise ValueError("no datasets detected")
+
+        # TODO: in these two preceding blocks; there is likely a more elegant
+        # way to approach this
+        opt_, obj_, ds_, g_ = [], [], [], []
+        for cb in self.callbacks:
+            if cb.relation_key == "global":
+                g_.append(cb)
+            elif cb.relation_key == "optimizer":
+                opt_.append(cb)
+            elif cb.relation_key == "objective":
+                obj_.append(cb)
+            elif cb.relation_key == "dataset":
+                ds_.append(cb)
+        rel_dict = {}
+        for rel_def in CB_RELATION_KEY:
+            if rel_def == "global":
+                rel_dict[rel_def] = Callbacks(g_)
+            elif rel_def == "optimizer":
+                # TODO: loop names
+                rel_dict[rel_def] = Callbacks(opt_)
+            elif rel_def == "objective":
+                # TODO: loop names
+                rel_dict[rel_def] = Callbacks(obj_)
+            elif rel_def == "dataset":
+                # TODO: loop names
+                rel_dict[rel_def] = Callbacks(ds_)
+        self.rel_dict = rel_dict
+
+    def pre_task(self, rel_key="global", rel_name=None):
+        # TODO: I don't like this... (the rel_key/rel_name and resulting code
+        # blocks...)
+        if rel_key == "global":
+            if self.rel_dict:
+                if self.rel_dict[rel_key]:
+                    self.rel_dict[rel_key].pre_task()
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
