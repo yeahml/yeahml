@@ -1,3 +1,6 @@
+import itertools
+
+
 def implemented(method):
     method._is_implemented = False
     return method
@@ -25,6 +28,18 @@ CB_STATE_OPTIONS = [
     "apply_gradient",
     "metric",
 ]
+
+# this is a terrible name, but I'm not sure what it should be yet
+# the idea is to be allowed to create a relationship between the callback and
+# the particular "part" of the training cycle you're interested in.
+# NOTE: the issue I'm currently trying to think through is how to organize
+# callbacks in a multitask scenario. The issue is that some callbacks (LR
+# schedule) should be organized by optimizer and some callbacks should be by
+# task (e.g. ______), and some callbacks are task/optimizer agnostic (e.g.
+# TerminateOnNan)
+# `datasets`
+# NOTE: `or`
+CB_RELATION_KEY = ["global", "optimizer", "objective", "dataset"]
 
 
 class Callback:
@@ -54,8 +69,16 @@ class Callback:
 
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, relation_key=None):
+        if not relation_key:
+            raise ValueError(
+                f"no relation_key {relation_key} detected, please select from {CB_RELATION_KEY}"
+            )
+        if relation_key not in CB_RELATION_KEY:
+            raise ValueError(
+                f"{relation_key} not allowed, please select from {CB_RELATION_KEY}"
+            )
+        self.relation_key = relation_key
 
     # task
     @implemented
@@ -191,3 +214,37 @@ class TrainCallback(Callback):
         """[summary]
         """
 
+
+class CallbackContainer:
+    def __init__(self, callbacks):
+        # TODO: could check to ensure these are valid callbacks
+        self.callbacks = callbacks if callbacks else None
+
+        # create dictionary of the callbacks to call at the specified time+state
+        cb_dict = {}
+        combos = itertools.product(CB_TIMING_OPTIONS, CB_STATE_OPTIONS)
+        for cb in self.callbacks:
+            for cb_name_tup in combos:
+                # e.g. pre_task
+                cb_name = f"{cb_name_tup[0]}_{cb_name_tup[1]}"
+                try:
+                    _ = cb_dict[cb_name]
+                except KeyError:
+                    cb_dict[cb_name] = []
+                cb_method = getattr(cb, cb_name)
+                if is_implemented(cb_method):
+                    cb_dict[cb_name].append(cb_method)
+        self.cb_dict = cb_dict
+
+    def pre_task(self):
+        if self.cb_dict["pre_task"]:
+            for cb_method in self.cb_dict["pre_task"]:
+                cb_method()
+
+    # def pre_task(self):
+    #     if self.cb_dict["pre_task"]:
+    #         for cb_method in self.cb_dict["pre_task"]:
+    #             cb_method()
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)

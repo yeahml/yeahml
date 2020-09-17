@@ -1,14 +1,9 @@
 import inspect
 import importlib
 from pathlib import Path
-import itertools
+
 
 import tensorflow as tf
-from yeahml.build.components.callbacks.objects.base import (
-    is_implemented,
-    CB_TIMING_OPTIONS,
-    CB_STATE_OPTIONS,
-)
 
 
 def configure_callback(callback_dict):
@@ -66,7 +61,8 @@ def return_available_callbacks():
                 custom_callbacks[cb_name.lower()]["function"] = cb_class
 
                 if inspect.signature(cb_class).parameters:
-                    args = inspect.signature(cb_class.__dict__["__init__"]).parameters
+                    # args = inspect.signature(cb_class.__dict__["__init__"]).parameters
+                    args = inspect.signature(cb_class).parameters
                     args = [a for a in args if a not in ["self", "kwargs"]]
                 else:
                     args = []
@@ -98,27 +94,4 @@ def return_callback(callback_str):
         )
 
     return callback
-
-
-class CallbackContainer:
-    def __init__(self, callbacks):
-        self.callbacks = callbacks if callbacks else None
-
-        # create dictionary of the callbacks to call at the specified time+state
-        cb_dict = {}
-        combos = itertools.product(CB_TIMING_OPTIONS, CB_STATE_OPTIONS)
-        for cb in self.callbacks:
-            for cb_name_tup in combos:
-                cb_name = f"{cb_name_tup[0]}_{cb_name_tup[1]}"
-                try:
-                    _ = cb_dict[cb_name]
-                except KeyError:
-                    cb_dict[cb_name] = []
-                cb_method = getattr(cb, cb_name)
-                if is_implemented(cb_method):
-                    cb_dict[cb_name].append(cb_method)
-        self.cb_dict = cb_dict
-
-    def __str__(self):
-        return str(self.__class__) + ": " + str(self.__dict__)
 

@@ -2,8 +2,8 @@ from yeahml.build.components.callbacks.objects.base import TrainCallback
 
 
 class Printer(TrainCallback):
-    def __init__(self, monitor="something"):
-        super(Printer, self).__init__()
+    def __init__(self, monitor="something", relation_key=None):
+        super(Printer, self).__init__(relation_key=relation_key)
         self.monitor = monitor
 
     def pre_task(self):
