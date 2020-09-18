@@ -9,7 +9,12 @@ class Printer(TrainCallback):
     def pre_task(self):
         """[summary]
         """
-        print(f"on_batch_begin: {self.monitor}")
+        print(f"pre_task: {self.monitor}")
+
+    def post_task(self):
+        """[summary]
+        """
+        print(f"post_task: {self.monitor}")
 
     def pre_metric(self):
         """[summary]

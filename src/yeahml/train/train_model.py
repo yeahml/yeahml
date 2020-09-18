@@ -221,19 +221,19 @@ def train_model(
     # TODO: hardcoded for the moment
 
     # TODO: objective_names =
-    jj = printer(monitor="jack", relation_key="global")
-    print(jj.relation_key)
-    custom_callbacks = [jj]
+    cb_a = printer(monitor="jack", relation_key="global")
+    cb_b = printer(monitor="jack", relation_key="optimizer")
+    # print(jj.relation_key)
+    custom_callbacks = [cb_a, cb_b]
     cbc = CBC(
         custom_callbacks,
         optimizer_names=list(optimizers_dict.keys()),
         dataset_names=list(dataset_dict.keys()),
         objective_names=["aaaa", "bbbb"],
     )
-    print(f"callbacks: {cbc.callbacks}")
-    cbc.pre_task()
-    print("okokokok")
-    sys.exit()
+    cbc.pre_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")
+    cbc.post_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")
+    sys.exit("done")
 
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the
