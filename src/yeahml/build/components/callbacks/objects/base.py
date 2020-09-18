@@ -276,6 +276,34 @@ class Callbacks:
         return str(self.__class__) + ": " + str(self.__dict__)
 
 
+def callback_mapper(cur_func):
+    def _callback_mapper(self, *args, **kwargs):
+        opt_name, obj_name, ds_name = (
+            kwargs["opt_name"],
+            kwargs["obj_name"],
+            kwargs["ds_name"],
+        )
+        cb_method = getattr(self.rel_dict["global"]["global"], cur_func.__name__)
+
+        if self.rel_dict["global"]:
+            cb_method = getattr(self.rel_dict["global"]["global"], cur_func.__name__)
+            cb_method()
+
+        if self.rel_dict["optimizer"]:
+            cb_method = getattr(self.rel_dict["optimizer"][opt_name], cur_func.__name__)
+            cb_method()
+
+        if self.rel_dict["objective"]:
+            cb_method = getattr(self.rel_dict["objective"][obj_name], cur_func.__name__)
+            cb_method()
+
+        if self.rel_dict["dataset"]:
+            cb_method = getattr(self.rel_dict["dataset"][ds_name], cur_func.__name__)
+            cb_method()
+
+    return _callback_mapper
+
+
 class CallbackContainer:
     def __init__(
         self, callbacks, optimizer_names=None, objective_names=None, dataset_names=None
@@ -373,37 +401,13 @@ class CallbackContainer:
         self.rel_dict = rel_dict
 
     # I'm concerned about passing these context names every time..
-    def pre_task(self, opt_name, obj_name, ds_name):
-        # TODO: I don't like this... (the rel_key/rel_name and resulting code
-        # blocks...)
+    @callback_mapper
+    def pre_task(self, *, opt_name, obj_name, ds_name):
+        pass
 
-        if self.rel_dict["global"]:
-            self.rel_dict["global"]["global"].pre_task()
-
-        if self.rel_dict["optimizer"]:
-            self.rel_dict["optimizer"][opt_name].pre_task()
-
-        if self.rel_dict["objective"]:
-            self.rel_dict["objective"][obj_name].pre_task()
-
-        if self.rel_dict["dataset"]:
-            self.rel_dict["dataset"][ds_name].pre_task()
-
-    def post_task(self, opt_name, obj_name, ds_name):
-        # TODO: I don't like this... (the rel_key/rel_name and resulting code
-        # blocks...)
-
-        if self.rel_dict["global"]:
-            self.rel_dict["global"]["global"].post_task()
-
-        if self.rel_dict["optimizer"]:
-            self.rel_dict["optimizer"][opt_name].post_task()
-
-        if self.rel_dict["objective"]:
-            self.rel_dict["objective"][obj_name].post_task()
-
-        if self.rel_dict["dataset"]:
-            self.rel_dict["dataset"][ds_name].post_task()
+    @callback_mapper
+    def post_task(self, *, opt_name, obj_name, ds_name):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
