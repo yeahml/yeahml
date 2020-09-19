@@ -8,12 +8,15 @@ import tensorflow as tf
 
 def configure_callback(callback_dict):
     # TODO: this should not be here. (follow template for losses)
-    callback_dict = return_callback(callback_dict["type"])
-    callback = callback_dict["function"]
+    callback_conf = return_callback(callback_dict["type"])
+    callback_fn = callback_conf["function"]
 
     # configure callback
     temp_dict = callback_dict.copy()
-    callback = callback(**temp_dict["options"])
+    if temp_dict["options"]:
+        callback = callback_fn(**temp_dict["options"])
+    else:
+        callback = callback_fn()
 
     return callback
 

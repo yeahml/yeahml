@@ -13,21 +13,6 @@ class Printer(TrainCallback):
         super(Printer, self).__init__(relation_key=relation_key)
         self.monitor = monitor
 
-    # def pre_task(self):
-    #     """[summary]
-    #     """
-    #     print(f"pre_task: {self.monitor}")
-
-    # def post_task(self):
-    #     """[summary]
-    #     """
-    #     print(f"post_task: {self.monitor}")
-
-    # def pre_metric(self):
-    #     """[summary]
-    #     """
-    #     print(f"pre_metric: {self.monitor}")
-
     # task
     @print_mapper
     def pre_task(self):

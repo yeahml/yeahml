@@ -21,6 +21,7 @@ from yeahml.train.sample_tasks.objective import select_objective
 from yeahml.train.sample_tasks.optimizer import select_optimizer
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.objectives import get_objectives
+from yeahml.train.setup.callbacks import get_callbacks
 from yeahml.train.setup.paths import (
     create_model_run_path,
     create_model_training_paths,
@@ -183,6 +184,7 @@ def train_model(
 
     perf_cdict: Dict[str, Any] = config_dict["performance"]
     optim_cdict: Dict[str, Any] = config_dict["optimize"]
+    cb_cdict: Dict[str, Any] = config_dict["callbacks"]
 
     return_dict = {}
 
@@ -219,11 +221,7 @@ def train_model(
     # https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/engine/training.py#L824-L1146
     # for cb in [].... get_callback(name)
     # TODO: hardcoded for the moment
-
-    cb_a = printer(monitor="jack", relation_key="global")
-    cb_b = printer(monitor="jack", relation_key="optimizer")
-    # print(jj.relation_key)
-    custom_callbacks = [cb_a, cb_b]
+    custom_callbacks = get_callbacks(cb_cdict)
     cbc = CBC(
         custom_callbacks,
         optimizer_names=list(optimizers_dict.keys()),
