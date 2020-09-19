@@ -220,7 +220,6 @@ def train_model(
     # for cb in [].... get_callback(name)
     # TODO: hardcoded for the moment
 
-    # TODO: objective_names =
     cb_a = printer(monitor="jack", relation_key="global")
     cb_b = printer(monitor="jack", relation_key="optimizer")
     # print(jj.relation_key)
@@ -229,7 +228,7 @@ def train_model(
         custom_callbacks,
         optimizer_names=list(optimizers_dict.keys()),
         dataset_names=list(dataset_dict.keys()),
-        objective_names=["aaaa", "bbbb"],
+        objective_names=list(objectives_dict.keys()),
     )
     cbc.pre_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")
     cbc.post_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")

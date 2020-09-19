@@ -283,7 +283,6 @@ def callback_mapper(cur_func):
             kwargs["obj_name"],
             kwargs["ds_name"],
         )
-        cb_method = getattr(self.rel_dict["global"]["global"], cur_func.__name__)
 
         if self.rel_dict["global"]:
             cb_method = getattr(self.rel_dict["global"]["global"], cur_func.__name__)
@@ -400,7 +399,9 @@ class CallbackContainer:
 
         self.rel_dict = rel_dict
 
+    # task
     # I'm concerned about passing these context names every time..
+    # TODO: since these are all the same, can we make them dynamically in the init?
     @callback_mapper
     def pre_task(self, *, opt_name, obj_name, ds_name):
         pass
@@ -408,6 +409,105 @@ class CallbackContainer:
     @callback_mapper
     def post_task(self, *, opt_name, obj_name, ds_name):
         pass
+
+    # obtain_task
+    @callback_mapper
+    def pre_obtain_task(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_obtain_task(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # obtain_dataset
+    @callback_mapper
+    def pre_obtain_dataset(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_obtain_dataset(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # dataset_pass
+    @callback_mapper
+    def pre_dataset_pass(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_dataset_pass(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # batch
+    @callback_mapper
+    def pre_batch(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_batch(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # obtain_data
+    @callback_mapper
+    def pre_obtain_batch(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_obtain_batch(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # prediction
+    @callback_mapper
+    def pre_prediction(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_prediction(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # performance
+    @callback_mapper
+    def pre_performance(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_performance(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # loss
+    @callback_mapper
+    def pre_loss(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_loss(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    # metric
+    @callback_mapper
+    def pre_metric(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
+
+    @callback_mapper
+    def post_metric(self, *, opt_name, obj_name, ds_name):
+        """[summary]
+        """
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
