@@ -126,6 +126,9 @@ callbacks:
   objects:
     "custom_printer":
       type: "Printer"
+      options:
+        monitor: "my_monitor"
+        relation_key: "global"
 
 model:
   path: "./model_config.yml"

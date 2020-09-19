@@ -216,11 +216,7 @@ def train_model(
         perf_cdict["objectives"], dataset_dict, target_splits=["train", "val"]
     )
 
-    # TODO: create callbacks
-    # https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/callbacks.py
-    # https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/engine/training.py#L824-L1146
-    # for cb in [].... get_callback(name)
-    # TODO: hardcoded for the moment
+    # create callbacks
     custom_callbacks = get_callbacks(cb_cdict)
     cbc = CBC(
         custom_callbacks,
@@ -228,9 +224,7 @@ def train_model(
         dataset_names=list(dataset_dict.keys()),
         objective_names=list(objectives_dict.keys()),
     )
-    cbc.pre_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")
-    cbc.post_task(opt_name="main_opt", obj_name="main_obj", ds_name="abalone")
-    sys.exit("done")
+    # TODO: call all cbc methods at the appropriate time
 
     # create a tf.function for applying gradients for each optimizer
     # TODO: I am not 100% about this logic for maping the optimizer to the

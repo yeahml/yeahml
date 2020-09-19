@@ -11,4 +11,3 @@ def get_callbacks(cb_dict):
             cb_list.append(cur_cb)
 
     return cb_list
-

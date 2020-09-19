@@ -1,5 +1,4 @@
 import itertools
-import copy
 
 
 def implemented(method):
@@ -511,4 +510,3 @@ class CallbackContainer:
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
-

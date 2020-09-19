@@ -1,7 +1,6 @@
-import inspect
 import importlib
+import inspect
 from pathlib import Path
-
 
 import tensorflow as tf
 
@@ -97,4 +96,3 @@ def return_callback(callback_str):
         )
 
     return callback
-
