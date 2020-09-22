@@ -1,6 +1,6 @@
-from yeahml.train.controller.components.optimizer import Optimizer
-from yeahml.train.controller.components.dataset import Dataset
+from yeahml.train.controller.components.dataset import DatasetWrapper
 from yeahml.train.controller.components.objective import Objective
+from yeahml.train.controller.components.optimizer import Optimizer
 
 
 """
@@ -15,6 +15,75 @@ from multiple datasets. Each ojective has a performance object with at least 1
 loss and N metrics
 
 """
+
+
+class DSNode:
+    def __init__(self, name):
+        self.name = name
+        self.objectives = None
+
+    def add_objective(self, objective):
+        if not self.objectives:
+            self.objectives = [objective]  # presently only 1
+        else:
+            self.objectives.append(objective)
+
+
+class ObjectiveNode:
+    def __init__(self, name):
+        self.name = name
+        self.datasets = None
+        self.optimizer = None  # presently only be 1
+
+    def add_dataset(self, dataset):
+        if not self.datasets:
+            self.datasets = [dataset]
+        else:
+            self.datasets.append(dataset)
+
+    def add_optimizer(self, optimizer):
+        if not self.optimizer:
+            self.optimizer = optimizer
+        else:
+            raise ValueError(
+                f"optimizer already exists {self.optimizer}, can't add {optimizer}"
+            )
+
+
+class OptimizerNode:
+    def __init__(self, name):
+        self.name = name
+        self.objectives = None
+
+    def add_objective(self, objective):
+        if not self.objectives:
+            self.objectives = [objective]
+        else:
+            self.objectives.append(objective)
+
+
+class ControllerRelationships:
+    def __init__(self, optimizers_dict, dataset_dict, objectives_dict):
+        opt_node_dict = {}
+        for opt_name, _ in optimizers_dict:
+            opt_node_dict[opt_name] = OptimizerNode(opt_name)
+
+        ds_node_dict = {}
+        for ds_name, _ in dataset_dict:
+            ds_node_dict[ds_name] = DSNode(ds_name)
+
+        obj_node_dict = {}
+        for obj_name, _ in objectives_dict:
+            obj_node_dict[obj_name] = DSNode(obj_name)
+
+        self.objectives = objectives_dict
+        self.datasets = ds_node_dict
+        self.objectives = obj_node_dict
+
+        # TODO: make connections
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
 
 
 class Controller:
@@ -47,7 +116,7 @@ class Controller:
         self.cur_obj = None
         self.obj_policy = obj_policy
 
-        self.datasets = None  # {ds_a: Dataset(), ds_b: Dataset()}
+        self.datasets = None  # {ds_a: DatasetWrapper(), ds_b: DatasetWrapper()}
         self.cur_ds = None
 
         self.optimizers = None  # {opt_a: Optimizer(), opt_b: Optimizer()}
@@ -55,7 +124,7 @@ class Controller:
 
         ds_dict = {}
         for cur_ds_name, cur_ds_conf in dataset_dict.items():
-            ds_dict[cur_ds_name] = Dataset(cur_ds_name, cur_ds_conf)
+            ds_dict[cur_ds_name] = DatasetWrapper(cur_ds_name, cur_ds_conf)
         self.datasets = ds_dict
 
         obj_dict = {}

@@ -169,8 +169,6 @@ def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
     return cur_train_iter
 
 
-
-
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
