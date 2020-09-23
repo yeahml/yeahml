@@ -7,10 +7,12 @@ import os.path
 # I'm not 100% sure this is the best way to do this yet
 try:
     _dist = get_distribution("yeahml")
+    print("HEY KEVIN", _dist)
     # Normalize case for Windows systems
     dist_loc = os.path.normcase(_dist.location)
     here = os.path.normcase(__file__)
-    if not here.startswith(os.path.join(dist_loc, "yeahml")):
+    print("HEY KEVIN", here, dist_loc)
+    if not here.startswith(os.path.join(dist_loc, "src/yeahml")):
         # not installed, but there is another version that *is*
         raise DistributionNotFound
 except DistributionNotFound:

@@ -1,0 +1,8 @@
+name: yeahml
+channels:
+  - defaults
+dependencies:
+  - pip:
+    - toposort
+prefix: /usr/local/anaconda3/envs/yeahml
+

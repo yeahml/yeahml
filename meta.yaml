@@ -1,0 +1,39 @@
+{% set setup_py = load_setup_py_data() %}
+
+package:
+  name: yeahml
+  version: {{ setup_py.version }}
+
+source:
+  path: .
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+
+  run:
+    - python
+    - tensorflow
+    - pyyaml
+    - matplotlib
+
+test:
+  imports:
+    - yeahml
+    - toposort
+
+about:
+  home: https://github.com/yeahml/yeahml
+  license: Apache
+  summary: 'TODO: Fill in'
+  description: |
+    TODO: Fill in
+  dev_url: https://github.com/yeahml/yeahml
+  doc_url: https://yeahml.readthedocs.io
+  doc_source_url: https://github.com/yeahml/yeahml
+  
