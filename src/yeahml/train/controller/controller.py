@@ -28,6 +28,9 @@ class DSNode:
         else:
             self.objectives.append(objective)
 
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
 
 class ObjectiveNode:
     def __init__(self, name):
@@ -35,11 +38,35 @@ class ObjectiveNode:
         self.datasets = None
         self.optimizer = None  # presently only be 1
 
-    def add_dataset(self, dataset):
-        if not self.datasets:
-            self.datasets = [dataset]
+        # NOTE: these three could be grouped
+        self.type = None
+        self.prediction = None
+        self.target = None
+
+    def add_type_information(self, in_config):
+        if self.type:
+            raise ValueError(
+                f"type has already been set to {self.type} cannot set: {in_config}"
+            )
         else:
-            self.datasets.append(dataset)
+            self.type = in_config["type"]
+            if self.type == "supervised":
+                self.prediction_node = in_config["options"]["prediction"]
+                self.target_node = in_config["options"]["target"]
+            else:
+                self.prediction = in_config["options"]["prediction"]
+
+    def add_datasets(self, dataset):
+        if isinstance(dataset, str):
+            dataset = [dataset]
+        if not isinstance(dataset, list):
+            raise ValueError(
+                f"dataset {dataset} is of unexpected type. expected str/list, got {type(dataset)}"
+            )
+        if not self.datasets:
+            self.datasets = dataset
+        else:
+            self.datasets += dataset
 
     def add_optimizer(self, optimizer):
         if not self.optimizer:
@@ -49,6 +76,9 @@ class ObjectiveNode:
                 f"optimizer already exists {self.optimizer}, can't add {optimizer}"
             )
 
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
 
 class OptimizerNode:
     def __init__(self, name):
@@ -56,31 +86,66 @@ class OptimizerNode:
         self.objectives = None
 
     def add_objective(self, objective):
+        if isinstance(objective, str):
+            objective = [objective]
+        if not isinstance(objective, list):
+            raise ValueError(
+                f"objective {objective} is of unexpected type. expected str/list, got {type(objective)}"
+            )
         if not self.objectives:
-            self.objectives = [objective]
+            self.objectives = objective
         else:
-            self.objectives.append(objective)
+            self.objectives += objective
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
 
 
 class ControllerRelationships:
     def __init__(self, optimizers_dict, dataset_dict, objectives_dict):
+
+        # build node skeleton
         opt_node_dict = {}
-        for opt_name, _ in optimizers_dict:
+        for opt_name, _ in optimizers_dict.items():
             opt_node_dict[opt_name] = OptimizerNode(opt_name)
 
         ds_node_dict = {}
-        for ds_name, _ in dataset_dict:
+        for ds_name, _ in dataset_dict.items():
             ds_node_dict[ds_name] = DSNode(ds_name)
 
         obj_node_dict = {}
-        for obj_name, _ in objectives_dict:
-            obj_node_dict[obj_name] = DSNode(obj_name)
+        for obj_name, _ in objectives_dict.items():
+            obj_node_dict[obj_name] = ObjectiveNode(obj_name)
 
-        self.objectives = objectives_dict
+        # build connections (probably could be clever and merge above and this
+        # loop if performance was an issue)
+        for obj_name, obj_node in obj_node_dict.items():
+            obj_node.add_type_information(objectives_dict[obj_name]["in_config"])
+            obj_node.add_datasets(objectives_dict[obj_name]["in_config"]["dataset"])
+            tmp_ds = objectives_dict[obj_name]["in_config"]["dataset"]
+            if isinstance(tmp_ds, str):
+                tmp_ds = [tmp_ds]
+            if not isinstance(tmp_ds, list):
+                raise ValueError(f"{tmp_ds} is not type list or str")
+            for ds in tmp_ds:
+                ds_node_dict[ds].add_objective(obj_name)
+
+            # TODO: add information to DS
+
+        # TODO: loop optimizers and add objectives
+        for opt_name, opt_node in opt_node_dict.items():
+            tmp_objs = optimizers_dict[opt_name]["objectives"]
+            opt_node.add_objective(tmp_objs)
+            if isinstance(tmp_objs, str):
+                tmp_objs = [tmp_objs]
+            if not isinstance(tmp_objs, list):
+                raise ValueError(f"{tmp_objs} is not type list or str")
+            for to in tmp_objs:
+                obj_node_dict[to].add_optimizer(opt_name)
+
+        self.optimizers = opt_node_dict
         self.datasets = ds_node_dict
         self.objectives = obj_node_dict
-
-        # TODO: make connections
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
@@ -138,6 +203,10 @@ class Controller:
             opt_object = Optimizer(cur_opt_name, cur_opt_conf, obj_dict)
             opt_dict[cur_opt_name] = opt_object
         self.optimizers = opt_dict
+
+        self.relationships = ControllerRelationships(
+            optimizers_dict, dataset_dict, objectives_dict
+        )
 
         # TODO: validate all connections ds --> obj --> optimizer ?
 
