@@ -1,3 +1,5 @@
+import random
+
 from yeahml.train.controller.components.dataset import DatasetWrapper
 from yeahml.train.controller.components.objective import Objective
 from yeahml.train.controller.components.optimizer import Optimizer
@@ -13,6 +15,14 @@ that is, objectives use multiple datasets, but are optimized by a single
 optimizer. Optimizers can optimize multiple objectives. objectives can learn
 from multiple datasets. Each ojective has a performance object with at least 1
 loss and N metrics
+
+TODO (in semi-order):
+1. clean file
+2. create the appropriate select_by_xxxx methods
+3. decide what a ``policy'' should look like
+4. tracker/statistics access
+5. model access
+
 
 """
 
@@ -160,31 +170,25 @@ class Controller:
         obj_policy=None,
         training=False,
     ):
-        """[summary]
+        """
 
-        Parameters
-        ----------
-        optimizers_dict : [type]
-            [description]
-        dataset_dict : [type]
-            [description]
-        objectives_dict : [type]
-            [description]
-        obj_policy : [type], optional
-            a policy that decides which objective to select, by default None
-        training : bool, optional
-            [description], by default False
+        I think the controller needs access to the tracker/statistics about each
+        dataset/objective/optimizer such that it can make ``informed'' decisions
+        as well as information about the model/params
         """
         self.training = training
 
         self.objectives = None  # {obj_a: Objective(), obj_b: Objective()}
-        self.cur_obj = None
+        self.objectives_remain = None
+        self.cur_objective = None
         self.obj_policy = obj_policy
 
         self.datasets = None  # {ds_a: DatasetWrapper(), ds_b: DatasetWrapper()}
-        self.cur_ds = None
+        self.datasets_remain = None
+        self.cur_dataset = None
 
         self.optimizers = None  # {opt_a: Optimizer(), opt_b: Optimizer()}
+        self.optimizers_remain = None
         self.cur_optimizer = None
 
         ds_dict = {}
@@ -197,6 +201,7 @@ class Controller:
             obj_object = Objective(cur_obj_name, cur_obj_conf, ds_dict)
             obj_dict[cur_obj_name] = obj_object
         self.objectives = obj_dict
+        self.objectives_remain = list(self.objectives.keys())
 
         opt_dict = {}
         for cur_opt_name, cur_opt_conf in optimizers_dict.items():
@@ -210,38 +215,67 @@ class Controller:
 
         # TODO: validate all connections ds --> obj --> optimizer ?
 
-        self._initialize(self.obj_policy)
-
-    def _initialize(self, obj_policy):
+    def _initialize(self):
+        # can use this manually if desired, but is currently dangerous, in that
+        # the policy will advance the objective it it is already initialized..
+        # this could be changed by setting the current to None if needed
         # TODO: implement `initialize` to allow setting the initial information
 
-        if not obj_policy:
-            obj_policy = self.obj_policy
-
-        first_obj = self.select_objective(obj_policy=obj_policy)
+        if self.obj_policy:
+            first_obj = self.select_objective(cur_policy=self.obj_policy)
+        else:
+            first_obj = self.objectives_remain[0]
         self.set_by_objective(first_obj)
 
-    def select_objective(self, obj_policy=None):
-        if obj_policy:
-            raise NotImplementedError(
-                "selecting the objective based on a policy is not implemented yet"
-            )
-        else:
-            # select first
-            obj = list(self.objectives.keys())[0]
+    def select_objective(self, cur_policy):
+        # TODO: logging
 
-        return obj
+        if not cur_policy:
+            # select 'next' as defined
+            if not self.cur_objective:
+                # initialize to 0 after increment
+                cur_ind = -1
+            else:
+                cur_ind = self.objectives_remain.index(f"{self.cur_objective.name}")
+            new_ind = cur_ind + 1
+            # wrap
+            obj_name = self.objectives_remain[new_ind % len(self.objectives_remain)]
+        elif cur_policy == "random":
+            # select a ``random'' objective
+            new_ind = random.randint(0, len(self.objectives_remain))
+            obj_name = self.objectives_remain[new_ind % len(self.objectives_remain)]
+        else:
+            raise ValueError(
+                f"objective policy type {cur_policy} is not currently supported"
+            )
+
+        return obj_name
+
+    def advance_objective(self, obj_policy=None):
+        """
+        advance the objective according the policy, which if does not exist,
+        will advance the ``next'' objective (order of creation)
+        """
+        if obj_policy:
+            cur_policy = obj_policy
+        else:
+            cur_policy = self.obj_policy
+
+        obj_name = self.select_objective(cur_policy=cur_policy)
+        self.set_by_objective(obj_name)
 
     def set_by_objective(self, obj_name):
         self.cur_objective = self.objectives[obj_name]
-        self.cur_dataset = self.objectives[obj_name].dataset
+        self.cur_dataset = self.objectives[obj_name].dataset  # assuming only one?
         self.cur_optimizer = self.objectives[obj_name].optimizer
 
-    # TODO:
-    # def select_by_______a________
-    # def select_by_______b________
-    # I'd like to see more methods here for selecting which objective/optimizer
-    # to select
+    # convenience
+    def __enter__(self):
+        self._initialize()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        pass
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)

@@ -6,6 +6,7 @@ class Objective:
 
         # NOTE: there may not be an optimizer here if this is only a metric?
         self.optimizer = None  # Optimizer()
+        self.name = name
 
         self.type = config["in_config"]["type"]
         self.prediction = config["in_config"]["options"]["prediction"]
