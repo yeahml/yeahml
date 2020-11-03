@@ -6,6 +6,7 @@ from crummycm.validation.types.values.element.numeric import Numeric
 from crummycm.validation.types.values.element.text import Text
 from crummycm.validation.types.values.element.bool import Bool
 from crummycm.validation.types.values.compound.multi import Multi
+from pkg_resources import require
 from yeahml.build.components.optimizer import return_available_optimizers
 import crummycm as ccm
 
@@ -95,9 +96,9 @@ optimize = {
                         " > e.g. optimize:optimizers:'name':type: 'adam'"
                     ),
                 ),
-                "options": {
+                KPH("options", exact=True, required=False): {
                     "learning_rate": Numeric(is_type=float),
-                    KPH("other_options"): VPH("optimizer_options"),
+                    KPH("other_options", required=False): VPH("optimizer_options"),
                 },
                 "objectives": VPH("optimizer_objectives"),
             }
@@ -148,12 +149,12 @@ data = {
         "datasets": {
             KPH("dataset_name"): {
                 "in": {
-                    KPH("feat_name"): {
+                    KPH("feat_name", multi=True): {
                         "shape": Multi(),
                         "dtype": Text(),
-                        "startpoint": Bool(),
-                        "endpoint": Bool(),
-                        "label": Bool(),
+                        KPH("startpoint", exact=True, required=False): Bool(),
+                        KPH("endpoint", exact=True, required=False): Bool(),
+                        KPH("label", exact=True, required=False): Bool(),
                     }
                 },
                 "split": {"names": Multi(element_types=Text())},
@@ -168,17 +169,20 @@ performance = {
             KPH("objective_name"): {
                 "loss": {
                     "type": Text(),
-                    "options": VPH("loss_options"),
-                    "track": VPH("loss_track"),
+                    KPH("options", exact=True, required=False): VPH("loss_options"),
+                    KPH("track", exact=True, required=False): VPH("loss_track"),
                 },
                 "metric": {
                     "type": Text(),
-                    "options": VPH("loss_options"),
-                    "track": VPH("loss_track"),
+                    KPH("options", exact=True, required=False): VPH("loss_options"),
+                    KPH("track", exact=True, required=False): VPH("loss_track"),
                 },
                 "in_config": {
                     "type": Text(),
-                    "options": {"prediction": Text(), "target": Text()},
+                    KPH("options", exact=True, required=False): {
+                        "prediction": Text(),
+                        "target": Text(),
+                    },
                     "dataset": Text(),
                 },
             }
@@ -191,10 +195,10 @@ model = {
         "name": Text(),
         "start_fresh": Bool(),
         "layers": {
-            KPH("layer_name"): {
+            KPH("layer_name", multi=True): {
                 "type": Text(),
-                "source": Text(),
-                "options": {
+                KPH("source", required=False, exact=True): Text(),
+                KPH("options", required=False, exact=True): {
                     KPH("layer_option_key", multi=True): VPH("layer_option_value"),
                     KPH("activation", exact=True, required=False): {
                         "type": Text(),
@@ -203,17 +207,19 @@ model = {
                         ),
                     },
                 },
+                KPH("in_name", exact=True, required=False): Text(),
+                KPH("end_point", exact=True, required=False): Text(),
             }
         },
     }
 }
 
 callbacks = {
-    "callbacks": {
+    KPH("callbacks", exact=True, required=False): {
         "objects": {
             KPH("callback_name", multi=True): {
                 "type": Text(to_lower=True),
-                "options": {
+                KPH("options", exact=True, required=False): {
                     KPH("options_key", multi=True, required=False): VPH("options_value")
                 },
             }
@@ -231,5 +237,7 @@ TEMPLATE = {**TEMPLATE, **model}
 TEMPLATE = {**TEMPLATE, **optimize}
 TEMPLATE = {**TEMPLATE, **callbacks}
 
+p = "/home/jackburdick/dev/github/YeahML/src/yeahml/config/template/template.yml"
 
+_ = ccm.template(TEMPLATE, p)
 

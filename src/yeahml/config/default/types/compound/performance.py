@@ -262,3 +262,4 @@ class performances_parser:
                 f"{performance_spec_dict} is type {type(performance_spec_dict)} not type {type({})}"
             )
         return temp_dict
+
