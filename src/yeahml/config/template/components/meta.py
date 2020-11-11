@@ -44,6 +44,7 @@ META = {
                 " > e.g. meta:rand_seed: 42"
             ),
         ),
+        # TODO: ensure path exists
         KPH("default_load_params_path", exact=True, required=False): Text(),
         # TODO: tracing
         # "trace_level": Text(description="meta:trace_level: <str>"),

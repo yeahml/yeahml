@@ -1,33 +1,21 @@
 #!/usr/bin/env python
-import functools
-import operator
 import os
 import shutil
 from pathlib import Path
-from typing import List
-import crummycm as ccm
 
+import crummycm as ccm
 from yeahml.config.default.types.compound.layer import layers_parser
 from yeahml.config.default.types.compound.performance import performances_parser
-
-from yeahml.config.template.template import TEMPLATE
-
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.default.util import parse_default
 from yeahml.config.graph_analysis.static_analysis import static_analysis
-
-# from yeahml.config.graph_analysis import static_analysis
-from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
 from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
+from yeahml.config.template.template import TEMPLATE
 from yeahml.log.yf_logging import config_logger
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
 # do the metrics make sense for the problem? layer order? est. param size?
 # > maybe this belongs in "build graph?"
-
-# TODO: A config logger should be generated / used
 
 
 def _maybe_create_dir(root_dir: str, wipe_dirs: bool, logger=None):

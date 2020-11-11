@@ -15,6 +15,11 @@ TODO:
 - descriptions
 - not sure what to do about `epochs`
 
+think on
+--------
+preprocess
+augment
+
 """
 
 
