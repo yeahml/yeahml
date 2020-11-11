@@ -5,6 +5,9 @@ import os
 import shutil
 from pathlib import Path
 from typing import List
+import crummycm as ccm
+
+from yeahml.config.template.template import TEMPLATE
 
 from yeahml.config.default.default_config import DEFAULT_CONFIG
 from yeahml.config.default.util import parse_default
@@ -22,21 +25,6 @@ from yeahml.log.yf_logging import config_logger
 # > maybe this belongs in "build graph?"
 
 # TODO: A config logger should be generated / used
-
-# TODO: I don't like this global, but I'm not sure where it belongs yet
-# NOTE: it is required that meta be created before model. this may need to
-# change
-REQ_KEYS = [
-    "meta",
-    "logging",
-    "performance",
-    "data",
-    "hyper_parameters",
-    "model",
-    "optimize",
-]
-
-CONFIG_KEYS = ["callbacks", *REQ_KEYS]
 
 
 def _maybe_extract_from_path(cur_dict: dict) -> dict:
@@ -183,43 +171,139 @@ def _maybe_message(unused_keys, main_config_raw, logger):
         )
 
 
-def _primary_config(main_path: str) -> dict:
-    main_config_raw = get_raw_dict_from_string(main_path)
-    cur_keys = main_config_raw.keys()
+# def _primary_config(main_path: str) -> dict:
+#     main_config_raw = get_raw_dict_from_string(main_path)
+#     cur_keys = main_config_raw.keys()
 
-    # check for invalid keys
-    keys_not_present = []
-    for key in REQ_KEYS:
-        if key not in cur_keys:
-            keys_not_present.append(key)
-    invalid_keys = []
-    for cur_key in cur_keys:
-        if cur_key not in CONFIG_KEYS:
-            invalid_keys.append(cur_key)
+#     # check for invalid keys
+#     keys_not_present = []
+#     for key in REQ_KEYS:
+#         if key not in cur_keys:
+#             keys_not_present.append(key)
+#     invalid_keys = []
+#     for cur_key in cur_keys:
+#         if cur_key not in CONFIG_KEYS:
+#             invalid_keys.append(cur_key)
 
-    err_str = ""
-    if invalid_keys:
-        err_str += (
-            f"The main config contains the following invalid key(s) {invalid_keys}:"
-        )
-    if keys_not_present:
-        err_str += f"The main config does not contain the key(s) {keys_not_present}:"
-    if err_str:
-        raise ValueError(f"{err_str} \n current keys: {cur_keys}")
+#     err_str = ""
+#     if invalid_keys:
+#         err_str += (
+#             f"The main config contains the following invalid key(s) {invalid_keys}:"
+#         )
+#     if keys_not_present:
+#         err_str += f"The main config does not contain the key(s) {keys_not_present}:"
+#     if err_str:
+#         raise ValueError(f"{err_str} \n current keys: {cur_keys}")
 
-    # build dict containing configs
-    config_dict = {}
-    for config_type in cur_keys:
-        # try block?
-        raw_config = main_config_raw[config_type]
-        raw_config = _maybe_extract_from_path(raw_config)
+#     # build dict containing configs
+#     config_dict = {}
+#     for config_type in cur_keys:
+#         # try block?
+#         raw_config = main_config_raw[config_type]
+#         raw_config = _maybe_extract_from_path(raw_config)
 
-        formatted_config = parse_default(raw_config, DEFAULT_CONFIG[f"{config_type}"])
-        if config_type == "model":
-            model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
-            formatted_config["model_hash"] = model_hash
+#         formatted_config = parse_default(raw_config, DEFAULT_CONFIG[f"{config_type}"])
+#         if config_type == "model":
+#             model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
+#             formatted_config["model_hash"] = model_hash
 
-        config_dict[config_type] = formatted_config
+#         config_dict[config_type] = formatted_config
+
+#     full_exp_path = (
+#         Path(config_dict["meta"]["yeahml_dir"])
+#         .joinpath(config_dict["meta"]["data_name"])
+#         .joinpath(config_dict["meta"]["experiment_name"])
+#         .joinpath(config_dict["model"]["name"])
+#     )
+#     logger = config_logger(full_exp_path, config_dict["logging"], "config")
+
+#     unused_keys = check_for_unused_keys(config_dict, main_config_raw, [], [])
+#     if unused_keys:
+#         _maybe_message(unused_keys, main_config_raw, logger)
+
+#     # TODO: this should probably be made once and stored? in the :meta?
+#     exp_root_dir = (
+#         Path(config_dict["meta"]["yeahml_dir"])
+#         .joinpath(config_dict["meta"]["data_name"])
+#         .joinpath(config_dict["meta"]["experiment_name"])
+#     )
+
+#     try:
+#         override_yml_dir = config_dict["meta"]["start_fresh"]
+#     except KeyError:
+#         # leave existing model information
+#         override_yml_dir = False
+
+#     if os.path.exists(exp_root_dir):
+#         if override_yml_dir:
+#             shutil.rmtree(exp_root_dir)
+#     if not os.path.exists(exp_root_dir):
+#         Path(exp_root_dir).mkdir(parents=True, exist_ok=True)
+
+#     model_root_dir = exp_root_dir.joinpath(config_dict["model"]["name"])
+#     try:
+#         override_model_dir = config_dict["model"]["start_fresh"]
+#     except KeyError:
+#         # leave existing model information
+#         override_model_dir = False
+
+#     _create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
+
+#     return config_dict
+
+
+# def create_configs(main_path: str) -> dict:
+#     pass
+
+
+#     # parse individual configs
+#     config_dict = _primary_config(main_path)
+
+#     # build the order of inputs into the model. This logic will likely need to
+#     # change as inputs become more complex
+#     input_order = []
+#     for ds_name, ds_config in config_dict["data"]["datasets"].items():
+#         for feat_name, config in ds_config["in"].items():
+#             if config["startpoint"]:
+#                 if not config["label"]:
+#                     input_order.append(feat_name)
+#     if not input_order:
+#         raise ValueError("no inputs have been specified to the model")
+
+#     # loop model to ensure all outputs are accounted for
+#     output_order = []
+#     for name, config in config_dict["model"]["layers"].items():
+#         if config["endpoint"]:
+#             output_order.append(name)
+#     if not output_order:
+#         raise ValueError("no outputs have been specified for the model")
+
+#     # TODO: maybe this should be a dictionary
+#     # TODO: this is a sneaky way + band-aid of ensuring we don't specify inputs
+#     # if they are named the same -- in reality this does not address the root
+#     # issue, that is that we should be able to allow some intermediate layers to
+#     # accept input from either layer_a or layer_b, not only layer_a
+#     input_order = list(set(input_order))
+
+#     config_dict["model_io"] = {"inputs": input_order, "outputs": output_order}
+
+#     # validate graph
+#     graph_dict, graph_dependencies = static_analysis(config_dict)
+
+#     config_dict["graph_dict"] = graph_dict
+#     config_dict["graph_dependencies"] = graph_dependencies
+
+#     return config_dict
+
+
+def create_configs(main_path: str) -> dict:
+
+    # parse + validate
+    config_dict = ccm.generate(main_path, TEMPLATE)
+
+    # TODO:
+    model_hash = make_hash(config_dict["model"], IGNORE_HASH_KEYS)
+    config_dict["model_hash"] = model_hash
 
     full_exp_path = (
         Path(config_dict["meta"]["yeahml_dir"])
@@ -229,11 +313,6 @@ def _primary_config(main_path: str) -> dict:
     )
     logger = config_logger(full_exp_path, config_dict["logging"], "config")
 
-    unused_keys = check_for_unused_keys(config_dict, main_config_raw, [], [])
-    if unused_keys:
-        _maybe_message(unused_keys, main_config_raw, logger)
-
-    # TODO: this should probably be made once and stored? in the :meta?
     exp_root_dir = (
         Path(config_dict["meta"]["yeahml_dir"])
         .joinpath(config_dict["meta"]["data_name"])
@@ -260,14 +339,6 @@ def _primary_config(main_path: str) -> dict:
         override_model_dir = False
 
     _create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
-
-    return config_dict
-
-
-def create_configs(main_path: str) -> dict:
-
-    # parse individual configs
-    config_dict = _primary_config(main_path)
 
     # build the order of inputs into the model. This logic will likely need to
     # change as inputs become more complex
