@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import List
 import crummycm as ccm
 
+from yeahml.config.default.types.compound.layer import layers_parser
+
 from yeahml.config.template.template import TEMPLATE
 
 from yeahml.config.default.default_config import DEFAULT_CONFIG
@@ -301,20 +303,22 @@ def create_configs(main_path: str) -> dict:
     # parse + validate
     config_dict = ccm.generate(main_path, TEMPLATE)
 
-    # make connections
-    prev_layer_name = None
-    for k, d in config_dict["model"]["layers"].items():
-        try:
-            in_name = d["in_name"]
-        except KeyError:
-            in_name = prev_layer_name
-        prev_layer_name = k
+    config_dict["model"]["layers"] = layers_parser()(config_dict["model"]["layers"])
 
-        config_dict["model"]["layers"][k]["in_name"] = in_name
+    # make connections
+    # prev_layer_name = None
+    # for k, d in config_dict["model"]["layers"].items():
+    #     try:
+    #         in_name = d["in_name"]
+    #     except KeyError:
+    #         in_name = prev_layer_name
+    #     prev_layer_name = k
+
+    #     config_dict["model"]["layers"][k]["in_name"] = in_name
 
     # TODO: ---- below
     model_hash = make_hash(config_dict["model"], IGNORE_HASH_KEYS)
-    config_dict["model_hash"] = model_hash
+    config_dict["model"]["model_hash"] = model_hash
 
     full_exp_path = (
         Path(config_dict["meta"]["yeahml_dir"])

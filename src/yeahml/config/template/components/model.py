@@ -25,6 +25,7 @@ MODEL = {
                         ),
                     },
                 },
+                # TODO: this could be Either a list of strings or string
                 KPH("in_name", exact=True, required=False): Text(),
                 KPH("endpoint", exact=True, required=False, populate=True): Bool(
                     default_value=False
