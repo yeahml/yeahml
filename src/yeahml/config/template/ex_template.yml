@@ -1,0 +1,83 @@
+'[callbacks]':
+  objects:
+    MULTI:[KPH]*:
+      options:
+        MULTI:[KPH]: '[ValuePlaceholder]*'
+      type: '[Text]*'
+data:
+  datasets:
+    '[KPH]*':
+      in:
+        MULTI:[KPH]*:
+          '[endpoint]': '[Bool]*'
+          '[label]': '[Bool]*'
+          '[startpoint]': '[Bool]*'
+          dtype: '[Text]*'
+          shape: '[Multi]*'
+      split:
+        names: el:[Text]*[Multi]*
+hyper_parameters:
+  '[early_stopping]':
+    epochs: <class 'int'>[Numeric]*
+    warm_up: <class 'int'>[Numeric]*
+  dataset:
+    '[shuffle_buffer]': <class 'int'>[Numeric]*
+    batch: <class 'int'>[Numeric]*
+  epochs: <class 'int'>[Numeric]*
+logging:
+  console:
+    format_str: '[Text](%(name)-12s: %(levelname)-8s %(message)s)*'
+    level: '[Text](critical)^*'
+  file:
+    format_str: '[Text](%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]:
+      %(message)s)*'
+    level: '[Text](critical)^*'
+  track:
+    tensorboard:
+      param_steps: <class 'int'>[Numeric]*
+    tracker_steps: <class 'int'>[Numeric]*
+meta:
+  '[default_load_params_path]': '[Text]*'
+  '[random_seed]': <class 'int'>[Numeric]*
+  '[yeahml_dir]': '[Text](yeahml)*'
+  data_name: '[Text]*'
+  experiment_name: '[Text]*'
+  start_fresh: '[Bool]*'
+model:
+  layers:
+    MULTI:[KPH]*:
+      '[in_name]': '[Text]*'
+      '[options]':
+        MULTI:[KPH]*: '[ValuePlaceholder]*'
+        '[activation]':
+          MULTI:[KPH]: '[ValuePlaceholder]*'
+          type: '[Text]*'
+      '[source]': '[Text]*'
+      type: '[Text]*'
+  name: '[Text]*'
+  start_fresh: '[Bool]*'
+optimize:
+  optimizers:
+    MULTI:[KPH]*:
+      '[options]':
+        '[KPH]*': '[ValuePlaceholder]*'
+        learning_rate: <class 'float'>[Numeric]*
+      objectives: '[ValuePlaceholder]*'
+      type: '[Text]^*'
+performance:
+  objectives:
+    '[KPH]*':
+      in_config:
+        '[options]':
+          prediction: '[Text]*'
+          target: '[Text]*'
+        dataset: '[Text]*'
+        type: '[Text]*'
+      loss:
+        '[options]': '[ValuePlaceholder]*'
+        '[track]': '[ValuePlaceholder]*'
+        type: '[Text]*'
+      metric:
+        '[options]': '[ValuePlaceholder]*'
+        '[track]': '[ValuePlaceholder]*'
+        type: '[Text]*'
