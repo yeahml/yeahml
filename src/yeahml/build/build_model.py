@@ -10,6 +10,10 @@ from yeahml.information.write_info import write_build_information
 # from yeahml.build.get_components import get_logits_and_preds
 from yeahml.log.yf_logging import config_logger
 
+# def get_lr_schedule():
+#     # TODO: https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/optimizers/schedules/ExponentialDecay
+#     raise NotImplementedError
+
 
 # Helper to make the output "consistent"
 def reset_graph_deterministic(seed: int = 42) -> None:

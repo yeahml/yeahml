@@ -2,7 +2,7 @@ import inspect
 
 import tensorflow as tf
 
-from yeahml.build.components.configure import copy_func
+from yeahml.build.components.util import copy_func
 
 
 def return_available_losses():
