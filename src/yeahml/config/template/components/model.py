@@ -26,7 +26,12 @@ MODEL = {
                     },
                 },
                 KPH("in_name", exact=True, required=False): Text(),
-                KPH("endpoint", exact=True, required=False): Bool(),
+                KPH("endpoint", exact=True, required=False, populate=True): Bool(
+                    default_value=False
+                ),
+                KPH("startpoint", exact=True, required=False, populate=True): Bool(
+                    default_value=False
+                ),
             }
         },
     }

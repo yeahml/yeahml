@@ -8,6 +8,8 @@ from crummycm.validation.types.values.element.text import Text
 from crummycm.validation.types.values.element.bool import Bool
 from crummycm.validation.types.values.compound.multi import Multi
 
+from yeahml.build.components.dtype import return_available_dtypes
+
 DATA = {
     "data": {
         "datasets": {
@@ -15,10 +17,16 @@ DATA = {
                 "in": {
                     KPH("feat_name", multi=True): {
                         "shape": Multi(),
-                        "dtype": Text(),
-                        KPH("startpoint", exact=True, required=False): Bool(),
-                        KPH("endpoint", exact=True, required=False): Bool(),
-                        KPH("label", exact=True, required=False): Bool(),
+                        "dtype": Text(is_in_list=return_available_dtypes()),
+                        KPH(
+                            "startpoint", exact=True, required=False, populate=True
+                        ): Bool(default_value=True),
+                        KPH(
+                            "endpoint", exact=True, required=False, populate=True
+                        ): Bool(default_value=False),
+                        KPH("label", exact=True, required=False, populate=True): Bool(
+                            default_value=False
+                        ),
                     }
                 },
                 "split": {"names": Multi(element_types=Text())},

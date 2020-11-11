@@ -10,7 +10,7 @@ from crummycm.validation.types.values.compound.multi import Multi
 
 META = {
     "meta": {
-        KPH("yeahml_dir", exact=True, required=False): Text(
+        KPH("yeahml_dir", exact=True, required=False, populate=True): Text(
             default_value="yeahml",
             description=(
                 "Root directory to store information\n"
