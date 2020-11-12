@@ -22,7 +22,7 @@ from yeahml.train.util import (
 from yeahml.train.gradients.gradients import get_validation_step_fn
 
 ################
-from yeahml.config.model.util import make_hash
+from yeahml.config.create_configs import make_hash
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.paths import create_model_run_path
 from yeahml.train.setup.objectives import get_objectives

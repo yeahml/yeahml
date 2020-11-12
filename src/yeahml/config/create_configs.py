@@ -2,16 +2,47 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Any, Dict
 
 import crummycm as ccm
+from yeahml.config.default.types.compound.callbacks import callbacks_parser
 from yeahml.config.default.types.compound.layer import layers_parser
 from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.graph_analysis.static_analysis import static_analysis
-from yeahml.config.model.config import IGNORE_HASH_KEYS
-from yeahml.config.model.util import make_hash
 from yeahml.config.template.template import TEMPLATE
 from yeahml.log.yf_logging import config_logger
-from yeahml.config.default.types.compound.callbacks import callbacks_parser
+
+# relu: the reasoning here is that the relu is subjectively the most
+# common/default activation function in DNNs, but I don't LOVE this
+# DEFAULT_ACT = {"type": "relu"}
+MODEL_IGNORE_HASH_KEYS = ["model_hash"]
+
+
+def make_hash(o: Dict[str, Any], ignore_keys: Any = None) -> int:
+    # combination of several answers in
+    # https://stackoverflow.com/questions/5884066/hashing-a-dictionary
+
+    """
+    Makes a hash from a dictionary, list, tuple or set to any level, that contains
+    only other hashable types (including any lists, tuples, sets, and
+    dictionaries).
+    """
+
+    if isinstance(o, (set, tuple, list)):
+        return tuple([make_hash(e) for e in o])
+    elif not isinstance(o, dict):
+        return hash(o)
+
+    new_o = {}
+    for k, v in o.items():
+        if ignore_keys:
+            if k not in ignore_keys:
+                new_o[k] = make_hash(v, ignore_keys)
+        else:
+            new_o[k] = make_hash(v, ignore_keys)
+
+    return hash(tuple(sorted(frozenset(new_o.items()))))
+
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
@@ -56,7 +87,7 @@ def create_configs(main_path: str) -> dict:
     )
 
     # TODO: ---- below
-    model_hash = make_hash(config_dict["model"], IGNORE_HASH_KEYS)
+    model_hash = make_hash(config_dict["model"], MODEL_IGNORE_HASH_KEYS)
     config_dict["model"]["model_hash"] = model_hash
 
     full_exp_path = (
