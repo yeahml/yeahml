@@ -11,6 +11,7 @@ from yeahml.config.model.config import IGNORE_HASH_KEYS
 from yeahml.config.model.util import make_hash
 from yeahml.config.template.template import TEMPLATE
 from yeahml.log.yf_logging import config_logger
+from yeahml.config.default.types.compound.callbacks import callbacks_parser
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
@@ -43,12 +44,15 @@ def create_configs(main_path: str) -> dict:
 
     # TODO: bandaid fix
     if "callbacks" not in config_dict.keys():
-        config_dict["callbacks"] = None
+        config_dict["callbacks"] = {"objects": {}}
 
+    # custom parsers
     config_dict["model"]["layers"] = layers_parser()(config_dict["model"]["layers"])
-
     config_dict["performance"]["objectives"] = performances_parser()(
         config_dict["performance"]["objectives"]
+    )
+    config_dict["callbacks"]["objects"] = callbacks_parser()(
+        config_dict["callbacks"]["objects"]
     )
 
     # TODO: ---- below

@@ -31,6 +31,7 @@ TEMPLATE = {**TEMPLATE, **LOGGING}
 TEMPLATE = {**TEMPLATE, **DATA}
 TEMPLATE = {**TEMPLATE, **MODEL}
 TEMPLATE = {**TEMPLATE, **OPTIMIZE}
+# optional
 TEMPLATE = {**TEMPLATE, **CALLBACKS}
 
 # p = "/home/jackburdick/dev/github/YeahML/src/yeahml/config/template/template.yml"
