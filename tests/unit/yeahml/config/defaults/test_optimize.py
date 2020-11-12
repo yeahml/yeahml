@@ -1,7 +1,7 @@
 import pytest
 
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.default.util import parse_default
+from yeahml.config.template.components.optimize import OPTIMIZE
+from util import parse_default
 
 ex_config = {
     # ----- REQUIRED
@@ -16,22 +16,24 @@ ex_config = {
                         "objectives": ["main_opt"],
                     }
                 },
-                "directive": {"instructions": "main_opt"},
+                # "directive": {"instructions": "main_opt"},
             }
         },
         {
-            "optimizers": {
-                "main_opt": {
-                    "type": "adam",
-                    "options": {"learning_rate": 0.0001},
-                    "objectives": ["main_opt"],
-                }
-            },
-            "directive": {
-                "instructions": {
-                    "YEAHML_0": {"operation": "+", "optimizers": "main_opt"}
-                }
-            },
+            "optimize": {
+                "optimizers": {
+                    "main_opt": {
+                        "type": "adam",
+                        "options": {"learning_rate": 0.0001},
+                        "objectives": ["main_opt"],
+                    }
+                },
+                # "directive": {
+                #     "instructions": {
+                #         "YEAHML_0": {"operation": "+", "optimizers": "main_opt"}
+                #     }
+                # },
+            }
         },
     )
 }
@@ -43,16 +45,12 @@ ex_config = {
 def test_default(config, expected):
     """test parsing of optimize"""
     if isinstance(expected, dict):
-        formatted_config = parse_default(config["optimize"], DEFAULT_CONFIG["optimize"])
+        formatted_config = parse_default(config, OPTIMIZE)
         print(formatted_config)
         assert expected == formatted_config
     elif isinstance(expected, ValueError):
         with pytest.raises(ValueError):
-            formatted_config = parse_default(
-                config["optimize"], DEFAULT_CONFIG["optimize"]
-            )
+            formatted_config = parse_default(config, OPTIMIZE)
     elif isinstance(expected, TypeError):
         with pytest.raises(TypeError):
-            formatted_config = parse_default(
-                config["optimize"], DEFAULT_CONFIG["optimize"]
-            )
+            formatted_config = parse_default(config, OPTIMIZE)

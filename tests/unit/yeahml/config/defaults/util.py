@@ -7,13 +7,10 @@ from yeahml.config.default.types.compound.performance import performances_parser
 
 
 def parse_default(user, temp):
+    user_pass = user.copy()
 
     # parse + validate
-    config_dict = ccm.validate(user, temp)
-
-    print(user)
-    print("----" * 8)
-    print(config_dict)
+    config_dict = ccm.validate(user_pass, temp)
 
     # custom parsers
 

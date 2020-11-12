@@ -1,7 +1,7 @@
 import pytest
 
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.default.util import parse_default
+from yeahml.config.template.components.performance import PERFORMANCE
+from util import parse_default
 
 # TODO: test options
 ex_config = {
@@ -28,7 +28,7 @@ ex_config = {
             "performance": {
                 "objectives": {
                     "main": {
-                        "metric": {"type": ["binarycrossentropy"], "options": [None]},
+                        "metric": {"type": "binarycrossentropy", "options": [None]},
                         "loss": {
                             "type": "binary_crossentropy",
                             "options": None,
@@ -44,19 +44,21 @@ ex_config = {
             }
         },
         {
-            "objectives": {
-                "main": {
-                    "metric": {"type": ["binarycrossentropy"], "options": [None]},
-                    "loss": {
-                        "type": "binary_crossentropy",
-                        "options": None,
-                        "track": ["mean"],
-                    },
-                    "in_config": {
-                        "type": "supervised",
-                        "options": {"prediction": "out", "target": "some_target"},
-                        "dataset": "some_dataset",
-                    },
+            "performance": {
+                "objectives": {
+                    "main": {
+                        "metric": {"type": ["binarycrossentropy"], "options": [None]},
+                        "loss": {
+                            "type": "binary_crossentropy",
+                            "options": [None],
+                            "track": ["mean"],
+                        },
+                        "in_config": {
+                            "type": "supervised",
+                            "options": {"prediction": "out", "target": "some_target"},
+                            "dataset": "some_dataset",
+                        },
+                    }
                 }
             }
         },
@@ -105,17 +107,11 @@ ex_config = {
 def test_default(config, expected):
     """test parsing of performance"""
     if isinstance(expected, dict):
-        formatted_config = parse_default(
-            config["performance"], DEFAULT_CONFIG["performance"]
-        )
+        formatted_config = parse_default(config, PERFORMANCE)
         assert expected == formatted_config
     elif isinstance(expected, ValueError):
         with pytest.raises(ValueError):
-            formatted_config = parse_default(
-                config["performance"], DEFAULT_CONFIG["performance"]
-            )
+            formatted_config = parse_default(config, PERFORMANCE)
     elif isinstance(expected, TypeError):
         with pytest.raises(TypeError):
-            formatted_config = parse_default(
-                config["performance"], DEFAULT_CONFIG["performance"]
-            )
+            formatted_config = parse_default(config, PERFORMANCE)
