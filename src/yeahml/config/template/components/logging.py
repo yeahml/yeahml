@@ -12,7 +12,7 @@ ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL
 
 LOGGING = {
     "logging": {
-        "console": {
+        KPH("console", exact=True, populate=True, required=False): {
             "level": Text(
                 default_value="critical",
                 is_in_list=ERR_LEVELS,
@@ -23,7 +23,7 @@ LOGGING = {
                 default_value="%(name)-12s: %(levelname)-8s %(message)s"
             ),
         },
-        "file": {
+        KPH("file", exact=True, populate=True, required=False): {
             "level": Text(
                 default_value="critical",
                 is_in_list=ERR_LEVELS,
@@ -34,13 +34,13 @@ LOGGING = {
                 default_value="%(filename)s:%(lineno)s - %(funcName)20s()][%(levelname)-8s]: %(message)s"
             ),
         },
-        "track": {
+        KPH("track", exact=True, populate=True, required=False): {
             "tracker_steps": Numeric(
                 default_value=0,
                 is_type=int,
                 description="the frequency (as a number of training steps) at which to log tracker information",
             ),
-            "tensorboard": {"param_steps": Numeric(is_type=int)},
+            "tensorboard": {"param_steps": Numeric(default_value=0, is_type=int)},
         },
     }
 }
