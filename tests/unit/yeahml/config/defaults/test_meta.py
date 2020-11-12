@@ -1,7 +1,7 @@
 import pytest
 
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.default.util import parse_default
+from yeahml.config.template.components.meta import META
+from util import parse_default
 
 
 # I'm not sure how to best structure this
@@ -19,13 +19,12 @@ ex_config = {
     "bare_minimum": (
         {"meta": {"data_name": "jack", "experiment_name": "trial_01"}},
         {
-            "yeahml_dir": "yeahml",
-            "data_name": "jack",
-            "experiment_name": "trial_01",
-            "rand_seed": None,
-            # "trace_level": None,
-            "start_fresh": False,
-            "default_load_params_path": None,
+            "meta": {
+                "yeahml_dir": "yeahml",
+                "data_name": "jack",
+                "experiment_name": "trial_01",
+                "start_fresh": False,
+            }
         },
     ),
     # -----
@@ -35,17 +34,18 @@ ex_config = {
                 # directory
                 "data_name": "jack",
                 "experiment_name": "trial_02",
-                "rand_seed": 2,
+                "random_seed": 2,
             }
         },
         {
-            "yeahml_dir": "yeahml",
-            "data_name": "jack",
-            "experiment_name": "trial_02",
-            "rand_seed": 2,
-            # "trace_level": None,
-            "start_fresh": False,
-            "default_load_params_path": None,
+            "meta": {
+                "yeahml_dir": "yeahml",
+                "data_name": "jack",
+                "experiment_name": "trial_02",
+                "random_seed": 2,
+                # "trace_level": None,
+                "start_fresh": False,
+            }
         },
     ),
     "set_rand_seed_to_float": (
@@ -54,7 +54,7 @@ ex_config = {
                 # directory
                 "data_name": "jack",
                 "experiment_name": "trial_02",
-                "rand_seed": 2.2,
+                "random_seed": 2.2,
             }
         },
         TypeError,
@@ -65,7 +65,7 @@ ex_config = {
                 # directory
                 "data_name": "jack",
                 "experiment_name": "trial_02",
-                "rand_seed": "some_string",
+                "random_seed": "some_string",
             }
         },
         TypeError,
@@ -76,7 +76,7 @@ ex_config = {
                 # directory
                 "data_name": 3,
                 "experiment_name": "trial_02",
-                "rand_seed": "some_string",
+                "random_seed": "some_string",
             }
         },
         TypeError,
@@ -87,7 +87,7 @@ ex_config = {
                 # directory
                 "data_name": "jack",
                 "experiment_name": 3,
-                "rand_seed": "some_string",
+                "random_seed": "some_string",
             }
         },
         TypeError,
@@ -101,11 +101,11 @@ ex_config = {
 def test_default(config, expected):
     """test parsing of meta"""
     if isinstance(expected, dict):
-        formatted_config = parse_default(config["meta"], DEFAULT_CONFIG["meta"])
+        formatted_config = parse_default(config, META)
         assert expected == formatted_config
     elif isinstance(expected, ValueError):
         with pytest.raises(ValueError):
-            formatted_config = parse_default(config["meta"], DEFAULT_CONFIG["meta"])
+            formatted_config = parse_default(config, META)
     elif isinstance(expected, TypeError):
         with pytest.raises(TypeError):
-            formatted_config = parse_default(config["meta"], DEFAULT_CONFIG["meta"])
+            formatted_config = parse_default(config, META)

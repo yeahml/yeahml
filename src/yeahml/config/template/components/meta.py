@@ -30,7 +30,7 @@ META = {
                 " > e.g. meta:experiment_name: 'trial_00'"
             )
         ),
-        "start_fresh": Bool(
+        KPH("start_fresh", exact=True, required=False, populate=True): Bool(
             default_value=False,
             description=(
                 "Used to determine whether previous experiments should be deleted\n"
