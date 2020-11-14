@@ -22,7 +22,6 @@ performance:
     main_obj:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "mse"
         track: "mean" # for now, only one description allowed
         #options:

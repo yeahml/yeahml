@@ -23,7 +23,6 @@ performance:
     mnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
@@ -41,13 +40,11 @@ performance:
     fashion_mnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
       metric:
         # there can be many metrics
-        # TODO: support custom metrics
         type: ["SparseCategoricalAccuracy"]
         options: [null]
       in_config:
@@ -59,13 +56,10 @@ performance:
     kmnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
       metric:
-        # there can be many metrics
-        # TODO: support custom metrics
         type: ["SparseCategoricalAccuracy"]
         options: [null]
       in_config:

@@ -22,7 +22,6 @@ performance:
     main_obj:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "binary_crossentropy"
         # TODO: this should be able to be a dict
         options: [{ from_logits: True }]

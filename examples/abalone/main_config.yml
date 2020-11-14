@@ -2,19 +2,18 @@ meta:
   data_name: "abalone"
   experiment_name: "trial_00"
   start_fresh: True
-  # TODO: information on when to save params, currently only best params saved
+
 logging:
   console:
+    format_str: null
     level: "info"
-    format_str: null
   file:
-    level: "ERROR"
     format_str: null
+    level: "info"
   track:
-    tracker_steps: 30
     tensorboard:
       param_steps: 50
-  # graph_spec: True
+    tracker_steps: 30
 
 performance:
   objectives:
@@ -22,15 +21,14 @@ performance:
     main_obj:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "MSE"
-        track: ["mean"] # only mean is supported currently
+        track: "mean" # only mean is supported currently
         #options:
       metric:
         # there can be many metrics
         # TODO: support custom metrics
-        type: ["MeanSquaredError"]
-        options: [null]
+        type: "MeanSquaredError"
+        options: null
       in_config:
         type: "supervised"
         options:
@@ -40,11 +38,11 @@ performance:
     second_obj:
       loss:
         type: "MAE"
-        track: ["mean"]
+        track: "mean"
         #options:
       metric:
-        type: ["meanabsoluteerror"]
-        options: [null]
+        type: "meanabsoluteerror"
+        options: null
       in_config:
         type: "supervised"
         options:
@@ -67,7 +65,6 @@ data:
           label: True
       split:
         names: ["train", "val", "test"]
-        # TODO: redo this section `train`, `val`, `eval`
 
 optimize:
   # NOTE: multiple losses by the same optimizer, are currently only modeled
@@ -93,34 +90,20 @@ optimize:
         learning_rate: 0.0002
         beta_1: 0.92
       objectives: ["second_obj"]
-  directive:
-    # (a|b): alternate, (a&b): joint, (a,b): sequential
-    # eventually, we should be able to specify time/epoch/% before moving to the
-    # next instruction, but presently each `opt` represents an (ENTIRE) pass of the training set
-    # instruct: "(a|b)"
-    instructions: "((main_opt, second_opt) & second_opt)"
-    # TODO: handle case where not present
-    #instructions: "(main_opt,second_opt)"
+  # directive:
+  #   # (a|b): alternate, (a&b): joint, (a,b): sequential
+  #   # eventually, we should be able to specify time/epoch/% before moving to the
+  #   # next instruction, but presently each `opt` represents an (ENTIRE) pass of the training set
+  #   # instruct: "(a|b)"
+  #   instructions: "((main_opt, second_opt) & second_opt)"
+  #   # TODO: handle case where not present
+  #   #instructions: "(main_opt,second_opt)"
 
 hyper_parameters:
-  # optimizer_definition:
-  #   seq: "(((a|b)&c),d)"
-  # optimizer: # TODO: support multiple optimizers
-  #   name: "main_2"
-  #   type: 'adam'
-  #   options:
-  #     learning_rate: 0.001
-  #     beta_1: 0.92
   epochs: 20
   dataset:
-    # TODO: I would like to make this logic more abstract
-    # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
-    shuffle_buffer: 128 # this should be grouped with batchsize
-  # other:
-  #   earlystopping:
-  #     type: 'earlystopping'
-  #     options:
+    shuffle_buffer: 128
 
 callbacks:
   objects:
@@ -130,5 +113,6 @@ callbacks:
         monitor: "my_monitor"
         relation_key: "global"
 
-model:
-  path: "./model_config.yml"
+# model:
+#   path: "./model_config.yml"
+model: "parse_path::./model_config.yml"

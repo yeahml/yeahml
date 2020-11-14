@@ -23,7 +23,6 @@ performance:
     main_obj:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         options: [{ "from_logits": True }]
         track: "mean" # for now, only one description allowed

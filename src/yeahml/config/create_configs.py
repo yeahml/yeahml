@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 import crummycm as ccm
-from yeahml.config.default.types.compound.callbacks import callbacks_parser
 from yeahml.config.default.types.compound.layer import layers_parser
 from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.graph_analysis.static_analysis import static_analysis
@@ -81,9 +80,6 @@ def create_configs(main_path: str) -> dict:
     config_dict["model"]["layers"] = layers_parser()(config_dict["model"]["layers"])
     config_dict["performance"]["objectives"] = performances_parser()(
         config_dict["performance"]["objectives"]
-    )
-    config_dict["callbacks"]["objects"] = callbacks_parser()(
-        config_dict["callbacks"]["objects"]
     )
 
     # TODO: ---- below
