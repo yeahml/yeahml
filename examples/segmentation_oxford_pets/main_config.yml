@@ -2,7 +2,7 @@ meta:
   data_name: "oxford_iiit_pet"
   experiment_name: "trial_00"
   start_fresh: False
-  # TODO: information on when to save params, currently only best params saved
+
 logging:
   console:
     level: "info"
@@ -15,8 +15,6 @@ logging:
     tensorboard:
       param_steps: 50
 
-  # graph_spec: True
-
 performance:
   objectives:
     # each objective can be a loss, a metric, or a combination of both
@@ -26,12 +24,6 @@ performance:
         type: "sparse_categorical_crossentropy"
         options: [{ "from_logits": True }]
         track: "mean" # for now, only one description allowed
-        #options:
-      # metric:
-      #   # there can be many metrics
-      #   # TODO: support custom metrics
-      #   type: ["accuracy"]
-      #   options: [null]
       in_config:
         type: "supervised"
         options:
@@ -51,29 +43,17 @@ data:
         names: ["train", "val"]
 
 optimize:
-  # NOTE: multiple losses by the same optimizer, are currently only modeled
-  # jointly, if we wish to model the losses seperately (sequentially or
-  # alternating), then we would want to use a second optimizer
   optimizers:
     "main_opt":
       type: "adam"
       options:
         learning_rate: 0.0005
       objectives: ["main_obj"]
-  directive:
-    instructions: "main_opt"
 
 hyper_parameters:
   epochs: 50
   dataset:
-    # TODO: I would like to make this logic more abstract
-    # I think the only options that should be applied here are "batch" and "shuffle"
     batch: 16
     shuffle_buffer: 128 # this should be grouped with batchsize
-  # other:
-  #   earlystopping:
-  #     type: 'earlystopping'
-  #     options:
 
-model:
-  path: "./model_config.yml"
+model: "parse_path::./model_config.yml"

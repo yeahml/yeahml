@@ -35,6 +35,5 @@ TEMPLATE = {**TEMPLATE, **OPTIMIZE}
 TEMPLATE = {**TEMPLATE, **CALLBACKS}
 
 # p = "/home/jackburdick/dev/github/YeahML/src/yeahml/config/template/template.yml"
-
 # _ = ccm.template(TEMPLATE, p)
 
