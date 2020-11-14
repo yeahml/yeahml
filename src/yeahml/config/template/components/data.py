@@ -16,7 +16,8 @@ DATA = {
             KPH("dataset_name", multi=True): {
                 "in": {
                     KPH("feat_name", multi=True): {
-                        "shape": Multi(element_types=int),
+                        # required false is a bit of a hacky
+                        "shape": Multi(element_types=int, required=False),
                         "dtype": Text(is_in_list=return_available_dtypes()),
                         KPH(
                             "startpoint", exact=True, required=False, populate=True
