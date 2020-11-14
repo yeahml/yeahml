@@ -41,6 +41,10 @@ def _configure_input(cur_name, cur_config):
     # I'm going to continue on with this minimal approach
     dtype = cur_config["dtype"]
     shape = cur_config["shape"]
+    # TODO: this is not a great fix.. Really this needs to be fixed upstream in
+    # the config
+    if shape is None:
+        shape = (None,)
     if cur_config["startpoint"]:
         out = tf.keras.layers.Input(shape=shape, dtype=dtype, name=cur_name)
     else:
