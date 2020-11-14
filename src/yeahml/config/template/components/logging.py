@@ -8,7 +8,8 @@ from crummycm.validation.types.values.element.text import Text
 from crummycm.validation.types.values.element.bool import Bool
 from crummycm.validation.types.values.compound.multi import Multi
 
-ERR_LEVELS = [x.lower() for x in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]]
+ERR_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+ERR_LEVELS = ERR_LEVELS + [x.lower() for x in ERR_LEVELS]
 
 LOGGING = {
     "logging": {

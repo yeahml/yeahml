@@ -13,7 +13,7 @@ from yeahml.build.components.dtype import return_available_dtypes
 DATA = {
     "data": {
         "datasets": {
-            KPH("dataset_name"): {
+            KPH("dataset_name", multi=True): {
                 "in": {
                     KPH("feat_name", multi=True): {
                         "shape": Multi(element_types=int),

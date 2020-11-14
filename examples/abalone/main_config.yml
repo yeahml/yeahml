@@ -113,6 +113,4 @@ callbacks:
         monitor: "my_monitor"
         relation_key: "global"
 
-# model:
-#   path: "./model_config.yml"
 model: "parse_path::./model_config.yml"
