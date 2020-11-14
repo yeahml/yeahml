@@ -7,6 +7,7 @@ from crummycm.validation.types.values.element.numeric import Numeric
 from crummycm.validation.types.values.element.text import Text
 from crummycm.validation.types.values.element.bool import Bool
 from crummycm.validation.types.values.compound.multi import Multi
+from crummycm.validation.types.values.compound.either import Either
 
 MODEL = {
     "model": {
@@ -26,7 +27,10 @@ MODEL = {
                     },
                 },
                 # TODO: this could be Either a list of strings or string
-                KPH("in_name", exact=True, required=False): Text(),
+                KPH("in_name", exact=True, required=False): Either(
+                    either_seq=[Text(required=False), Multi(required=False)],
+                    return_as_type=list,
+                ),
                 KPH("endpoint", exact=True, required=False, populate=True): Bool(
                     default_value=False
                 ),

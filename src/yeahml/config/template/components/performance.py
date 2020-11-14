@@ -11,7 +11,7 @@ from crummycm.validation.types.values.compound.multi import Multi
 PERFORMANCE = {
     "performance": {
         "objectives": {
-            KPH("objective_name"): {
+            KPH("objective_name", multi=True): {
                 "loss": {
                     "type": Text(),
                     KPH("options", exact=True, required=False): VPH("loss_options"),
