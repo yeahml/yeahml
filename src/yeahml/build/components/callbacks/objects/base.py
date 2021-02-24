@@ -337,15 +337,16 @@ class CallbackContainer:
         # TODO: in these two preceding blocks; there is likely a more elegant
         # way to approach this
         opt_, obj_, ds_, g_ = [], [], [], []
-        for cb in self.callbacks:
-            if cb.relation_key == "global":
-                g_.append(cb)
-            elif cb.relation_key == "optimizer":
-                opt_.append(cb)
-            elif cb.relation_key == "objective":
-                obj_.append(cb)
-            elif cb.relation_key == "dataset":
-                ds_.append(cb)
+        if self.callbacks:
+            for cb in self.callbacks:
+                if cb.relation_key == "global":
+                    g_.append(cb)
+                elif cb.relation_key == "optimizer":
+                    opt_.append(cb)
+                elif cb.relation_key == "objective":
+                    obj_.append(cb)
+                elif cb.relation_key == "dataset":
+                    ds_.append(cb)
         tmp_dict = {}
         for rel_def in CB_RELATION_KEY:
             if rel_def == "global":

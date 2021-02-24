@@ -2,41 +2,35 @@ meta:
   data_name: "mnist"
   experiment_name: "trial_00"
   start_fresh: False
-  # TODO: information on when to save params, currently only best params saved
+
 logging:
   console:
+    format_str: null
     level: "info"
-    format_str: null
   file:
-    level: "ERROR"
     format_str: null
+    level: "info"
   track:
-    tracker_steps: 30
     tensorboard:
       param_steps: 50
-  # graph_spec: True
+    tracker_steps: 30
 
 performance:
   objectives:
-    # each objective can be a loss, a metric, or a combination of both
-    main_obj:
-      loss:
-        # each loss can only be one loss
-        # TODO: support custom losses
-        type: "sparse_categorical_crossentropy"
-        track: "mean" # for now, only one description allowed
-        #options:
-      metric:
-        # there can be many metrics
-        # TODO: support custom metrics
-        type: ["SparseCategoricalAccuracy"]
-        options: [null]
+    "main_obj":
       in_config:
         type: "supervised"
         options:
           prediction: "y_pred"
           target: "y_target"
         dataset: "mnist"
+      loss:
+        type: "sparse_categorical_crossentropy"
+        track: "mean" # for now, only one description allowed
+      metric:
+        # TODO: change this to metric: [name/type]: options:
+        type: "SparseCategoricalAccuracy"
+        options: null
     # second_obj:
     #   metric:
     #     type: ["TopKCategoricalAccuracy", "TopKCategoricalAccuracy"]
@@ -64,29 +58,17 @@ data:
         names: ["train", "val", "test"]
 
 optimize:
-  # NOTE: multiple losses by the same optimizer, are currently only modeled
-  # jointly, if we wish to model the losses seperately (sequentially or
-  # alternating), then we would want to use a second optimizer
   optimizers:
     "main_opt":
-      type: "adam"
+      objectives: ["main_obj"]
       options:
         learning_rate: 0.0001
-      objectives: ["main_obj"]
-  directive:
-    instructions: "main_opt"
+      type: "adam"
 
 hyper_parameters:
-  epochs: 10
   dataset:
-    # TODO: I would like to make this logic more abstract
-    # I think the only options that should be applied here are "batch" and "shuffle"
+    shuffle_buffer: 128
     batch: 16
-    shuffle_buffer: 128 # this should be grouped with batchsize
-  # other:
-  #   earlystopping:
-  #     type: 'earlystopping'
-  #     options:
+  epochs: 10
 
-model:
-  path: "./model_config.yml"
+model: "parse_path::./model_config.yml"

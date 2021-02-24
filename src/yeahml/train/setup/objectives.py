@@ -122,6 +122,9 @@ def _get_loss(
     except KeyError:
         loss_track = None
 
+    if isinstance(loss_track, str):
+        loss_track = [loss_track]
+
     if loss_track:
         for name in loss_track:
             try:

@@ -22,17 +22,12 @@ performance:
     main_obj:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "binary_crossentropy"
-        # TODO: this should be able to be a dict
-        options: [{ from_logits: True }]
+        options:
+          from_logits: True
         track: "mean" # for now, only one description allowed
-        #options:
       metric:
-        # there can be many metrics
-        # TODO: support custom metrics
-        type: ["BinaryAccuracy"]
-        options: [null]
+        type: "BinaryAccuracy"
       in_config:
         type: "supervised"
         options:
@@ -56,10 +51,10 @@ data:
     "imdb":
       in:
         text:
-          shape: "unknown"
+          shape: null
           dtype: "int64" # this is a cast
         y_label: # TODO: `label:True` identifiers are not doing what they seem...
-          shape: "unknown"
+          shape: null
           dtype: "int64"
           label: True
       split:
@@ -75,8 +70,8 @@ optimize:
       options:
         learning_rate: 0.0001
       objectives: ["main_obj"]
-  directive:
-    instructions: "main_opt"
+  # directive:
+  #   instructions: "main_opt"
 
 hyper_parameters:
   epochs: 8
@@ -90,5 +85,4 @@ hyper_parameters:
   #     type: 'earlystopping'
   #     options:
 
-model:
-  path: "./model_config_b.yml"
+model: "parse_path::./model_config_b.yml"

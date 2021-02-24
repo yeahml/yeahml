@@ -23,15 +23,13 @@ performance:
     mnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
       metric:
         # there can be many metrics
         # TODO: support custom metrics
-        type: ["SparseCategoricalAccuracy"]
-        options: [null]
+        type: "SparseCategoricalAccuracy"
       in_config:
         type: "supervised"
         options:
@@ -41,15 +39,12 @@ performance:
     fashion_mnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
         #options:
       metric:
         # there can be many metrics
-        # TODO: support custom metrics
-        type: ["SparseCategoricalAccuracy"]
-        options: [null]
+        type: "SparseCategoricalAccuracy"
       in_config:
         type: "supervised"
         options:
@@ -59,15 +54,10 @@ performance:
     kmnist_objective:
       loss:
         # each loss can only be one loss
-        # TODO: support custom losses
         type: "sparse_categorical_crossentropy"
         track: "mean" # for now, only one description allowed
-        #options:
       metric:
-        # there can be many metrics
-        # TODO: support custom metrics
-        type: ["SparseCategoricalAccuracy"]
-        options: [null]
+        type: "SparseCategoricalAccuracy"
       in_config:
         type: "supervised"
         options:
@@ -134,8 +124,6 @@ optimize:
       options:
         learning_rate: 0.0001
       objectives: ["kmnist_objective"]
-  directive:
-    instructions: "mnist_objective"
 
 hyper_parameters:
   epochs: 5
@@ -149,5 +137,4 @@ hyper_parameters:
   #     type: 'earlystopping'
   #     options:
 
-model:
-  path: "./model_config.yml"
+model: "parse_path::./model_config.yml"

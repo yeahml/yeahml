@@ -7,7 +7,7 @@ import tensorflow as tf
 # from tensorflow.python.keras import callbacks as callbacks_module
 
 
-from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.log.yf_logging import config_logger
 from yeahml.train.gradients.gradients import (
     get_apply_grad_fn,
     get_get_supervised_grads_fn,

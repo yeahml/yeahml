@@ -19,7 +19,6 @@ from yeahml.config.default.types.base_types import (
     list_of_numeric,
     numeric,
 )
-from yeahml.config.default.types.compound.data import data_in_spec
 
 SPECIAL_OPTIONS = [
     ("kernel_regularizer", configure_regularizer),
@@ -274,7 +273,7 @@ class layers_parser:
                     )
         else:
             raise ValueError(
-                f"{data_in_spec} is type {type(data_in_spec)} not type {type({})}"
+                f"{model_spec_dict} is type {type(model_spec_dict)} not type {type({})}"
             )
 
         return out_dict

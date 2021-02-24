@@ -10,6 +10,10 @@ from yeahml.information.write_info import write_build_information
 # from yeahml.build.get_components import get_logits_and_preds
 from yeahml.log.yf_logging import config_logger
 
+# def get_lr_schedule():
+#     # TODO: https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/optimizers/schedules/ExponentialDecay
+#     raise NotImplementedError
+
 
 # Helper to make the output "consistent"
 def reset_graph_deterministic(seed: int = 42) -> None:
@@ -37,6 +41,10 @@ def _configure_input(cur_name, cur_config):
     # I'm going to continue on with this minimal approach
     dtype = cur_config["dtype"]
     shape = cur_config["shape"]
+    # TODO: this is not a great fix.. Really this needs to be fixed upstream in
+    # the config
+    if shape is None:
+        shape = (None,)
     if cur_config["startpoint"]:
         out = tf.keras.layers.Input(shape=shape, dtype=dtype, name=cur_name)
     else:

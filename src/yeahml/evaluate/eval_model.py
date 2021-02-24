@@ -9,7 +9,7 @@ from yeahml.build.components.loss import configure_loss
 from yeahml.build.components.metric import configure_metric
 from yeahml.dataset.handle_data import return_batched_iter  # datasets from tfrecords
 from yeahml.dataset.util import get_configured_dataset
-from yeahml.log.yf_logging import config_logger  # custom logging
+from yeahml.log.yf_logging import config_logger
 from yeahml.train.inference import inference_on_ds
 
 #####
@@ -22,7 +22,7 @@ from yeahml.train.util import (
 from yeahml.train.gradients.gradients import get_validation_step_fn
 
 ################
-from yeahml.config.model.util import make_hash
+from yeahml.config.create_configs import make_hash
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.paths import create_model_run_path
 from yeahml.train.setup.objectives import get_objectives

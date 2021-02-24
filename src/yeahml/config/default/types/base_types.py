@@ -403,5 +403,7 @@ class list_of_dict(default_config):
                 if o:
                     if not isinstance(o, dict):
                         raise ValueError(f"{o} is type ({type(o)}), not {type(dict)}")
+        else:
+            cur_values_list = [None]
 
         return cur_values_list

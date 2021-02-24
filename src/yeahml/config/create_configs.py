@@ -1,64 +1,60 @@
 #!/usr/bin/env python
-import functools
-import operator
 import os
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, Dict
 
-from yeahml.config.default.default_config import DEFAULT_CONFIG
-from yeahml.config.default.util import parse_default
+import crummycm as ccm
+from yeahml.config.default.types.compound.layer import layers_parser
+from yeahml.config.default.types.compound.performance import performances_parser
 from yeahml.config.graph_analysis.static_analysis import static_analysis
-
-# from yeahml.config.graph_analysis import static_analysis
-from yeahml.config.helper import extract_dict_from_path, get_raw_dict_from_string
-from yeahml.config.model.config import IGNORE_HASH_KEYS
-from yeahml.config.model.util import make_hash
+from yeahml.config.template.template import TEMPLATE
 from yeahml.log.yf_logging import config_logger
+
+# relu: the reasoning here is that the relu is subjectively the most
+# common/default activation function in DNNs, but I don't LOVE this
+# DEFAULT_ACT = {"type": "relu"}
+MODEL_IGNORE_HASH_KEYS = ["model_hash"]
+
+
+def make_hash(o: Dict[str, Any], ignore_keys: Any = None) -> int:
+    # combination of several answers in
+    # https://stackoverflow.com/questions/5884066/hashing-a-dictionary
+
+    """
+    Makes a hash from a dictionary, list, tuple or set to any level, that contains
+    only other hashable types (including any lists, tuples, sets, and
+    dictionaries).
+    """
+
+    if isinstance(o, (set, tuple, list)):
+        return tuple([make_hash(e) for e in o])
+    elif not isinstance(o, dict):
+        return hash(o)
+
+    new_o = {}
+    for k, v in o.items():
+        if ignore_keys:
+            if k not in ignore_keys:
+                new_o[k] = make_hash(v, ignore_keys)
+        else:
+            new_o[k] = make_hash(v, ignore_keys)
+
+    return hash(tuple(sorted(frozenset(new_o.items()))))
+
 
 ## Basic Error Checking
 # TODO: There should be some ~basic error checking here against design
 # do the metrics make sense for the problem? layer order? est. param size?
 # > maybe this belongs in "build graph?"
 
-# TODO: A config logger should be generated / used
 
-# TODO: I don't like this global, but I'm not sure where it belongs yet
-# NOTE: it is required that meta be created before model. this may need to
-# change
-REQ_KEYS = [
-    "meta",
-    "logging",
-    "performance",
-    "data",
-    "hyper_parameters",
-    "model",
-    "optimize",
-]
-
-CONFIG_KEYS = ["callbacks", *REQ_KEYS]
-
-
-def _maybe_extract_from_path(cur_dict: dict) -> dict:
-    try:
-        cur_path = cur_dict["path"]
-        if len(cur_dict.keys()) > 1:
-            raise ValueError(
-                "the current dict has a path specified, but also contains other"
-                f" top level keys ({cur_dict.keys()}). please move these keys"
-                " to path location or remove"
-            )
-        cur_dict = extract_dict_from_path(cur_path)
-    except KeyError:
-        pass
-    return cur_dict
-
-
-def _create_exp_dir(root_dir: str, wipe_dirs: bool):
+def _maybe_create_dir(root_dir: str, wipe_dirs: bool, logger=None):
 
     if os.path.exists(root_dir):
         if wipe_dirs:
             shutil.rmtree(root_dir)
+            logger.info(f"directory {root_dir} removed")
         else:
             raise ValueError(
                 f"a model experiment directory currently exists at {root_dir}."
@@ -68,158 +64,27 @@ def _create_exp_dir(root_dir: str, wipe_dirs: bool):
 
     if not os.path.exists(root_dir):
         Path(root_dir).mkdir(parents=True, exist_ok=True)
+        logger.info(f"directory {root_dir} created")
 
 
-def check_for_unused_keys(
-    conf_formatted: dict,
-    conf_raw: dict,
-    parent_key_path: List[str],
-    unused_keys: List[List[str]],
-) -> List[List[str]]:
-    """Recursive function to check for unparsed keys in the user's config.
+def create_configs(main_path: str) -> dict:
 
-    The idea is to have the user's config only contain information that is known
-    to yeahml. This will help prevent confusion about what is/isn't being used
-    by the framework.
+    # parse + validate
+    config_dict = ccm.generate(main_path, TEMPLATE)
 
-    TODO: if a `path` is specified (as will likely be typical for the model
-    def), the extra key check is currently ignored - 13June20
+    # TODO: bandaid fix
+    if "callbacks" not in config_dict.keys():
+        config_dict["callbacks"] = {"objects": {}}
 
-    Parameters
-    ----------
-    conf_formatted : dict
-        The yeahml formatted+parsed config
-    conf_raw : dict
-        The user's raw config
-    parent_key_path : List[str]
-        Key path that has lead to the current location
-    unused_keys : List[List[str]]
-        Nested keys to unparsed values
+    # custom parsers
+    config_dict["model"]["layers"] = layers_parser()(config_dict["model"]["layers"])
+    config_dict["performance"]["objectives"] = performances_parser()(
+        config_dict["performance"]["objectives"]
+    )
 
-    Returns
-    -------
-    List[List[str]]
-        Nested keys to unparsed values
-    """
-    raw_keys = conf_raw.keys()
-    for key in raw_keys:
-        cur_key_path = parent_key_path.copy()
-        cur_key_path.append(key)
-
-        if key == "path":
-            # TODO: "path" is a magic word indicating that in the users config,
-            # the nested structure for the indicated section is written
-            # somewhere else (path)
-            # TODO: this isn't perfectly straight forward, i.e. the config for a
-            # model is not 1:1 with the returned formatted config
-            # raw = _maybe_extract_from_path(conf_raw)
-            # check_for_unused_keys(conf_formatted, raw, cur_key_path,
-            # unused_keys)
-            pass
-        elif key == "instructions" and cur_key_path[-2] == "directive":
-            # TODO: this is a bandaid fix -- the issue is that the return type
-            # of [optimize][directive][instructions] is a dict and thus is
-            # attempted to be checked against below by check_for_unused_keys and
-            # so the solution currently is to not check this key
-            return
-        else:
-            raw = conf_raw[key]
-
-        if key not in conf_formatted.keys():
-            unused_keys.append(cur_key_path)
-        else:
-            obj = conf_formatted[key]
-            if isinstance(obj, dict):
-                check_for_unused_keys(obj, raw, cur_key_path, unused_keys)
-
-    return unused_keys
-
-
-def _getFromDict(dataDict, mapList):
-    # https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
-    return functools.reduce(operator.getitem, mapList, dataDict)
-
-
-def _build_unused_keys_message(main_config_raw, unused_keys):
-    unchecked_str = ""
-    error_str = ""
-    for uks in unused_keys:
-        retv = _getFromDict(main_config_raw, uks)
-        if uks[-1] == "path":
-            unchecked_str += f" - main_config [{']['.join(uks)}] = {retv}\n"
-        else:
-            error_str += f" - main_config [{']['.join(uks)}] = {retv}\n"
-    return error_str, unchecked_str
-
-
-def _maybe_message(unused_keys, main_config_raw, logger):
-    err_str, unchecked_str = _build_unused_keys_message(main_config_raw, unused_keys)
-    if unchecked_str:
-        unchecked_msg = (
-            f"The following paths were not checked for unparsed keys:\n"
-            f"{unchecked_str}"
-        )
-    else:
-        unchecked_msg = ""
-    if err_str:
-        raise ValueError(
-            (
-                "Unparsed keys detected\n\n"
-                f"{unchecked_msg}"
-                f"The following unparsed keys were detected:\n"
-                f"{err_str}"
-                "please remove these keys from the config.\n\n"
-                "If you would like to support these keys; \n"
-                "please modify the `DEFAULT_CONFIG` in `src/yeahml/config/default/default_config.py`"
-            )
-        )
-    elif unchecked_str:
-        logger.warn(
-            "some keys have not been checked for unparsed keys:\n"
-            f"{unchecked_str}"
-            "\n This is common when the config contains model:path: <some_path>.yml and means that"
-            " there could be extra keys in this model config that are not being parsed+used by yeahml."
-            " in a future release, this could be addressed by building parsing logic in `src/yeahml/config/create_configs.py`"
-        )
-
-
-def _primary_config(main_path: str) -> dict:
-    main_config_raw = get_raw_dict_from_string(main_path)
-    cur_keys = main_config_raw.keys()
-
-    # check for invalid keys
-    keys_not_present = []
-    for key in REQ_KEYS:
-        if key not in cur_keys:
-            keys_not_present.append(key)
-    invalid_keys = []
-    for cur_key in cur_keys:
-        if cur_key not in CONFIG_KEYS:
-            invalid_keys.append(cur_key)
-
-    err_str = ""
-    if invalid_keys:
-        err_str += (
-            f"The main config contains the following invalid key(s) {invalid_keys}:"
-        )
-    if keys_not_present:
-        err_str += f"The main config does not contain the key(s) {keys_not_present}:"
-    if err_str:
-        raise ValueError(f"{err_str} \n current keys: {cur_keys}")
-
-    # build dict containing configs
-    config_dict = {}
-    for config_type in cur_keys:
-        # try block?
-        raw_config = main_config_raw[config_type]
-        raw_config = _maybe_extract_from_path(raw_config)
-
-        formatted_config = parse_default(raw_config, DEFAULT_CONFIG[f"{config_type}"])
-        if config_type == "model":
-            model_hash = make_hash(formatted_config, IGNORE_HASH_KEYS)
-            formatted_config["model_hash"] = model_hash
-
-        config_dict[config_type] = formatted_config
+    # TODO: ---- below
+    model_hash = make_hash(config_dict["model"], MODEL_IGNORE_HASH_KEYS)
+    config_dict["model"]["model_hash"] = model_hash
 
     full_exp_path = (
         Path(config_dict["meta"]["yeahml_dir"])
@@ -229,11 +94,6 @@ def _primary_config(main_path: str) -> dict:
     )
     logger = config_logger(full_exp_path, config_dict["logging"], "config")
 
-    unused_keys = check_for_unused_keys(config_dict, main_config_raw, [], [])
-    if unused_keys:
-        _maybe_message(unused_keys, main_config_raw, logger)
-
-    # TODO: this should probably be made once and stored? in the :meta?
     exp_root_dir = (
         Path(config_dict["meta"]["yeahml_dir"])
         .joinpath(config_dict["meta"]["data_name"])
@@ -249,8 +109,11 @@ def _primary_config(main_path: str) -> dict:
     if os.path.exists(exp_root_dir):
         if override_yml_dir:
             shutil.rmtree(exp_root_dir)
+            logger.info(f"directory {exp_root_dir} removed")
+
     if not os.path.exists(exp_root_dir):
         Path(exp_root_dir).mkdir(parents=True, exist_ok=True)
+        logger.info(f"directory {exp_root_dir} created")
 
     model_root_dir = exp_root_dir.joinpath(config_dict["model"]["name"])
     try:
@@ -259,15 +122,7 @@ def _primary_config(main_path: str) -> dict:
         # leave existing model information
         override_model_dir = False
 
-    _create_exp_dir(model_root_dir, wipe_dirs=override_model_dir)
-
-    return config_dict
-
-
-def create_configs(main_path: str) -> dict:
-
-    # parse individual configs
-    config_dict = _primary_config(main_path)
+    _maybe_create_dir(model_root_dir, wipe_dirs=override_model_dir, logger=logger)
 
     # build the order of inputs into the model. This logic will likely need to
     # change as inputs become more complex
@@ -299,7 +154,6 @@ def create_configs(main_path: str) -> dict:
 
     # validate graph
     graph_dict, graph_dependencies = static_analysis(config_dict)
-
     config_dict["graph_dict"] = graph_dict
     config_dict["graph_dependencies"] = graph_dependencies
 
