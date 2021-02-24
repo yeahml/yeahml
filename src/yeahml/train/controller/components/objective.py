@@ -4,7 +4,7 @@ from yeahml.train.controller.components.sub.performance import Performance
 class Objective:
     def __init__(self, name, config, ds_dict):
 
-        # NOTE: there may not be an optimizer here if this is only a metric?
+        # NOTE: there may not be an optimizer here if this is only a metric
         self.optimizer = None  # Optimizer()
         self.name = name
 

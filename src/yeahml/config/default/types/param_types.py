@@ -41,6 +41,6 @@ class parameter_config:
                     out_dict[opt_name] = opt_config
 
         else:
-            raise TypeError(f"param config is not a dict is type:{type(opts)}")
+            raise TypeError(f"param config is not a dict is type:{type(opts_raw)}")
 
         return out_dict
