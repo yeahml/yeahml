@@ -14,10 +14,7 @@ from yeahml.build.layers.config import (
 from yeahml.config.default.types.base_types import (
     categorical,
     custom_source_config,
-    default_config,
     list_of_categorical,
-    list_of_numeric,
-    numeric,
 )
 
 SPECIAL_OPTIONS = [

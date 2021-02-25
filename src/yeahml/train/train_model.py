@@ -169,6 +169,28 @@ def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
     return cur_train_iter
 
 
+class Trainer:
+    def __init__(self, graph, config_dict, datasets):
+        # parameterized graph to train/fit
+        self.graph = graph
+
+        # information about how to train
+        self.model_cdict: Dict[str, Any] = config_dict["model"]
+        self.meta_cdict: Dict[str, Any] = config_dict["meta"]
+        self.log_cdict: Dict[str, Any] = config_dict["logging"]
+        self.data_cdict: Dict[str, Any] = config_dict["data"]
+        self.hp_cdict: Dict[str, Any] = config_dict["hyper_parameters"]
+        self.perf_cdict: Dict[str, Any] = config_dict["performance"]
+        self.optim_cdict: Dict[str, Any] = config_dict["optimize"]
+        self.cb_cdict: Dict[str, Any] = config_dict["callbacks"]
+
+        # data to train on
+        self.datasets = datasets
+
+    def fit():
+        raise NotImplemented(f"fit not implemented yet")
+
+
 def train_model(
     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
 ) -> Dict[str, Any]:
