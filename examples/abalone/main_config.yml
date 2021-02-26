@@ -108,7 +108,7 @@ hyper_parameters:
 callbacks:
   objects:
     "custom_printer":
-      type: "Printer"
+      type: "printer"
       options:
         monitor: "my_monitor"
         relation_key: "global"
