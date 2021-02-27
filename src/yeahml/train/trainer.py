@@ -55,6 +55,7 @@ from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,
     get_optimizers,
 )
 
+from yeahml.train.controller.controller import Controller
 
 # from yeahml.build.load_params_onto_layer import init_params_from_file  # load params
 
@@ -262,6 +263,14 @@ class Trainer:
         self.objective_to_output_index = self._create_objective_to_output_index()
 
         self.list_of_optimizers = list(self.optimizers_dict.keys())
+
+        self.controller = Controller(
+            self.optimizers_dict,
+            self.dataset_dict,
+            self.objectives_dict,
+            obj_policy="random",
+            training=True,
+        )
 
     def _create_objective_to_output_index(self):
         # TODO: this is hardcoded for supervised settings
