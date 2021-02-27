@@ -213,6 +213,8 @@ class Controller:
             optimizers_dict, dataset_dict, objectives_dict
         )
 
+        self._initialize()
+
         # TODO: validate all connections ds --> obj --> optimizer ?
 
     def _initialize(self):
@@ -227,10 +229,11 @@ class Controller:
             first_obj = self.objectives_remain[0]
         self.set_by_objective(first_obj)
 
-    def select_objective(self, cur_policy):
+    def select_objective(self, cur_policy=None):
         # TODO: logging
+        policy = cur_policy or self.self.obj_policy
 
-        if not cur_policy:
+        if not policy:
             # select 'next' as defined
             if not self.cur_objective:
                 # initialize to 0 after increment
@@ -240,7 +243,7 @@ class Controller:
             new_ind = cur_ind + 1
             # wrap
             obj_name = self.objectives_remain[new_ind % len(self.objectives_remain)]
-        elif cur_policy == "random":
+        elif policy == "random":
             # select a ``random'' objective
             new_ind = random.randint(0, len(self.objectives_remain))
             obj_name = self.objectives_remain[new_ind % len(self.objectives_remain)]
@@ -251,7 +254,7 @@ class Controller:
 
         return obj_name
 
-    def advance_objective(self, obj_policy=None):
+    def maybe_advance_objective(self, obj_policy=None):
         """
         advance the objective according the policy, which if does not exist,
         will advance the ``next'' objective (order of creation)
@@ -263,6 +266,10 @@ class Controller:
 
         obj_name = self.select_objective(cur_policy=cur_policy)
         self.set_by_objective(obj_name)
+
+        # return True if advancing
+        advanced = self.cur_objective.name == obj_name
+        return advanced
 
     def set_by_objective(self, obj_name):
         self.cur_objective = self.objectives[obj_name]
