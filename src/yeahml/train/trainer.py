@@ -360,24 +360,27 @@ class Trainer:
 
         while self.controller.training:
 
-            cur_tf_optimizer = self.controller.cur_optimizer
-            self.logger.info(f"optimizer: {cur_tf_optimizer.name}")
+            self.logger.info(f"optimizer: {self.controller.cur_optimizer.name}")
 
             # NOTE: if there are multiple objectives, they will be trained *jointly*
             # cur_optimizer_config:
             #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
             # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
-            get_grads_fn = self.opt_to_get_grads_fn[cur_tf_optimizer.name]
-            apply_grads_fn = self.opt_to_app_grads_fn[cur_tf_optimizer.name]
+            get_grads_fn = self.opt_to_get_grads_fn[self.controller.cur_optimizer.name]
+            apply_grads_fn = self.opt_to_app_grads_fn[
+                self.controller.cur_optimizer.name
+            ]
 
             # TODO: these should really be grouped by the in config (likely by
             # creating a hash) this allows us to group objectives by what
             # dataset their using so that we can reuse the same batch.
             # NOTE: for now, I'm saving the prediction and gt (if supervised) in
             # the grad_dict
-            loss_objective_names = self.opt_to_loss_objectives[cur_tf_optimizer.name]
+            loss_objective_names = self.opt_to_loss_objectives[
+                self.controller.cur_optimizer.name
+            ]
             metrics_objective_names = self.opt_to_metrics_objectives[
-                cur_tf_optimizer.name
+                self.controller.cur_optimizer.name
             ]
 
             obj_to_grads = {}
@@ -396,6 +399,105 @@ class Trainer:
             cur_batch = self.controller.cur_dataset.dataset.get_next_batch("train")
             if not cur_batch:
                 # do stuff
+                # dataset pass is complete
+                self.obj_ds_to_epoch = update_epoch_dict(
+                    self.obj_ds_to_epoch,
+                    self.controller.cur_objective.name,
+                    self.controller.cur_dataset.name,
+                    "train",
+                )
+
+                if (
+                    self.obj_ds_to_epoch[self.controller.cur_objective.name][
+                        self.controller.cur_dataset.name
+                    ]["train"]
+                    >= self.hp_cdict["epochs"]
+                ):
+
+                    # update this particular combination to false -
+                    # eventually this logic will be "smarter" i.e. not
+                    # based entirely on number of epochs.
+                    self.opt_obj_ds_to_training[self.controller.cur_optimizer.name][
+                        self.controller.cur_objective.name
+                    ][self.controller.cur_dataset.name]["train"] = False
+
+                    # this objective is done. see if they're all done
+                    self.is_training = determine_if_training(
+                        self.opt_obj_ds_to_training
+                    )
+
+                    # TODO: this isn't the "best" way to handle this,
+                    # ideally, we would decided (in an intelligent way) when
+                    # we're done training a group of objectives by
+                    # evaluating the loss curves
+                    self.list_of_optimizers.remove(self.controller.cur_optimizer.name)
+                    self.logger.info(
+                        f"{self.controller.cur_optimizer.name} removed from list of opt. remaining: {self.list_of_optimizers}"
+                    )
+                    self.logger.info(f"is_training: {self.is_training}")
+                    # TODO: determine whether to move to the next objective
+                    # NOTE: currently, move to the next objective
+                    if not self.is_training:
+                        # need to break from all loops
+                        continue_optimizer = False
+                        continue_objective = False
+
+                    # TODO: there is likely a better way to handle the case
+                    # where we have reached the 'set' number of epochs for
+                    # this problem
+
+                # the original dict is updated here in case another dataset
+                # needs to use the datset iter -- this could likely be
+                # optimized, but the impact would be minimal right now
+                # cur_train_iter = re_init_iter(
+                #     cur_ds_name, "train", self.dataset_dict
+                # )
+                # self.dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
+
+                self.logger.info(
+                    f"epoch {self.controller.cur_objective.name} - {self.controller.cur_dataset.name} {'train'}:"
+                    f" {self.obj_ds_to_epoch[self.controller.cur_objective.name][self.controller.cur_dataset.name]['train']}"
+                )
+
+                # perform validation after each pass through the training
+                # dataset
+                # NOTE: the location of this 'validation' may change
+                # TODO: there is an error here where the first objective
+                # will be validated on the last epoch and then one more
+                # time.
+                # TODO: ensure the metrics are reset
+                #  iterate validation after iterating entire training..
+                # this will/should change to update on a set frequency --
+                # also, maybe we don't want to run the "full" validation,
+                # only a (random) subset?
+
+                # validation pass
+                cur_val_update = inference_dataset(
+                    self.graph,
+                    loss_objective_names,
+                    metrics_objective_names,
+                    self.dataset_iter_dict,
+                    self.opt_to_validation_fn[self.controller.cur_optimizer.name],
+                    self.main_tracker_dict[self.controller.cur_optimizer.name],
+                    self.controller.cur_objective.name,
+                    self.controller.cur_dataset.name,
+                    self.dataset_dict,
+                    self.opt_to_steps[self.controller.cur_optimizer.name],
+                    self.num_training_ops,
+                    self.objective_to_output_index,
+                    self.objectives_dict,
+                    self.v_writer,
+                    self.logger,
+                    split_name="val",
+                )
+
+                # log params used during validation in other location
+                self.log_model_params(self.tr_writer, self.num_training_ops)
+
+                # TODO: has run entire ds -- for now, time to break out of
+                # this ds eventually, something smarter will need to be done
+                # here in the training loop, not just after an epoch
+                continue_objective = False
                 pass
             else:
                 # grad_dict contains {
@@ -411,213 +513,112 @@ class Trainer:
                     self.objective_to_output_index[self.controller.cur_objective.name],
                     tf_train_loss_descs_to_update,
                 )
-                print(grad_dict)
 
-            sys.exit("here")
+                # TODO: see note above about ensuring the same batch is used for
+                # losses with the same dataset specified
+                self.opt_to_steps[self.controller.cur_optimizer.name] += cur_batch[
+                    0
+                ].shape[0]
+                self.num_training_ops += 1
+                # if num_training_ops > 5:
+                #     start_profiler(profile_path, profiling)
+                # elif num_training_ops > 10:
+                #     stop_profiler()
 
-            while True:
-                while True:  # continue_objective:
-                    if not cur_batch:
+                # TODO: currently this only stores the last grad dict per objective
+                obj_to_grads[self.controller.cur_objective.name] = grad_dict
 
-                        # dataset pass is complete
-                        self.obj_ds_to_epoch = update_epoch_dict(
-                            self.obj_ds_to_epoch, cur_objective, cur_ds_name, "train"
-                        )
+                # NOTE: the steps here aren't accurate (due to note above about)
+                # using the same batches for objectives/losses that specify the
+                # same datasets
+                # update_tf_loss_descriptions(
+                #     grad_dict, tf_train_loss_descs_to_update
+                # )
+                # # TODO: add to tensorboard
 
-                        if (
-                            self.obj_ds_to_epoch[cur_objective][cur_ds_name]["train"]
-                            >= self.hp_cdict["epochs"]
-                        ):
-
-                            # update this particular combination to false -
-                            # eventually this logic will be "smarter" i.e. not
-                            # based entirely on number of epochs.
-                            self.opt_obj_ds_to_training[cur_optimizer_name][
-                                cur_objective
-                            ][cur_ds_name]["train"] = False
-
-                            # this objective is done. see if they're all done
-                            self.is_training = determine_if_training(
-                                self.opt_obj_ds_to_training
-                            )
-
-                            # TODO: this isn't the "best" way to handle this,
-                            # ideally, we would decided (in an intelligent way) when
-                            # we're done training a group of objectives by
-                            # evaluating the loss curves
-                            self.list_of_optimizers.remove(cur_optimizer_name)
-                            self.logger.info(
-                                f"{cur_optimizer_name} removed from list of opt. remaining: {self.list_of_optimizers}"
-                            )
-                            self.logger.info(f"is_training: {self.is_training}")
-                            # TODO: determine whether to move to the next objective
-                            # NOTE: currently, move to the next objective
-                            if not self.is_training:
-                                # need to break from all loops
-                                continue_optimizer = False
-                                continue_objective = False
-
-                            # TODO: there is likely a better way to handle the case
-                            # where we have reached the 'set' number of epochs for
-                            # this problem
-
-                        # the original dict is updated here in case another dataset
-                        # needs to use the datset iter -- this could likely be
-                        # optimized, but the impact would be minimal right now
-                        # cur_train_iter = re_init_iter(
-                        #     cur_ds_name, "train", self.dataset_dict
-                        # )
-                        # self.dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
-
-                        self.logger.info(
-                            f"epoch {cur_objective} - {cur_ds_name} {'train'}:"
-                            f" {self.obj_ds_to_epoch[cur_objective][cur_ds_name]['train']}"
-                        )
-
-                        # perform validation after each pass through the training
-                        # dataset
-                        # NOTE: the location of this 'validation' may change
-                        # TODO: there is an error here where the first objective
-                        # will be validated on the last epoch and then one more
-                        # time.
-                        # TODO: ensure the metrics are reset
-                        #  iterate validation after iterating entire training..
-                        # this will/should change to update on a set frequency --
-                        # also, maybe we don't want to run the "full" validation,
-                        # only a (random) subset?
-
-                        # validation pass
-                        cur_val_update = inference_dataset(
-                            self.graph,
-                            loss_objective_names,
-                            metrics_objective_names,
-                            self.dataset_iter_dict,
-                            self.opt_to_validation_fn[cur_optimizer_name],
-                            opt_tracker_dict,
-                            cur_objective,
-                            cur_ds_name,
-                            self.dataset_dict,
-                            self.opt_to_steps[cur_optimizer_name],
-                            self.num_training_ops,
-                            self.objective_to_output_index,
-                            self.objectives_dict,
-                            self.v_writer,
-                            self.logger,
-                            split_name="val",
-                        )
-
-                        # log params used during validation in other location
+                # create histograms of model parameters
+                if self.log_cdict["track"]["tensorboard"]["param_steps"] > 0:
+                    if (
+                        self.num_training_ops
+                        % self.log_cdict["track"]["tensorboard"]["param_steps"]
+                        == 0
+                    ):
                         self.log_model_params(self.tr_writer, self.num_training_ops)
 
-                        # TODO: has run entire ds -- for now, time to break out of
-                        # this ds eventually, something smarter will need to be done
-                        # here in the training loop, not just after an epoch
-                        continue_objective = False
+                # update Tracker
+                if self.log_cdict["track"]["tracker_steps"] > 0:
+                    if (
+                        self.num_training_ops % self.log_cdict["track"]["tracker_steps"]
+                        == 0
+                    ):
+                        cur_loss_tracker_dict = self.main_tracker_dict[
+                            self.controller.cur_optimizer.name
+                        ][self.controller.cur_objective.name]["loss"][
+                            self.controller.cur_dataset.name
+                        ][
+                            "train"
+                        ]
+                        cur_loss_update = update_loss_trackers(
+                            loss_conf["track"]["train"],
+                            cur_loss_tracker_dict,
+                            self.opt_to_steps[self.controller.cur_optimizer.name],
+                            self.num_training_ops,
+                            tb_writer=self.tr_writer,
+                            ds_name=self.controller.cur_dataset.name,
+                            objective_name=self.controller.cur_objective.name,
+                        )
 
-                    else:
+                        loss_update_dict[
+                            self.controller.cur_objective.name
+                        ] = cur_loss_update
 
-                        # TODO: see note above about ensuring the same batch is used for
-                        # losses with the same dataset specified
-                        self.opt_to_steps[cur_optimizer_name] += cur_batch[0].shape[0]
-                        self.num_training_ops += 1
-                        # if num_training_ops > 5:
-                        #     start_profiler(profile_path, profiling)
-                        # elif num_training_ops > 10:
-                        #     stop_profiler()
+                # TODO: this is a hacky way of seeing if training on a batch was run
+                if obj_to_grads:
+                    update_model_params(
+                        apply_grads_fn,
+                        obj_to_grads,
+                        self.graph,
+                        self.controller.cur_optimizer.object,
+                    )
 
-                        # TODO: currently this only stores the last grad dict per objective
-                        obj_to_grads[cur_objective] = grad_dict
+                    update_metric_objects(
+                        metrics_objective_names,
+                        self.objectives_dict,
+                        obj_to_grads,
+                        "train",
+                    )
 
-                        # NOTE: the steps here aren't accurate (due to note above about)
-                        # using the same batches for objectives/losses that specify the
-                        # same datasets
-                        # update_tf_loss_descriptions(
-                        #     grad_dict, tf_train_loss_descs_to_update
-                        # )
-                        # # TODO: add to tensorboard
-
-                        # create histograms of model parameters
-                        if self.log_cdict["track"]["tensorboard"]["param_steps"] > 0:
-                            if (
-                                self.num_training_ops
-                                % self.log_cdict["track"]["tensorboard"]["param_steps"]
-                                == 0
-                            ):
-                                self.log_model_params(
-                                    self.tr_writer, self.num_training_ops
-                                )
-
-                        # update Tracker
-                        if self.log_cdict["track"]["tracker_steps"] > 0:
-                            if (
-                                self.num_training_ops
-                                % self.log_cdict["track"]["tracker_steps"]
-                                == 0
-                            ):
-                                cur_loss_tracker_dict = opt_tracker_dict[cur_objective][
-                                    "loss"
-                                ][cur_ds_name]["train"]
-                                cur_loss_update = update_loss_trackers(
-                                    loss_conf["track"]["train"],
-                                    cur_loss_tracker_dict,
-                                    self.opt_to_steps[cur_optimizer_name],
-                                    self.num_training_ops,
-                                    tb_writer=self.tr_writer,
-                                    ds_name=cur_ds_name,
-                                    objective_name=cur_objective,
-                                )
-
-                                loss_update_dict[cur_objective] = cur_loss_update
-
-                        # TODO: this is a hacky way of seeing if training on a batch was run
-                        if obj_to_grads:
-                            update_model_params(
-                                apply_grads_fn,
-                                obj_to_grads,
-                                self.graph,
-                                cur_tf_optimizer,
-                            )
-
-                            update_metric_objects(
+                    if self.log_cdict["track"]["tracker_steps"] > 0:
+                        if (
+                            self.num_training_ops
+                            % self.log_cdict["track"]["tracker_steps"]
+                            == 0
+                        ):
+                            update_metrics_dict = update_metrics_tracking(
                                 metrics_objective_names,
                                 self.objectives_dict,
+                                self.main_tracker_dict[
+                                    self.controller.cur_optimizer.name
+                                ],
                                 obj_to_grads,
+                                self.opt_to_steps[self.controller.cur_optimizer.name],
+                                self.num_training_ops,
                                 "train",
+                                tb_writer=self.tr_writer,
+                                ds_name=self.controller.cur_dataset.name,
+                                objective_name=self.controller.cur_objective.name,
                             )
 
-                            if self.log_cdict["track"]["tracker_steps"] > 0:
-                                if (
-                                    self.num_training_ops
-                                    % self.log_cdict["track"]["tracker_steps"]
-                                    == 0
-                                ):
-                                    update_metrics_dict = update_metrics_tracking(
-                                        metrics_objective_names,
-                                        self.objectives_dict,
-                                        opt_tracker_dict,
-                                        obj_to_grads,
-                                        self.opt_to_steps[cur_optimizer_name],
-                                        self.num_training_ops,
-                                        "train",
-                                        tb_writer=self.tr_writer,
-                                        ds_name=cur_ds_name,
-                                        objective_name=cur_objective,
-                                    )
-
-                    update_dict = {
-                        "loss": loss_update_dict,
-                        "metrics": update_metrics_dict,
-                    }
-                continue_optimizer = False
-            # one pass of training (a batch from each objective) with the
-            # current optimizer
-
-        # TODO: I think the 'joint' should likely be the optimizer name, not the
-        # combination of losses name, this would also simplify the creation of these
-
+            update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
         return_dict = {"tracker": self.main_tracker_dict}
 
         return return_dict
+
+    # one pass of training (a batch from each objective) with the
+    # current optimizer
+
+    # TODO: I think the 'joint' should likely be the optimizer name, not the
+    # combination of losses name, this would also simplify the creation of these
 
     # # TODO: adjust
     # train_best_joint_update = record_joint_losses(

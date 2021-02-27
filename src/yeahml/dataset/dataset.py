@@ -8,6 +8,7 @@ class Dataset:
             iter_dict[split_name] = tf_ds.repeat(1).__iter__()
             split_count[split_name] = 0
 
+        self.obj_dict = obj_dict
         self.iter_dict = iter_dict
         self.split_count = split_count
 
