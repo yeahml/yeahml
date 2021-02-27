@@ -156,12 +156,12 @@ def determine_if_training(opt_obj_ds_to_training):
 #     tf.profiler.experimental.stop()
 
 
-def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
-    cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
-    if split_name not in cur_ds_iter_dict.keys():
-        raise ValueError(f"{cur_ds_iter_dict} does not have a {split_name} dataset")
-    cur_train_iter = cur_ds_iter_dict[split_name]
-    return cur_train_iter
+# def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
+#     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
+#     if split_name not in cur_ds_iter_dict.keys():
+#         raise ValueError(f"{cur_ds_iter_dict} does not have a {split_name} dataset")
+#     cur_train_iter = cur_ds_iter_dict[split_name]
+#     return cur_train_iter
 
 
 class Trainer:
@@ -358,61 +358,65 @@ class Trainer:
         self.logger.info("START - training")
         self.log_model_params(self.tr_writer, 0)
 
-        while self.is_training:
+        while self.controller.training:
 
-            cur_optimizer_name = select_optimizer(self.list_of_optimizers)
-            cur_optimizer_config = self.optimizers_dict[cur_optimizer_name]
-            self.logger.info(f"optimizer: {cur_optimizer_name}")
-            continue_optimizer = True
-
-            # apply_current_optimizer is used to remain using a single optimizer
-
-            # get optimizer
-            cur_tf_optimizer = cur_optimizer_config["optimizer"]
-
-            # loss
-            # opt_name :loss :main_obj :ds_name :split_name :loss_name:desc_name
-            # opt_name :metric :main_obj: ds_name :split_name :metric_name
-            opt_tracker_dict = self.main_tracker_dict[cur_optimizer_name]
+            cur_tf_optimizer = self.controller.cur_optimizer
+            self.logger.info(f"optimizer: {cur_tf_optimizer.name}")
 
             # NOTE: if there are multiple objectives, they will be trained *jointly*
             # cur_optimizer_config:
             #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
             # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
-            get_grads_fn = self.opt_to_get_grads_fn[cur_optimizer_name]
-            apply_grads_fn = self.opt_to_app_grads_fn[cur_optimizer_name]
+            get_grads_fn = self.opt_to_get_grads_fn[cur_tf_optimizer.name]
+            apply_grads_fn = self.opt_to_app_grads_fn[cur_tf_optimizer.name]
 
             # TODO: these should really be grouped by the in config (likely by
             # creating a hash) this allows us to group objectives by what
             # dataset their using so that we can reuse the same batch.
             # NOTE: for now, I'm saving the prediction and gt (if supervised) in
             # the grad_dict
-            loss_objective_names = self.opt_to_loss_objectives[cur_optimizer_name]
-            metrics_objective_names = self.opt_to_metrics_objectives[cur_optimizer_name]
+            loss_objective_names = self.opt_to_loss_objectives[cur_tf_optimizer.name]
+            metrics_objective_names = self.opt_to_metrics_objectives[
+                cur_tf_optimizer.name
+            ]
 
             obj_to_grads = {}
             # TODO: the losses should be grouped by the ds used so that we only
             # obtain+run the batch once+ensuring it's the same batch
             loss_update_dict, update_metrics_dict = {}, {}
-            while continue_optimizer:
-                cur_objective = select_objective(loss_objective_names)
-                self.logger.info(f"objective: {cur_objective}")
-                continue_objective = True
+            self.logger.info(f"objective: {self.controller.cur_objective}")
 
-                # TODO: next step -- continue_objective = True
-                # each loss may be being optimized by data from different datasets
-                cur_ds_name = self.objectives_dict[cur_objective]["in_config"][
-                    "dataset"
-                ]
-                loss_conf = self.objectives_dict[cur_objective]["loss"]
-                tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
+            # self.controller.cur_objective
+            # self.controller.cur_dataset
 
-                cur_train_iter = get_train_iter(
-                    self.dataset_iter_dict, cur_ds_name, "train"
+            loss_conf = self.controller.cur_objective.performance.loss
+            tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
+
+            # cur_train_iter = self.controller.cur_dataset.dataset.iter_dict["train"]
+            cur_batch = self.controller.cur_dataset.dataset.get_next_batch("train")
+            if not cur_batch:
+                # do stuff
+                pass
+            else:
+                # grad_dict contains {
+                #     "gradients": grads,
+                #     "predictions": prediction,
+                #     "final_loss": final_loss,
+                #     "losses": loss,
+                # }
+                grad_dict = get_grads_fn(
+                    self.graph,
+                    cur_batch,
+                    self.controller.cur_objective.performance.loss["object"],
+                    self.objective_to_output_index[self.controller.cur_objective.name],
+                    tf_train_loss_descs_to_update,
                 )
+                print(grad_dict)
 
-                while continue_objective:
-                    cur_batch = get_next_batch(cur_train_iter)
+            sys.exit("here")
+
+            while True:
+                while True:  # continue_objective:
                     if not cur_batch:
 
                         # dataset pass is complete
@@ -460,10 +464,10 @@ class Trainer:
                         # the original dict is updated here in case another dataset
                         # needs to use the datset iter -- this could likely be
                         # optimized, but the impact would be minimal right now
-                        cur_train_iter = re_init_iter(
-                            cur_ds_name, "train", self.dataset_dict
-                        )
-                        self.dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
+                        # cur_train_iter = re_init_iter(
+                        #     cur_ds_name, "train", self.dataset_dict
+                        # )
+                        # self.dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
 
                         self.logger.info(
                             f"epoch {cur_objective} - {cur_ds_name} {'train'}:"
@@ -511,20 +515,6 @@ class Trainer:
                         continue_objective = False
 
                     else:
-
-                        grad_dict = get_grads_fn(
-                            self.graph,
-                            cur_batch,
-                            loss_conf["object"],
-                            self.objective_to_output_index[cur_objective],
-                            tf_train_loss_descs_to_update,
-                        )
-                        # grad_dict contains {
-                        #     "gradients": grads,
-                        #     "predictions": prediction,
-                        #     "final_loss": final_loss,
-                        #     "losses": loss,
-                        # }
 
                         # TODO: see note above about ensuring the same batch is used for
                         # losses with the same dataset specified
