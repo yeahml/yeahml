@@ -164,6 +164,9 @@ def determine_if_training(opt_obj_ds_to_training):
 #     return cur_train_iter
 
 
+# TODO: epochs in 'budget'
+
+
 class Trainer:
     def __init__(self, graph, config_dict, datasets):
         # parameterized graph to train/fit
@@ -268,6 +271,7 @@ class Trainer:
             self.optimizers_dict,
             self.dataset_dict,
             self.objectives_dict,
+            ebudget=self.hp_cdict["epochs"],
             obj_policy="random",
             training=True,
         )
@@ -351,16 +355,12 @@ class Trainer:
             for v in self.graph.variables:
                 tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
 
-    # def train_model(
-    #     model: Any, config_dict: Dict[str, Dict[str, Any]], datasets: dict = None
-    # ) -> Dict[str, Any]:
+    # TODO: how to decide when training is done?
     def fit(self) -> Dict[str, Any]:
         self.logger.info("START - training")
         self.log_model_params(self.tr_writer, 0)
 
         while self.controller.training:
-
-            self.logger.info(f"optimizer: {self.controller.cur_optimizer.name}")
 
             # NOTE: if there are multiple objectives, they will be trained *jointly*
             # cur_optimizer_config:
@@ -387,7 +387,7 @@ class Trainer:
             # TODO: the losses should be grouped by the ds used so that we only
             # obtain+run the batch once+ensuring it's the same batch
             loss_update_dict, update_metrics_dict = {}, {}
-            self.logger.info(f"objective: {self.controller.cur_objective}")
+            # self.logger.info(f"objective: {self.controller.cur_objective}")
 
             # self.controller.cur_objective
             # self.controller.cur_dataset
@@ -430,29 +430,14 @@ class Trainer:
                     # ideally, we would decided (in an intelligent way) when
                     # we're done training a group of objectives by
                     # evaluating the loss curves
-                    self.list_of_optimizers.remove(self.controller.cur_optimizer.name)
-                    self.logger.info(
-                        f"{self.controller.cur_optimizer.name} removed from list of opt. remaining: {self.list_of_optimizers}"
-                    )
-                    self.logger.info(f"is_training: {self.is_training}")
-                    # TODO: determine whether to move to the next objective
-                    # NOTE: currently, move to the next objective
-                    if not self.is_training:
-                        # need to break from all loops
-                        continue_optimizer = False
-                        continue_objective = False
+                    # self.list_of_optimizers.remove(self.controller.cur_optimizer.name)
+                    # self.logger.info(
+                    #     f"{self.controller.cur_optimizer.name} removed from list of opt. remaining: {self.list_of_optimizers}"
+                    # )
 
                     # TODO: there is likely a better way to handle the case
                     # where we have reached the 'set' number of epochs for
                     # this problem
-
-                # the original dict is updated here in case another dataset
-                # needs to use the datset iter -- this could likely be
-                # optimized, but the impact would be minimal right now
-                # cur_train_iter = re_init_iter(
-                #     cur_ds_name, "train", self.dataset_dict
-                # )
-                # self.dataset_iter_dict[cur_ds_name]["train"] = cur_train_iter
 
                 self.logger.info(
                     f"epoch {self.controller.cur_objective.name} - {self.controller.cur_dataset.name} {'train'}:"
@@ -497,7 +482,6 @@ class Trainer:
                 # TODO: has run entire ds -- for now, time to break out of
                 # this ds eventually, something smarter will need to be done
                 # here in the training loop, not just after an epoch
-                continue_objective = False
                 pass
             else:
                 # grad_dict contains {
@@ -608,8 +592,9 @@ class Trainer:
                                 ds_name=self.controller.cur_dataset.name,
                                 objective_name=self.controller.cur_objective.name,
                             )
+                objective_advanced = self.controller.maybe_advance_objective()
 
-            update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
+            # update_dict = {"loss": loss_update_dict, "metrics": update_metrics_dict}
         return_dict = {"tracker": self.main_tracker_dict}
 
         return return_dict

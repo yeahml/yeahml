@@ -13,7 +13,7 @@ left to right: datasets -->  objectives -->  optimizers
 
 that is, objectives use multiple datasets, but are optimized by a single
 optimizer. Optimizers can optimize multiple objectives. objectives can learn
-from multiple datasets. Each ojective has a performance object with at least 1
+from multiple datasets. Each objective has a performance object with at least 1
 loss and N metrics
 
 TODO (in semi-order):
@@ -46,6 +46,7 @@ class ObjectiveNode:
     def __init__(self, name):
         self.name = name
         self.datasets = None
+        self.remaining_datasets = None
         self.optimizer = None  # presently only be 1
 
         # NOTE: these three could be grouped
@@ -75,8 +76,10 @@ class ObjectiveNode:
             )
         if not self.datasets:
             self.datasets = dataset
+            self.remaining_datasets = dataset
         else:
             self.datasets += dataset
+            self.remaining_datasets += dataset
 
     def add_optimizer(self, optimizer):
         if not self.optimizer:
@@ -167,6 +170,7 @@ class Controller:
         optimizers_dict,
         dataset_dict,
         objectives_dict,
+        ebudget=1,  # TODO: think about default
         obj_policy=None,
         training=False,
     ):
@@ -177,6 +181,7 @@ class Controller:
         as well as information about the model/params
         """
         self.training = training
+        self.ebudget = ebudget
 
         self.objectives = None  # {obj_a: Objective(), obj_b: Objective()}
         self.objectives_remain = None
@@ -224,14 +229,20 @@ class Controller:
         # TODO: implement `initialize` to allow setting the initial information
 
         if self.obj_policy:
-            first_obj = self.select_objective(cur_policy=self.obj_policy)
+            first_obj = self._select_objective(cur_policy=self.obj_policy)
         else:
             first_obj = self.objectives_remain[0]
-        self.set_by_objective(first_obj)
+        objective_set = self.set_by_objective(first_obj)
+        if not objective_set:
+            raise ValueError(f"there are no datasets available for {first_obj}")
 
-    def select_objective(self, cur_policy=None):
+    def _select_objective(self, cur_policy=None):
         # TODO: logging
         policy = cur_policy or self.self.obj_policy
+
+        if not self.objectives_remain:
+            # done with objectives
+            return None
 
         if not policy:
             # select 'next' as defined
@@ -258,23 +269,106 @@ class Controller:
         """
         advance the objective according the policy, which if does not exist,
         will advance the ``next'' objective (order of creation)
+
+        return True if the objective has changed, False if not
         """
         if obj_policy:
             cur_policy = obj_policy
         else:
             cur_policy = self.obj_policy
 
-        obj_name = self.select_objective(cur_policy=cur_policy)
-        self.set_by_objective(obj_name)
+        if not self.objectives_remain:
+            # done with objectives
+            self.training = False
+            return False
+
+        obj_name = self._select_objective(cur_policy=cur_policy)
+        if not obj_name:
+            # NO OBJECTIVES REMAIN
+            self.training = False
+            return False
+
+        objective_set = self.set_by_objective(obj_name)
+        if not objective_set:
+            self.maybe_advance_objective(obj_policy=cur_policy)
 
         # return True if advancing
         advanced = self.cur_objective.name == obj_name
         return advanced
 
+    def _select_ds_from_cur_objective_and_optimizer(self, cur_policy=None):
+        # self.cur_objective
+        # self.cur_dataset
+
+        # obtain all datasets that might be present
+        # print(self.objectives[self.cur_objective.name])
+        # print(self.relationships.objectives[self.cur_objective.name].datasets)
+
+        # TODO: use policy
+        policy = cur_policy or self.obj_policy
+
+        if not policy:
+            raise ValueError(
+                f"objective policy type {cur_policy} is not currently supported"
+            )
+        elif policy == "random":
+            if not self.relationships.objectives[
+                self.cur_objective.name
+            ].remaining_datasets:
+                return False
+            # select a ``random'' objective
+            new_ind = random.randint(
+                0,
+                len(
+                    self.relationships.objectives[
+                        self.cur_objective.name
+                    ].remaining_datasets
+                ),
+            )
+            selected_ds_name = self.relationships.objectives[
+                self.cur_objective.name
+            ].datasets[
+                new_ind
+                % len(
+                    self.relationships.objectives[
+                        self.cur_objective.name
+                    ].remaining_datasets
+                )
+            ]
+        else:
+            raise ValueError(
+                f"objective policy type {cur_policy} is not currently supported"
+            )
+
+        # check budget
+        # TODO: better logic here...
+        if self.datasets[selected_ds_name].dataset.split_count["train"] >= self.ebudget:
+            # at budget, remove so that it is not used again in the future
+            self.relationships.objectives[
+                self.cur_objective.name
+            ].remaining_datasets.remove(selected_ds_name)
+
+        # TODO: there should not only be one dataset here
+        # self.cur_dataset = self.objectives[self.cur_objective.name].dataset
+        self.cur_dataset = self.datasets[selected_ds_name]
+        return True
+
+    def _select_optimizer_from_cur_obj_relationship(self):
+        defined_opt_name = self.relationships.objectives[
+            self.cur_objective.name
+        ].optimizer
+        self.cur_optimizer = self.optimizers[defined_opt_name]
+
     def set_by_objective(self, obj_name):
+        # TODO: use relationships + knowledge of current objective and current
         self.cur_objective = self.objectives[obj_name]
-        self.cur_dataset = self.objectives[obj_name].dataset  # assuming only one?
-        self.cur_optimizer = self.objectives[obj_name].optimizer
+        self._select_optimizer_from_cur_obj_relationship()
+        advanced_ds = self._select_ds_from_cur_objective_and_optimizer()
+        if not advanced_ds:
+            # no datasets remain for current objective
+            self.objectives_remain.remove(obj_name)
+            return False
+        return True
 
     # convenience
     def __enter__(self):

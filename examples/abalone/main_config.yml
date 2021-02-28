@@ -100,7 +100,7 @@ optimize:
   #   #instructions: "(main_opt,second_opt)"
 
 hyper_parameters:
-  epochs: 20
+  epochs: 10
   dataset:
     batch: 16
     shuffle_buffer: 128
