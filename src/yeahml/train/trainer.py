@@ -23,14 +23,6 @@ from yeahml.train.setup.paths import (
     get_tb_writers,
 )
 
-# from yeahml.train.setup.tracker.metric import (
-#     create_metric_trackers,
-#     update_metric_trackers,
-# )
-# from yeahml.train.setup.tracker.tracker import (
-#     create_joint_dict_tracker,
-#     record_joint_losses,
-# )
 from yeahml.train.update_progress.tf_objectives import update_metric_objects
 from yeahml.train.update_progress.tracker import (
     update_loss_trackers,
@@ -122,29 +114,6 @@ def update_epoch_dict(
         tmp_dict = {objective_name: {dataset_name: {split_name: 1}}}
         obj_ds_to_epoch = {**obj_ds_to_epoch, **tmp_dict}
     return obj_ds_to_epoch
-
-
-# def determine_if_training(opt_obj_ds_to_training):
-
-#     # if a single is_training is found return True, else they are all false,
-#     # return false
-#     for opt_name, opt_to_training in opt_obj_ds_to_training.items():
-#         for obj_name, obj_to_training in opt_to_training.items():
-#             for ds_name, ds_to_training in obj_to_training.items():
-#                 for split_name, is_training in ds_to_training.items():
-#                     if is_training:
-#                         return True
-
-#     return False
-
-
-# def start_profiler(profile_path, profiling):
-#     if not profiling:
-#         tf.profiler.experimental.start(str(profile_path))
-
-
-# def stop_profiler():
-#     tf.profiler.experimental.stop()
 
 
 # TODO: epochs in 'budget'
@@ -242,13 +211,7 @@ class Trainer:
         # a core issue here is that we're doing this entire loop for a single batch
         # NOTE: consider changing is_training to `switch_optimizer`
 
-        # dictionary to keep track of what optimizers are still training on what
-        # datasets
-        # self.opt_obj_ds_to_training = self._create_opt_obj_ds_to_training()
-
         self.objective_to_output_index = self._create_objective_to_output_index()
-
-        # self.list_of_optimizers = list(self.optimizers_dict.keys())
 
         self.controller = Controller(
             self.optimizers_dict,
@@ -286,20 +249,18 @@ class Trainer:
 
         return objective_to_output_index
 
-    def _create_opt_obj_ds_to_training(self):
-        opt_obj_ds_to_training = {}
-        for opt_name, opt_conf in self.optimizers_dict.items():
-            opt_obj_ds_to_training[opt_name] = {}
-            loss_objective_names = self.opt_to_loss_objectives[opt_name]
-            for ln in loss_objective_names:
-                opt_obj_ds_to_training[opt_name][ln] = {}
-                ds_name = self.objectives_dict[ln]["in_config"]["dataset"]
-                # init all to True
-                # currently there is only one ds per objective
-                opt_obj_ds_to_training[opt_name][ln][ds_name] = {"train": True}
-        return opt_obj_ds_to_training
-
     def _create_opt_mapping(self):
+        """
+        give each optimizer an:
+            - gradient calc function
+            - apply gradient functions
+            - inference function
+            - book keeping (number of optimization steps)
+
+        maybe needs:
+            - mapping of optimizer to loss objectives and metric objectives
+        
+        """
 
         # create a tf.function for applying gradients for each optimizer
         # TODO: I am not 100% about this logic for maping the optimizer to the
@@ -333,7 +294,7 @@ class Trainer:
             self.opt_to_loss_objectives[cur_optimizer_name] = loss_objective_names
             self.opt_to_metrics_objectives[cur_optimizer_name] = metrics_objective_names
 
-    def log_model_params(self, writer, g_train_step):
+    def _log_model_params(self, writer, g_train_step):
         with writer.as_default():
             for v in self.graph.variables:
                 tf.summary.histogram(v.name.split(":")[0], v.numpy(), step=g_train_step)
@@ -341,7 +302,7 @@ class Trainer:
     # TODO: how to decide when training is done?
     def fit(self) -> Dict[str, Any]:
         self.logger.info("START - training")
-        self.log_model_params(self.tr_writer, 0)
+        self._log_model_params(self.tr_writer, 0)
 
         while self.controller.training:
 
@@ -370,10 +331,6 @@ class Trainer:
             # TODO: the losses should be grouped by the ds used so that we only
             # obtain+run the batch once+ensuring it's the same batch
             loss_update_dict, update_metrics_dict = {}, {}
-            # self.logger.info(f"objective: {self.controller.cur_objective}")
-
-            # self.controller.cur_objective
-            # self.controller.cur_dataset
 
             loss_conf = self.controller.cur_objective.performance.loss
             tf_train_loss_descs_to_update = get_losses_to_update(loss_conf, "train")
@@ -427,7 +384,7 @@ class Trainer:
                 )
 
                 # log params used during validation in other location
-                self.log_model_params(self.tr_writer, self.num_training_ops)
+                self._log_model_params(self.tr_writer, self.num_training_ops)
 
                 # TODO: has run entire ds -- for now, time to break out of
                 # this ds eventually, something smarter will need to be done
@@ -454,10 +411,6 @@ class Trainer:
                     0
                 ].shape[0]
                 self.num_training_ops += 1
-                # if num_training_ops > 5:
-                #     start_profiler(profile_path, profiling)
-                # elif num_training_ops > 10:
-                #     stop_profiler()
 
                 # TODO: currently this only stores the last grad dict per objective
                 obj_to_grads[self.controller.cur_objective.name] = grad_dict
@@ -477,7 +430,7 @@ class Trainer:
                         % self.log_cdict["track"]["tensorboard"]["param_steps"]
                         == 0
                     ):
-                        self.log_model_params(self.tr_writer, self.num_training_ops)
+                        self._log_model_params(self.tr_writer, self.num_training_ops)
 
                 # update Tracker
                 if self.log_cdict["track"]["tracker_steps"] > 0:
