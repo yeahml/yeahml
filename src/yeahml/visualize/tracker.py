@@ -98,18 +98,20 @@ def basic_plot_tracker(
         for opt_name, opt_tracker_d in tracker.items():
 
             # TODO: eventually, also plot joint
-            objective_names = opt_tracker_d["objectives"]
-            for obj_name in objective_names:
-                # metrics, loss
-                _basic_plot_loss_tracker(
-                    opt_tracker_d[obj_name]["loss"],
-                    skip=skip,
-                    local=local,
-                    training=training,
-                    validation=validation,
-                    obj_name=obj_name,
-                    opt_name=opt_name,
-                )
+            for obj_name, obj_d in opt_tracker_d.items():
+                try:
+                    # _ = obj_d["loss"]
+                    _basic_plot_loss_tracker(
+                        obj_d["loss"],
+                        skip=skip,
+                        local=local,
+                        training=training,
+                        validation=validation,
+                        obj_name=obj_name,
+                        opt_name=opt_name,
+                    )
+                except (KeyError, TypeError):
+                    pass
         plt.legend()
         plt.show()
     if metrics:
@@ -117,17 +119,20 @@ def basic_plot_tracker(
         for opt_name, opt_tracker_d in tracker.items():
 
             # TODO: eventually, also plot joint
-            objective_names = opt_tracker_d["objectives"]
-            for obj_name in objective_names:
-                # metrics, loss
-                _basic_plot_metrics_tracker(
-                    opt_tracker_d[obj_name]["metrics"],
-                    skip=skip,
-                    local=local,
-                    training=training,
-                    validation=validation,
-                    obj_name=obj_name,
-                    opt_name=opt_name,
-                )
+            for obj_name, obj_d in opt_tracker_d.items():
+                try:
+                    # _ = obj_d["metrics"]
+                    # metrics, loss
+                    _basic_plot_metrics_tracker(
+                        obj_d["metrics"],
+                        skip=skip,
+                        local=local,
+                        training=training,
+                        validation=validation,
+                        obj_name=obj_name,
+                        opt_name=opt_name,
+                    )
+                except (KeyError, TypeError):
+                    pass
         plt.legend()
         plt.show()

@@ -147,7 +147,7 @@ class ControllerRelationships:
 
         # TODO: loop optimizers and add objectives
         for opt_name, opt_node in opt_node_dict.items():
-            tmp_objs = optimizers_dict[opt_name]["objectives"]
+            tmp_objs = optimizers_dict[opt_name].objectives
             opt_node.add_objective(tmp_objs)
             if isinstance(tmp_objs, str):
                 tmp_objs = [tmp_objs]

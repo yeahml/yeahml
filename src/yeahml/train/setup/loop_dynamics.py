@@ -1,22 +1,8 @@
-from yeahml.build.components.optimizer import configure_optimizer
 from yeahml.train.setup.tracker.loss import (
     create_joint_loss_tracker,
     create_loss_trackers,
 )
 from yeahml.train.setup.tracker.metric import create_metric_trackers
-
-
-def get_optimizers(optim_cdict):
-
-    optimizers_dict = {}
-    for opt_name, opt_dict in optim_cdict["optimizers"].items():
-        configured_optimizer = configure_optimizer(opt_dict)
-        optimizers_dict[opt_name] = {
-            "optimizer": configured_optimizer,
-            "objectives": opt_dict["objectives"],
-        }
-
-    return optimizers_dict
 
 
 def _return_loss_trackers(raw_obj_dict):
@@ -115,9 +101,9 @@ def create_full_dict(optimizers_dict=None, objectives_dict=None, datasets_dict=N
     """
 
     ret_dict = {}
-    for opt_name, opt_and_obj_dict in optimizers_dict.items():
-        ret_dict[opt_name] = {**opt_and_obj_dict}
-        objectives = opt_and_obj_dict["objectives"]
+    for opt_name, wrapped_optimizer in optimizers_dict.items():
+        ret_dict[opt_name] = {}
+        objectives = wrapped_optimizer.objectives
 
         # loss_names will be used to determine whether a joint tracker should be
         # created

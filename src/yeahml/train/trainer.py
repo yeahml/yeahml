@@ -6,12 +6,7 @@ import tensorflow as tf
 
 
 from yeahml.log.yf_logging import config_logger
-from yeahml.train.gradients.gradients import (
-    get_apply_grad_fn,
-    get_get_supervised_grads_fn,
-    get_validation_step_fn,
-    update_model_params,
-)
+from yeahml.train.gradients.gradients import update_model_params
 from yeahml.train.inference import inference_dataset
 
 from yeahml.train.setup.datasets import get_datasets
@@ -35,8 +30,9 @@ from yeahml.build.components.callbacks.objects.printer import Printer as printer
 
 from yeahml.train.setup.loop_dynamics import (  # obtain_optimizer_loss_mapping,; create_grouped_metrics,; map_in_config_to_objective,
     create_full_dict,
-    get_optimizers,
 )
+
+from yeahml.train.setup.optimizers import Optimizers
 
 from yeahml.train.controller.controller import Controller
 
@@ -161,10 +157,6 @@ class Trainer:
         # get datasets
         self.dataset_dict = get_datasets(self.datasets, self.data_cdict, self.hp_cdict)
 
-        # optimizers
-        # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
-        self.optimizers_dict = get_optimizers(self.optim_cdict)
-
         # {objective_name: "in_config": {...}, "loss": {...}, "metric": {...}}
         # TODO: "train", "val" should be obtained from the config
         self.objectives_dict = get_objectives(
@@ -173,20 +165,23 @@ class Trainer:
             target_splits=["train", "val"],
         )
 
+        # optimizers
+        # {optimizer_name: {"optimizer": tf.obj, "objective": [objective_name]}}
+        # self.optimizers_dict = get_optimizers(self.optim_cdict)
+        self.optimizers = Optimizers(self.optim_cdict, self.objectives_dict)
+
         # create callbacks
         custom_callbacks = get_callbacks(self.cb_cdict)
         self.cbs = CBC(
             custom_callbacks,
-            optimizer_names=list(self.optimizers_dict.keys()),
+            optimizer_names=list(self.optimizers.optimizers.keys()),
             dataset_names=list(self.dataset_dict.keys()),
             objective_names=list(self.objectives_dict.keys()),
         )
         # TODO: call all cbc methods at the appropriate time
 
-        self._create_opt_mapping()
-
         self.main_tracker_dict = create_full_dict(
-            optimizers_dict=self.optimizers_dict,
+            optimizers_dict=self.optimizers.optimizers,
             objectives_dict=self.objectives_dict,
             datasets_dict=self.dataset_dict,
         )
@@ -214,7 +209,7 @@ class Trainer:
         self.objective_to_output_index = self._create_objective_to_output_index()
 
         self.controller = Controller(
-            self.optimizers_dict,
+            self.optimizers.optimizers,
             self.dataset_dict,
             self.objectives_dict,
             ebudget=self.hp_cdict["epochs"],
@@ -249,51 +244,6 @@ class Trainer:
 
         return objective_to_output_index
 
-    def _create_opt_mapping(self):
-        """
-        give each optimizer an:
-            - gradient calc function
-            - apply gradient functions
-            - inference function
-            - book keeping (number of optimization steps)
-
-        maybe needs:
-            - mapping of optimizer to loss objectives and metric objectives
-        
-        """
-
-        # create a tf.function for applying gradients for each optimizer
-        # TODO: I am not 100% about this logic for maping the optimizer to the
-        #   apply_gradient fn... this needs to be confirmed to work as expected
-        self.opt_to_validation_fn = {}
-        self.opt_to_get_grads_fn, self.opt_to_app_grads_fn = {}, {}
-        self.opt_to_steps = {}
-        # used to determine which objectives to loop to calculate losses
-        self.opt_to_loss_objectives = {}
-        # used to determine which objectives to obtain to calculate metrics
-        self.opt_to_metrics_objectives = {}
-
-        for cur_optimizer_name, cur_optimizer_config in self.optimizers_dict.items():
-
-            # TODO: check config to see which fn to get supervised/etc
-            self.opt_to_get_grads_fn[cur_optimizer_name] = get_get_supervised_grads_fn()
-            self.opt_to_app_grads_fn[cur_optimizer_name] = get_apply_grad_fn()
-            self.opt_to_validation_fn[cur_optimizer_name] = get_validation_step_fn()
-            self.opt_to_steps[cur_optimizer_name] = 0
-
-            loss_objective_names = []
-            metrics_objective_names = []
-            for cur_objective in cur_optimizer_config["objectives"]:
-                cur_objective_dict = self.objectives_dict[cur_objective]
-                if "loss" in cur_objective_dict.keys():
-                    if cur_objective_dict["loss"]:
-                        loss_objective_names.append(cur_objective)
-                if "metrics" in cur_objective_dict.keys():
-                    if cur_objective_dict["metrics"]:
-                        metrics_objective_names.append(cur_objective)
-            self.opt_to_loss_objectives[cur_optimizer_name] = loss_objective_names
-            self.opt_to_metrics_objectives[cur_optimizer_name] = metrics_objective_names
-
     def _log_model_params(self, writer, g_train_step):
         with writer.as_default():
             for v in self.graph.variables:
@@ -310,22 +260,14 @@ class Trainer:
             # cur_optimizer_config:
             #   {'optimizer': <tf.opt{}>, 'objectives': ['main_obj']}
             # cur_apply_grad_fn = opt_name_to_gradient_fn[cur_optimizer_name]
-            get_grads_fn = self.opt_to_get_grads_fn[self.controller.cur_optimizer.name]
-            apply_grads_fn = self.opt_to_app_grads_fn[
-                self.controller.cur_optimizer.name
-            ]
+            get_grads_fn = self.controller.cur_optimizer.get_grads_fn
+            apply_grads_fn = self.controller.cur_optimizer.apply_grads_fn
 
             # TODO: these should really be grouped by the in config (likely by
             # creating a hash) this allows us to group objectives by what
             # dataset their using so that we can reuse the same batch.
             # NOTE: for now, I'm saving the prediction and gt (if supervised) in
             # the grad_dict
-            loss_objective_names = self.opt_to_loss_objectives[
-                self.controller.cur_optimizer.name
-            ]
-            metrics_objective_names = self.opt_to_metrics_objectives[
-                self.controller.cur_optimizer.name
-            ]
 
             obj_to_grads = {}
             # TODO: the losses should be grouped by the ds used so that we only
@@ -366,15 +308,15 @@ class Trainer:
                 # validation pass
                 cur_val_update = inference_dataset(
                     self.graph,
-                    loss_objective_names,
-                    metrics_objective_names,
+                    self.controller.cur_optimizer.losses,
+                    self.controller.cur_optimizer.metrics,
                     self.dataset_iter_dict,
-                    self.opt_to_validation_fn[self.controller.cur_optimizer.name],
+                    self.controller.cur_optimizer.validation_step_fn,
                     self.main_tracker_dict[self.controller.cur_optimizer.name],
                     self.controller.cur_objective.name,
                     self.controller.cur_dataset.name,
                     self.dataset_dict,
-                    self.opt_to_steps[self.controller.cur_optimizer.name],
+                    self.controller.cur_optimizer.num_train_steps,
                     self.num_training_ops,
                     self.objective_to_output_index,
                     self.objectives_dict,
@@ -407,9 +349,7 @@ class Trainer:
 
                 # TODO: see note above about ensuring the same batch is used for
                 # losses with the same dataset specified
-                self.opt_to_steps[self.controller.cur_optimizer.name] += cur_batch[
-                    0
-                ].shape[0]
+                self.controller.cur_optimizer.num_train_steps += cur_batch[0].shape[0]
                 self.num_training_ops += 1
 
                 # TODO: currently this only stores the last grad dict per objective
@@ -448,7 +388,7 @@ class Trainer:
                         cur_loss_update = update_loss_trackers(
                             loss_conf["track"]["train"],
                             cur_loss_tracker_dict,
-                            self.opt_to_steps[self.controller.cur_optimizer.name],
+                            self.controller.cur_optimizer.num_train_steps,
                             self.num_training_ops,
                             tb_writer=self.tr_writer,
                             ds_name=self.controller.cur_dataset.name,
@@ -469,7 +409,7 @@ class Trainer:
                     )
 
                     update_metric_objects(
-                        metrics_objective_names,
+                        self.controller.cur_optimizer.metrics,
                         self.objectives_dict,
                         obj_to_grads,
                         "train",
@@ -482,13 +422,13 @@ class Trainer:
                             == 0
                         ):
                             update_metrics_dict = update_metrics_tracking(
-                                metrics_objective_names,
+                                self.controller.cur_optimizer.metrics,
                                 self.objectives_dict,
                                 self.main_tracker_dict[
                                     self.controller.cur_optimizer.name
                                 ],
                                 obj_to_grads,
-                                self.opt_to_steps[self.controller.cur_optimizer.name],
+                                self.controller.cur_optimizer.num_train_steps,
                                 self.num_training_ops,
                                 "train",
                                 tb_writer=self.tr_writer,

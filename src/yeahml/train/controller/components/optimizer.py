@@ -1,17 +1,13 @@
-from yeahml.train.gradients.gradients import (
-    get_apply_grad_fn,
-    get_get_supervised_grads_fn,
-    get_validation_step_fn,
-)
-
-
 class Optimizer:
-    def __init__(self, optimizer_name, optimizer_config, obj_dict):
+    def __init__(self, optimizer_name, optimizer, obj_dict):
+        # this is very confusing and needs to be cleaned up such that it matches
+        # the OptimizerWrapper/Optimizers class in train/setup/optimizers.py
+
         self.name = None if not optimizer_name else optimizer_name
-        self.object = optimizer_config["optimizer"]
+        self.object = optimizer.object
 
         opt_obj_dict = {}
-        for obj_name in optimizer_config["objectives"]:
+        for obj_name in optimizer.objectives:
             objective_object = obj_dict[obj_name]
             objective_object.set_optimizer(self)
             opt_obj_dict[obj_name] = objective_object
@@ -20,9 +16,12 @@ class Optimizer:
         # presently, this is by optimizer, but it might need to be optimizer by
         # ds/in_config to support different shapes/parameters
         # TODO: support more than supervised
-        self.get_grads_fn = get_get_supervised_grads_fn()
-        self.apply_grads_fn = get_apply_grad_fn()
-        self.validation_step_fn = get_validation_step_fn()
+        self.get_grads_fn = optimizer.calc_gradient_fn
+        self.apply_grads_fn = optimizer.apply_gradient_fn
+        self.validation_step_fn = optimizer.inference_fn
+        self.losses = optimizer.losses
+        self.metrics = optimizer.metrics
+        self.num_train_steps = optimizer.num_train_steps
 
     def __str__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
