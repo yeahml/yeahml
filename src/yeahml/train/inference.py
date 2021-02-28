@@ -12,15 +12,10 @@ import tensorflow as tf
 
 def inference_dataset(
     model,
-    loss_objective_names,
-    metrics_objective_names,
+    controller,
     dataset_iter_dict,
-    cur_val_fn,
     opt_tracker_dict,
-    cur_objective,
-    cur_ds_name,
     dataset_dict,
-    num_train_instances,
     num_training_ops,
     objective_to_output_index,
     objectives_dict,
@@ -28,6 +23,16 @@ def inference_dataset(
     logger,
     split_name,
 ):
+    # optimizer
+    loss_objective_names = controller.cur_optimizer.losses
+    metrics_objective_names = controller.cur_optimizer.metrics
+    cur_val_fn = controller.cur_optimizer.validation_step_fn
+    num_train_instances = controller.cur_optimizer.num_train_steps
+    # objective
+    cur_objective = controller.cur_objective.name
+    # dataset
+    cur_ds_name = controller.cur_dataset.name
+
     logger.debug(
         f"START inference on {split_name}, num_train_instances: {num_train_instances}"
     )

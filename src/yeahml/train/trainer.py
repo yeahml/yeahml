@@ -306,17 +306,15 @@ class Trainer:
                 # only a (random) subset?
 
                 # validation pass
+                # TODO: here -- 1) adjust dataset access/use
+                # print(self.controller.datasets["abalone"].dataset.iter_dict["val"])
+                sys.exit()
                 cur_val_update = inference_dataset(
                     self.graph,
-                    self.controller.cur_optimizer.losses,
-                    self.controller.cur_optimizer.metrics,
+                    self.controller,
                     self.dataset_iter_dict,
-                    self.controller.cur_optimizer.validation_step_fn,
                     self.main_tracker_dict[self.controller.cur_optimizer.name],
-                    self.controller.cur_objective.name,
-                    self.controller.cur_dataset.name,
                     self.dataset_dict,
-                    self.controller.cur_optimizer.num_train_steps,
                     self.num_training_ops,
                     self.objective_to_output_index,
                     self.objectives_dict,
