@@ -4,8 +4,6 @@ from yeahml.build.components.callbacks.objects.base import CallbackContainer as 
 
 import tensorflow as tf
 
-# from tensorflow.python.keras import callbacks as callbacks_module
-
 
 from yeahml.log.yf_logging import config_logger
 from yeahml.train.gradients.gradients import (
@@ -16,9 +14,6 @@ from yeahml.train.gradients.gradients import (
 )
 from yeahml.train.inference import inference_dataset
 
-# select which task to optimize
-from yeahml.train.sample_tasks.objective import select_objective
-from yeahml.train.sample_tasks.optimizer import select_optimizer
 from yeahml.train.setup.datasets import get_datasets
 from yeahml.train.setup.objectives import get_objectives
 from yeahml.train.setup.callbacks import get_callbacks
@@ -27,25 +22,21 @@ from yeahml.train.setup.paths import (
     create_model_training_paths,
     get_tb_writers,
 )
-from yeahml.train.setup.tracker.metric import (
-    create_metric_trackers,
-    update_metric_trackers,
-)
-from yeahml.train.setup.tracker.tracker import (
-    create_joint_dict_tracker,
-    record_joint_losses,
-)
+
+# from yeahml.train.setup.tracker.metric import (
+#     create_metric_trackers,
+#     update_metric_trackers,
+# )
+# from yeahml.train.setup.tracker.tracker import (
+#     create_joint_dict_tracker,
+#     record_joint_losses,
+# )
 from yeahml.train.update_progress.tf_objectives import update_metric_objects
 from yeahml.train.update_progress.tracker import (
     update_loss_trackers,
     update_metrics_tracking,
 )
-from yeahml.train.util import (
-    convert_to_single_pass_iterator,
-    get_losses_to_update,
-    get_next_batch,
-    re_init_iter,
-)
+from yeahml.train.util import convert_to_single_pass_iterator, get_losses_to_update
 
 # TODO: delete out before merging
 from yeahml.build.components.callbacks.objects.printer import Printer as printer
@@ -133,18 +124,18 @@ def update_epoch_dict(
     return obj_ds_to_epoch
 
 
-def determine_if_training(opt_obj_ds_to_training):
+# def determine_if_training(opt_obj_ds_to_training):
 
-    # if a single is_training is found return True, else they are all false,
-    # return false
-    for opt_name, opt_to_training in opt_obj_ds_to_training.items():
-        for obj_name, obj_to_training in opt_to_training.items():
-            for ds_name, ds_to_training in obj_to_training.items():
-                for split_name, is_training in ds_to_training.items():
-                    if is_training:
-                        return True
+#     # if a single is_training is found return True, else they are all false,
+#     # return false
+#     for opt_name, opt_to_training in opt_obj_ds_to_training.items():
+#         for obj_name, obj_to_training in opt_to_training.items():
+#             for ds_name, ds_to_training in obj_to_training.items():
+#                 for split_name, is_training in ds_to_training.items():
+#                     if is_training:
+#                         return True
 
-    return False
+#     return False
 
 
 # def start_profiler(profile_path, profiling):
@@ -154,14 +145,6 @@ def determine_if_training(opt_obj_ds_to_training):
 
 # def stop_profiler():
 #     tf.profiler.experimental.stop()
-
-
-# def get_train_iter(dataset_iter_dict, cur_ds_name, split_name):
-#     cur_ds_iter_dict = dataset_iter_dict[cur_ds_name]
-#     if split_name not in cur_ds_iter_dict.keys():
-#         raise ValueError(f"{cur_ds_iter_dict} does not have a {split_name} dataset")
-#     cur_train_iter = cur_ds_iter_dict[split_name]
-#     return cur_train_iter
 
 
 # TODO: epochs in 'budget'
@@ -261,11 +244,11 @@ class Trainer:
 
         # dictionary to keep track of what optimizers are still training on what
         # datasets
-        self.opt_obj_ds_to_training = self._create_opt_obj_ds_to_training()
+        # self.opt_obj_ds_to_training = self._create_opt_obj_ds_to_training()
 
         self.objective_to_output_index = self._create_objective_to_output_index()
 
-        self.list_of_optimizers = list(self.optimizers_dict.keys())
+        # self.list_of_optimizers = list(self.optimizers_dict.keys())
 
         self.controller = Controller(
             self.optimizers_dict,
@@ -398,7 +381,6 @@ class Trainer:
             # cur_train_iter = self.controller.cur_dataset.dataset.iter_dict["train"]
             cur_batch = self.controller.cur_dataset.dataset.get_next_batch("train")
             if not cur_batch:
-                # do stuff
                 # dataset pass is complete
                 self.obj_ds_to_epoch = update_epoch_dict(
                     self.obj_ds_to_epoch,
@@ -406,38 +388,6 @@ class Trainer:
                     self.controller.cur_dataset.name,
                     "train",
                 )
-
-                if (
-                    self.obj_ds_to_epoch[self.controller.cur_objective.name][
-                        self.controller.cur_dataset.name
-                    ]["train"]
-                    >= self.hp_cdict["epochs"]
-                ):
-
-                    # update this particular combination to false -
-                    # eventually this logic will be "smarter" i.e. not
-                    # based entirely on number of epochs.
-                    self.opt_obj_ds_to_training[self.controller.cur_optimizer.name][
-                        self.controller.cur_objective.name
-                    ][self.controller.cur_dataset.name]["train"] = False
-
-                    # this objective is done. see if they're all done
-                    self.is_training = determine_if_training(
-                        self.opt_obj_ds_to_training
-                    )
-
-                    # TODO: this isn't the "best" way to handle this,
-                    # ideally, we would decided (in an intelligent way) when
-                    # we're done training a group of objectives by
-                    # evaluating the loss curves
-                    # self.list_of_optimizers.remove(self.controller.cur_optimizer.name)
-                    # self.logger.info(
-                    #     f"{self.controller.cur_optimizer.name} removed from list of opt. remaining: {self.list_of_optimizers}"
-                    # )
-
-                    # TODO: there is likely a better way to handle the case
-                    # where we have reached the 'set' number of epochs for
-                    # this problem
 
                 self.logger.info(
                     f"epoch {self.controller.cur_objective.name} - {self.controller.cur_dataset.name} {'train'}:"
