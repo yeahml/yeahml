@@ -51,12 +51,24 @@ def return_available_callbacks():
         if x.is_file() and str(x).split("/")[-1].split(".")[0] not in ["base"]
     ]
     for import_source in files:
+        # ex. [PosixPath('/Users/<>/dev/github/yeahml/src/yeahml/build/components/callbacks/objects/printer.py')]
         import_source = str(import_source).split("/")
         import_source = import_source[import_source.index("yeahml") :]
+        # ex. ['yeahml', 'src', 'yeahml', 'build', 'components', 'callbacks', 'objects', 'printer.py']
+        if import_source.count("yeahml") > 1:
+            # remove first value (since it is 'yeahml' from above)
+            import_source = import_source[1:]
+            # repeat logic to begin with 'yeahml'
+            import_source = import_source[import_source.index("yeahml") :]
+            # ex. ['yeahml', 'build', 'components', 'callbacks', 'objects', 'printer.py']
+
         import_source = ".".join(import_source)
         if import_source.endswith(".py"):
             import_source = import_source.rstrip("py").rstrip(".")
-        custom_mod = importlib.import_module(f"{import_source}")
+        try:
+            custom_mod = importlib.import_module(f"{import_source}")
+        except ModuleNotFoundError as e:
+            raise ValueError(f"Module from {import_source} not found. \n {e}")
         for cb_name, cb_class in inspect.getmembers(custom_mod, inspect.isclass):
             if inspect.isclass(cb_class):
                 custom_callbacks[cb_name.lower()] = {}
