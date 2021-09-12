@@ -185,7 +185,12 @@ def build_model(config_dict: Dict[str, Dict[str, Any]]) -> Any:
         list_of_nodes = list(group_of_nodes)
         for cur_node in list_of_nodes:
             if cur_node:
-                if not graph_dict[cur_node].label:
+                # NOTE: unsure why graph_dict[cur_node].startpoint needed to be added here.
+                # previously the `None` access was a non-issue. 12Sept21
+                if (
+                    not graph_dict[cur_node].label
+                    and not graph_dict[cur_node].startpoint
+                ):
                     if not _is_valid_output(built_nodes[cur_node]["out"]):
                         # create the output (it doesn't exist yet)
                         in_names = graph_dict[cur_node].in_name
